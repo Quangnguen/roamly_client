@@ -100,9 +100,6 @@ const InAppNavigator = () => {
       <Tab.Screen name="Post" component={CreatePostPage} />
       <Tab.Screen name="Notify" component={NotifyPage} />
       <Tab.Screen name="Account" component={AccountPage} />
-      
-
-      
     </Tab.Navigator>
   )
 }
