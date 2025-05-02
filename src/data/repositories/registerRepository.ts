@@ -2,5 +2,5 @@
 import { User } from '../../domain/models/User'
 
 export interface RegisterRepository {
-  register(email: string, password: string, name: string): Promise<User>
+  register(email: string, password: string, name: string, username: string): Promise<User>
 }

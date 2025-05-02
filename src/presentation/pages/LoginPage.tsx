@@ -17,7 +17,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Login'>
 
 export default function LoginPage({ navigation }: Props) {
   const dispatch = useAppDispatch()
-  const { loading } = useAppSelector((state) => state.auth)
+  const { loading, user } = useAppSelector((state) => state.auth)
+  console.log('user', user)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
