@@ -37,9 +37,10 @@ export default function AppNavigator() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
 
-      <Stack.Navigator screenOptions={{ headerShown: false,  gestureEnabled: true, // Cho phép vuốt quay lại
+      <Stack.Navigator screenOptions={{
+        headerShown: false, gestureEnabled: true, // Cho phép vuốt quay lại
         gestureDirection: 'horizontal', // Vuốt theo chiều ngang 
-        }}>
+      }}>
         <Stack.Screen name="Auth" component={AuthNavigator} />
         <Stack.Screen name="InApp" component={InAppNavigator} />
         <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
@@ -52,9 +53,10 @@ export default function AppNavigator() {
 
 const AuthNavigator = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false,
-     
-     }}>
+    <Stack.Navigator screenOptions={{
+      headerShown: false,
+
+    }}>
       <Stack.Screen name="Login" component={LoginPage} />
       <Stack.Screen name="Register" component={RegisterPage} />
     </Stack.Navigator>
@@ -64,40 +66,43 @@ const AuthNavigator = () => {
 const InAppNavigator = () => {
   return (
     <Tab.Navigator initialRouteName="Home"
-        screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-                let iconName;
-                if (route.name === 'Home') {
-                    iconName = 'home';
-                } else if (route.name === 'Search') {
-                    iconName = 'search';
-                }
-                else if (route.name === 'Post') {
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === 'Home') {
+            iconName = 'home';
+          } else if (route.name === 'Search') {
+            iconName = 'search';
+          }
+          else if (route.name === 'Post') {
 
-                    iconName = 'plus-square';
-                }
-                else if (route.name === 'Notify') {
-                  iconName = 'heart';
-                } else {
-                  iconName = 'user'
-                }
-                return <FontAwesome name={iconName as any} size={size} color={color} />
-            },
-            tabBarActiveTintColor: 'tomato',
-            tabBarInactiveTintColor: 'gray',
-            headerShown: false,
-            tabBarStyle: {
-              borderTopColor: 'black',   // ✅ viền trên màu xanh lá
-              borderTopWidth: 1,         // ✅ độ dày viền
-              elevation: 5,              // (Android) thêm bóng đổ nếu muốn
-            },
-        })}
+            iconName = 'plus-square';
+          }
+          else if (route.name === 'Notify') {
+            iconName = 'heart';
+          } else {
+            iconName = 'user'
+          }
+          return <FontAwesome name={iconName as any} size={size} color={color} />
+        },
+        tabBarActiveTintColor: 'tomato',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: false,
+        tabBarStyle: {
+          borderTopColor: 'black',   // ✅ viền trên màu xanh lá
+          borderTopWidth: 1,         // ✅ độ dày viền
+          elevation: 5,              // (Android) thêm bóng đổ nếu muốn
+        },
+      })}
 
     >
 
       <Tab.Screen name="Home" component={HomePage} />
       <Tab.Screen name="Search" component={SearchPage} />
-      <Tab.Screen name="Post" component={CreatePostPage} />
+      <Tab.Screen name="Post" component={CreatePostPage} options={{
+        tabBarStyle: { display: 'none' }, // Ẩn thanh tab khi ở màn hình này
+        headerShown: false, // Ẩn header nếu cần
+      }} />
       <Tab.Screen name="Notify" component={NotifyPage} />
       <Tab.Screen name="Account" component={AccountPage} />
     </Tab.Navigator>

@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Alert,
   Image,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native'
 import { useAppDispatch, useAppSelector } from '../redux/hook'
 import { login } from '../redux/slices/authSlice'
@@ -26,7 +28,7 @@ export default function LoginPage({ navigation }: Props) {
   const handleLogin = async () => {
     const result = await dispatch(login({ email, password }))
     if (login.fulfilled.match(result)) {
-      Alert.alert('Thành công', 'Đăng nhập thành công')
+      //Alert.alert('Thành công', 'Đăng nhập thành công')
       navigation.replace('InApp')
     } else {
       Alert.alert('Lỗi', 'Đăng nhập thất bại')
@@ -42,61 +44,64 @@ export default function LoginPage({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome To Roadly 👋</Text>
-      <Text style={styles.subtitle}>Login to continue</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Welcome To Roadly 👋</Text>
+        <Text style={styles.subtitle}>Login to continue</Text>
 
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-      />
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+        />
 
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-      />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={styles.input}
+        />
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Text style={styles.loginText}>
-          {loading ? 'Logging in...' : 'Login'}
-        </Text>
-      </TouchableOpacity>
-
-      <Text style={styles.or}>OR</Text>
-
-      <View style={styles.socialContainer}>
-        <TouchableOpacity
-          style={styles.socialButton}
-          onPress={handleLoginWithGoogle}
-        >
-          <Image
-            source={{ uri: 'https://img.icons8.com/color/48/google-logo.png' }}
-            style={styles.socialIcon}
-          />
-          <Text style={styles.socialText}>Google</Text>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Text style={styles.loginText}>
+            {loading ? 'Logging in...' : 'Login'}
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.socialButton}
-          onPress={handleLoginWithFacebook}
-        >
-          <Image
-            source={{ uri: 'https://img.icons8.com/color/48/facebook-new.png' }}
-            style={styles.socialIcon}
-          />
-          <Text style={styles.socialText}>Facebook</Text>
+        <Text style={styles.or}>OR</Text>
+
+        <View style={styles.socialContainer}>
+          <TouchableOpacity
+            style={styles.socialButton}
+            onPress={handleLoginWithGoogle}
+          >
+            <Image
+              source={{ uri: 'https://img.icons8.com/color/48/google-logo.png' }}
+              style={styles.socialIcon}
+            />
+            <Text style={styles.socialText}>Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.socialButton}
+            onPress={handleLoginWithFacebook}
+          >
+            <Image
+              source={{ uri: 'https://img.icons8.com/color/48/facebook-new.png' }}
+              style={styles.socialIcon}
+            />
+            <Text style={styles.socialText}>Facebook</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <Text style={styles.registerText}>Chưa có tài khoản? Đăng ký</Text>
         </TouchableOpacity>
       </View>
+    </TouchableWithoutFeedback>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-        <Text style={styles.registerText}>Chưa có tài khoản? Đăng ký</Text>
-      </TouchableOpacity>
-    </View>
   )
 }
 

@@ -5,7 +5,7 @@ import { Post } from "../models/Post"
 export class PostUseCase {
   constructor(private repo: PostRepository) {}
 
-  async creatPost(post : Post ): Promise<Post> {
+  async createPost(post : Post ): Promise<Post> {
     return await this.repo.createPost(post)
   }
   
