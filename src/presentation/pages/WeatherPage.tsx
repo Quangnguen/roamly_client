@@ -147,15 +147,15 @@ export default function WeatherPage() {
         country: string;
     } | null>(null);
 
-    const navigation: NavigationProp<"Home" | "WeatherPage"> = useNavigation();
+    const navigation: NavigationProp<"InApp" | "WeatherPage"> = useNavigation();
 
     const panResponder = PanResponder.create({
         onMoveShouldSetPanResponder: (_, gestureState) => {
             return Math.abs(gestureState.dx) > 20;
         },
         onPanResponderRelease: (_, gestureState) => {
-            if (gestureState.dx > 100) {
-                navigation.navigate("Home");
+            if (gestureState.dx > 50) {
+                navigation.navigate("InApp");
             }
         },
     });
