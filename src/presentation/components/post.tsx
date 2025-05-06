@@ -64,10 +64,13 @@ const Post: React.FC<PostProps> = ({
 
       {/* Image */}
       <View style={styles.imageContainer}>
-        <Image  source={ imageUrl 
-            ? { uri: imageUrl } 
-            : require('../../../assets/images/avatar-test.jpg')}
-            style={styles.postImage}
+        <Image
+          source={
+            typeof imageUrl === 'string'
+              ? { uri: imageUrl }
+              : imageUrl // Nếu là require, sử dụng trực tiếp
+          }
+          style={styles.postImage}
         />
         <View style={styles.imageCounter}>
           <Text style={styles.imageCounterText}>

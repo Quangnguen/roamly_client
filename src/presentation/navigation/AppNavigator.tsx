@@ -75,7 +75,6 @@ const InAppNavigator = () => {
             iconName = 'search';
           }
           else if (route.name === 'Post') {
-
             iconName = 'plus-square';
           }
           else if (route.name === 'Notify') {
@@ -88,6 +87,7 @@ const InAppNavigator = () => {
         tabBarActiveTintColor: 'tomato',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           borderTopColor: 'black',   // ✅ viền trên màu xanh lá
           borderTopWidth: 1,         // ✅ độ dày viền

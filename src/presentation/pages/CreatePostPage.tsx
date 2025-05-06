@@ -113,7 +113,6 @@ const CreatePostPage = () => {
           </View>
         </SafeAreaView>
       </TouchableWithoutFeedback>
-
     </KeyboardAvoidingView>
   );
 };
