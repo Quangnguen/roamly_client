@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     paddingVertical: 6,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgb(173, 216, 230)',
   },
   gradientBorderSimulated: {
     width: AVATAR_SIZE + 6,

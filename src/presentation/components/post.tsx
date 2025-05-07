@@ -122,7 +122,7 @@ const Post: React.FC<PostProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgb(173, 216, 230)',
     borderBottomWidth: 0.5,
     borderBottomColor: '#DADADA',
   },

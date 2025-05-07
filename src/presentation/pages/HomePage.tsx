@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, PanResponder, Animated } from 'react-native'
+import { View, Text, ScrollView, PanResponder, Animated, StyleSheet } from 'react-native'
 import { Header } from '../components/header'
 import FollowList from '../components/follower'
 import Post from '../components/post'
@@ -99,7 +99,7 @@ const HomePage = () => {
   ];
 
   return (
-    <ScrollView {...panResponder.panHandlers}>
+    <ScrollView {...panResponder.panHandlers} style={styles.container}>
       <Header
         unreadMessages={1}
         onCameraPress={() => console.log("Camera pressed")}
@@ -126,5 +126,22 @@ const HomePage = () => {
     </ScrollView>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'rgb(173, 216, 230)',
+  },
+  header: {
+    padding: 16,
+    backgroundColor: '#f8f8f8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  headerText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+})
 
 export default HomePage

@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#DBDBDB",
-    backgroundColor: "#FFFFFF",
+    // backgroundColor: "red",
   },
   logoText: {
     fontFamily: "cursive",
