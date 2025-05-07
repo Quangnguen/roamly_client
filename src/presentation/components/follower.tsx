@@ -1,3 +1,4 @@
+import { BACKGROUND } from '@/src/const/constants';
 import React from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, Dimensions } from 'react-native';
 
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     paddingVertical: 6,
-    backgroundColor: 'rgb(173, 216, 230)',
+    backgroundColor: BACKGROUND,
   },
   gradientBorderSimulated: {
     width: AVATAR_SIZE + 6,

@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
+import { BACKGROUND } from '@/src/const/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -122,7 +123,7 @@ const Post: React.FC<PostProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgb(173, 216, 230)',
+    backgroundColor: BACKGROUND,
     borderBottomWidth: 0.5,
     borderBottomColor: '#DADADA',
   },

@@ -5,6 +5,7 @@ import Post from '../components/post'
 import { useNavigation } from '@react-navigation/native'
 import { NavigationProp } from "@/src/utils/PropsNavigate"
 import { useEffect, useRef, useState } from 'react'
+import { BACKGROUND } from '@/src/const/constants'
 
 const HomePage = () => {
 
@@ -130,7 +131,7 @@ const HomePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgb(173, 216, 230)',
+    backgroundColor: BACKGROUND,
   },
   header: {
     padding: 16,
