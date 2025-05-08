@@ -125,7 +125,9 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: BACKGROUND,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: '#000',
+    borderTopColor: "#000",
+    borderTopWidth: 0.5,
   },
   header: {
     flexDirection: 'row',

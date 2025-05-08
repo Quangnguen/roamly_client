@@ -16,6 +16,7 @@ import {
 import { Ionicons, MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
 import { NavigationProp } from '@/src/utils/PropsNavigate';
 import { useNavigation } from 'expo-router';
+import { BACKGROUND } from '@/src/const/constants';
 
 const CreatePostPage = () => {
   const [postText, setPostText] = useState('');
@@ -42,10 +43,10 @@ const CreatePostPage = () => {
             <Text style={styles.headerTitle}>Thread mới</Text>
             <View style={styles.rightIcons}>
               <TouchableOpacity style={styles.headerIcon}>
-                <Ionicons name="document-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="document-outline" size={24} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.headerIcon}>
-                <Ionicons name="happy-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="happy-outline" size={24} />
               </TouchableOpacity>
             </View>
           </View>
@@ -77,22 +78,22 @@ const CreatePostPage = () => {
             {/* Media Icons */}
             <View style={styles.mediaIcons}>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="images-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="images-outline" size={24}/>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="camera-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="camera-outline" size={24} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <MaterialIcons name="gif" size={24} color="#FFFFFF" />
+                <MaterialIcons name="gif" size={24}/>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <FontAwesome name="microphone" size={22} color="#FFFFFF" />
+                <FontAwesome name="microphone" size={22}/>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="list-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="list-outline" size={24}/>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="location-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="location-outline" size={24}/>
               </TouchableOpacity>
             </View>
           </View>
@@ -120,7 +121,7 @@ const CreatePostPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: BACKGROUND,
   },
   header: {
     flexDirection: 'row',
@@ -135,11 +136,9 @@ const styles = StyleSheet.create({
     width: 60,
   },
   cancelText: {
-    color: '#FFFFFF',
     fontSize: 16,
   },
   headerTitle: {
-    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -169,16 +168,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   username: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },
   addTopic: {
-    color: '#777777',
+    color: '#000',
     fontSize: 14,
   },
   postInput: {
-    color: '#FFFFFF',
     fontSize: 16,
     minHeight: 100,
     textAlignVertical: 'top',
@@ -220,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   postButtonText: {
-    color: '#777777',
+    color: '#fff',
     fontWeight: '600',
   },
   postButtonTextActive: {

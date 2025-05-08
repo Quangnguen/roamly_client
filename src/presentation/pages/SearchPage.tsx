@@ -17,9 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { ScrollView, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Post from '../components/post';
-import CardAddress from '../components/cardAddress';
-import CardHomeStay from '../components/cardHomeStay';
-import CardUser from '../components/cardUser';
+import { BACKGROUND } from '@/src/const/constants';
+import Card from '../components/card';
 
 type Tab = {
   name: string;
@@ -177,8 +176,11 @@ const users = [
 
 const SearchPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('Post');
+  const [searchText, setSearchText] = useState<string>('');
 
-
+  const handleClearSearch = () => {
+    setSearchText('');
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -192,7 +194,14 @@ const SearchPage: React.FC = () => {
                 style={styles.searchBar}
                 placeholder="Search"
                 placeholderTextColor="#888"
+                value={searchText}
+                onChangeText={setSearchText}
               />
+              {searchText.length > 0 && (
+                <TouchableOpacity onPress={handleClearSearch}>
+                  <Ionicons name="close-circle" size={20} color="#888" style={styles.clearIcon} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -202,7 +211,7 @@ const SearchPage: React.FC = () => {
               <TouchableOpacity
                 key={tab.name}
                 onPress={() => setActiveTab(tab.name)}
-                style={[styles.tab, activeTab === tab.name ? { backgroundColor: 'rgba(192, 192, 192, 0.64)' } : null]}
+                style={[styles.tab, activeTab === tab.name ? { backgroundColor: 'rgba(192, 192, 192, 0.64)' } : { backgroundColor: '#fff' }]}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Ionicons
@@ -224,7 +233,6 @@ const SearchPage: React.FC = () => {
           </View>
 
           {/* Nội dung theo tab */}
-
           {activeTab === 'Post' && (
             <ScrollView>
               {posts.map((post) => (
@@ -243,11 +251,13 @@ const SearchPage: React.FC = () => {
               ))}
             </ScrollView>
           )}
+
           {activeTab === 'Address' && (
             <ScrollView contentContainerStyle={styles.addressContainer}>
               {addressCards.map((card, index) => (
-                <CardAddress
-                  key={index} // Sử dụng `index` làm key (hoặc một giá trị duy nhất nếu có)
+                <Card
+                  key={index}
+                  type="address"
                   image={card.image}
                   title={card.title}
                   description={card.description}
@@ -255,28 +265,33 @@ const SearchPage: React.FC = () => {
               ))}
             </ScrollView>
           )}
-          {(activeTab === 'Home Stay') && (
+
+          {activeTab === 'Home Stay' && (
             <ScrollView contentContainerStyle={styles.addressContainer}>
               {homeStays.map((homeStay, index) => (
-                <CardHomeStay
+                <Card
                   key={index}
+                  type="homestay"
                   image={homeStay.image}
                   title={homeStay.title}
-                  rating={homeStay.rating}
                   description={homeStay.description}
+                  rating={homeStay.rating}
+                  cardHeight={250}
                 />
               ))}
             </ScrollView>
           )}
-          {(activeTab === 'User') && (
+
+          {activeTab === 'User' && (
             <ScrollView contentContainerStyle={styles.addressContainer}>
               {users.map((user, index) => (
-                <CardUser
+                <Card
                   key={index}
+                  type="user"
                   avatar={user.avatar}
-                  name={user.name}
-                  achievements={user.achievements}
+                  title={user.name}
                   description={user.description}
+                  achievements={user.achievements}
                 />
               ))}
             </ScrollView>
@@ -290,13 +305,13 @@ const SearchPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: BACKGROUND,
   },
   header: {
     padding: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbdbdb',
+    // backgroundColor: '#fff',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#000',
   },
   searchBarContainer: {
     flexDirection: 'row',
@@ -316,9 +331,9 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbdbdb',
+    // backgroundColor: '#fff',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#000',
     paddingVertical: 10,
   },
   tab: {
@@ -373,6 +388,9 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#888',
+  },
+  clearIcon: {
+    marginLeft: 8,
   },
 });
 

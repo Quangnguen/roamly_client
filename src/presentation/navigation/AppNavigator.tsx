@@ -99,7 +99,7 @@ const InAppNavigator = () => {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          borderTopColor: 'black',
+          borderTopColor: "#000",
           borderTopWidth: 1,
           elevation: 5,
           backgroundColor: BACKGROUND,

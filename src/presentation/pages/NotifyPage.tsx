@@ -347,6 +347,7 @@ import { useState } from "react"
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native"
 import Following from "../components/notify/Following"
 import You from "../components/notify/ForYou"
+import { BACKGROUND } from "@/src/const/constants"
 
 const NotifyPage = () => {
   const [activeTab, setActiveTab] = useState<"you" | "following">("you")
@@ -383,7 +384,7 @@ const NotifyPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: BACKGROUND,
   },
   tabContainer: {
     flexDirection: "row",
