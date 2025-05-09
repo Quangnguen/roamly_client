@@ -1,6 +1,6 @@
 import type React from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
-import { Camera, MessageCircle, Send } from "lucide-react-native"
+import { Camera, MessageCircle, Send, Cloud } from "lucide-react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import type { RootStackParamList } from "../navigation/AppNavigator"
@@ -12,6 +12,7 @@ interface headerProps {
   onCameraPress?: () => void
   onMessagesPress?: () => void
   onDirectPress?: () => void
+  onWeatherPress?: () => void
 }
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -21,6 +22,7 @@ export const Header: React.FC<headerProps> = ({
   onCameraPress,
   onMessagesPress,
   onDirectPress,
+  onWeatherPress,
 }) => {
 
   const navigation = useNavigation<NavigationProp>()
@@ -67,6 +69,9 @@ export const Header: React.FC<headerProps> = ({
       <Text style={styles.logoText}>Roamly</Text>
 
       <View style={styles.rightIcons}>
+        <TouchableOpacity onPress={onWeatherPress} style={styles.iconContainer}>
+          <Cloud size={24} color="#000" />
+        </TouchableOpacity>
         <TouchableOpacity onPress={handleMessagesPress} style={styles.iconContainer}>
           <MessageCircle size={24} color="#000" />
           {unreadMessages > 0 && (
@@ -75,7 +80,6 @@ export const Header: React.FC<headerProps> = ({
             </View>
           )}
         </TouchableOpacity>
-
         <TouchableOpacity onPress={onDirectPress} style={styles.iconContainer}>
           <Send size={24} color="#000" />
         </TouchableOpacity>

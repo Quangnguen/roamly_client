@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, PanResponder, Animated, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, StyleSheet } from 'react-native'
 import { Header } from '../components/header'
 import FollowList from '../components/follower'
 import Post from '../components/post'
@@ -10,19 +10,6 @@ import { BACKGROUND } from '@/src/const/constants'
 const HomePage = () => {
 
   const navigation: NavigationProp<'Home' | 'WeatherPage'> = useNavigation()
-  const pan = useRef(new Animated.ValueXY()).current
-
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gestureState) => {
-      return Math.abs(gestureState.dx) > 20 // Vuốt ngang
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (gestureState.dx > 50) {
-        // Vuốt từ trái sang phải -> chuyển sang trang Weather
-        navigation.navigate('WeatherPage')
-      }
-    },
-  })
 
   const posts = [
     {
@@ -100,12 +87,13 @@ const HomePage = () => {
   ];
 
   return (
-    <ScrollView {...panResponder.panHandlers} style={styles.container}>
+    <ScrollView style={styles.container}>
       <Header
         unreadMessages={1}
         onCameraPress={() => console.log("Camera pressed")}
         onMessagesPress={() => console.log("Messages pressed")}
-        onDirectPress={() => console.log("Direct pressed")} />
+        onDirectPress={() => console.log("Direct pressed")}
+        onWeatherPress={() => navigation.navigate('WeatherPage')} />
       <FollowList />
       <ScrollView>
         {posts.map((post) => (
