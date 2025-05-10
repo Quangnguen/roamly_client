@@ -1,6 +1,7 @@
 import type React from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
-import { Camera, MessageCircle, Send, Cloud } from "lucide-react-native"
+// Đổi import icon:
+import { Feather } from '@expo/vector-icons'
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import type { RootStackParamList } from "../navigation/AppNavigator"
@@ -26,12 +27,6 @@ export const Header: React.FC<headerProps> = ({
 }) => {
 
   const navigation = useNavigation<NavigationProp>()
-
-  // const handleCameraPress = () => {
-  //   if (onCameraPress) {
-  //     onCameraPress()
-  //   }
-  // }
 
   const handleMessagesPress = () => {
     navigation.navigate("ChatPage")
@@ -59,21 +54,20 @@ export const Header: React.FC<headerProps> = ({
     }
   };
 
-
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={handleCameraPress} style={styles.iconContainer}>
-        <Camera size={24} color="#000" />
+        <Feather name="camera" size={24} color="#000" />
       </TouchableOpacity>
 
       <Text style={styles.logoText}>Roamly</Text>
 
       <View style={styles.rightIcons}>
         <TouchableOpacity onPress={onWeatherPress} style={styles.iconContainer}>
-          <Cloud size={24} color="#000" />
+          <Feather name="cloud" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity onPress={handleMessagesPress} style={styles.iconContainer}>
-          <MessageCircle size={24} color="#000" />
+          <Feather name="message-circle" size={24} color="#000" />
           {unreadMessages > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadMessages}</Text>
@@ -81,7 +75,7 @@ export const Header: React.FC<headerProps> = ({
           )}
         </TouchableOpacity>
         <TouchableOpacity onPress={onDirectPress} style={styles.iconContainer}>
-          <Send size={24} color="#000" />
+          <Feather name="send" size={24} color="#000" />
         </TouchableOpacity>
       </View>
     </View>
