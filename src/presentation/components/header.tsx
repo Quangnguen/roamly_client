@@ -56,16 +56,18 @@ export const Header: React.FC<headerProps> = ({
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handleCameraPress} style={styles.iconContainer}>
-        <Feather name="camera" size={24} color="#000" />
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={handleCameraPress} style={styles.iconContainer}>
+          <Feather name="camera" size={24} color="#000" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onWeatherPress} style={styles.iconContainer}>
+          <Feather name="cloud" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.logoText}>Roamly</Text>
 
       <View style={styles.rightIcons}>
-        <TouchableOpacity onPress={onWeatherPress} style={styles.iconContainer}>
-          <Feather name="cloud" size={24} color="#000" />
-        </TouchableOpacity>
         <TouchableOpacity onPress={handleMessagesPress} style={styles.iconContainer}>
           <Feather name="message-circle" size={24} color="#000" />
           {unreadMessages > 0 && (
