@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
     View,
     Text,
+    TextInput,
     StyleSheet,
     SafeAreaView,
     TouchableOpacity,
@@ -9,6 +10,8 @@ import {
     Platform,
     StatusBar,
     ActivityIndicator,
+    Keyboard,
+    FlatList,
 } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
@@ -24,6 +27,12 @@ interface WeatherInfoCardProps {
     title: string;
     value: number;
     unit?: string;
+}
+
+interface Suggestion {
+    name: string;
+    latitude: number;
+    longitude: number;
 }
 
 /**
@@ -317,6 +326,9 @@ const formatDate = (timestamp: number) => {
  */
 export default function WeatherPage() {
     // States
+    const [searchQuery, setSearchQuery] = useState("");
+     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false); // State cho trạng thái tải gợi ý
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [weatherData, setWeatherData] = useState<WeatherType | null>(null);
@@ -456,6 +468,114 @@ export default function WeatherPage() {
         initWeatherPage();
     }, []);
 
+    const fetchSuggestions = async (query: string) => {
+    if (!query.trim()) {
+        setSuggestions([]);
+        return;
+    }
+
+    try {
+        setLoadingSuggestions(true);
+
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                query
+            )}&countrycodes=VN&format=json&addressdetails=1`
+        );
+
+        if (!response.ok) {
+            throw new Error("Không thể lấy gợi ý địa điểm.");
+        }
+
+        const data = await response.json();
+
+        const formattedSuggestions = data.map((item: any) => ({
+            name: item.display_name,
+            latitude: parseFloat(item.lat),
+            longitude: parseFloat(item.lon),
+        }));
+
+        setSuggestions(formattedSuggestions);
+    } catch (error) {
+        console.error("Error fetching suggestions:", error);
+    } finally {
+        setLoadingSuggestions(false);
+    }
+};
+
+    // Hàm xử lý khi chọn một gợi ý
+    const handleSelectSuggestion = async (suggestion: {
+        name: string;
+        latitude: number;
+        longitude: number;
+    }) => {
+        try {
+            setSearchQuery(suggestion.name);
+            setSuggestions([]);
+            Keyboard.dismiss();
+
+            setLocation({
+                latitude: suggestion.latitude,
+                longitude: suggestion.longitude,
+                city: suggestion.name.split(",")[0],
+                country: suggestion.name.split(",").pop()?.trim() || "Unknown",
+            });
+
+            await fetchWeatherData(suggestion.latitude, suggestion.longitude);
+        } catch (error) {
+            console.error("Error selecting suggestion:", error);
+            setError("Không thể lấy dữ liệu thời tiết cho địa điểm này.");
+        }
+    };
+
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) {
+            setError("Vui lòng nhập địa chỉ hợp lệ.");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Gọi API Nominatim để chuyển đổi địa chỉ thành tọa độ
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                    searchQuery
+                )}&format=json&addressdetails=1`
+            );
+
+            if (!response.ok) {
+                throw new Error("Không thể tìm thấy địa chỉ.");
+            }
+
+            const data = await response.json();
+
+            if (!data || data.length === 0) {
+                throw new Error("Không tìm thấy kết quả cho địa chỉ này.");
+            }
+
+            // Lấy tọa độ từ kết quả đầu tiên
+            const { lat, lon, display_name } = data[0];
+            const newLocation = {
+                latitude: parseFloat(lat),
+                longitude: parseFloat(lon),
+                city: display_name.split(",")[0], // Lấy tên thành phố từ địa chỉ
+                country: display_name.split(",").pop()?.trim() || "Unknown",
+            };
+
+            setLocation(newLocation);
+
+            // Fetch dữ liệu thời tiết cho tọa độ mới
+            await fetchWeatherData(newLocation.latitude, newLocation.longitude);
+        } catch (error) {
+            console.error("Error searching location:", error);
+            setError("Không thể tìm thấy địa chỉ. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     /**
      * Lấy dữ liệu thời tiết từ OpenWeatherMap API
      * @param lat Vĩ độ
@@ -579,6 +699,7 @@ export default function WeatherPage() {
     return (
         <SafeAreaView style={styles.container}>
             {/* Header */}
+            
             <View style={styles.header}>
                 <TouchableOpacity style={styles.iconButton} onPress={handleBackPress}>
                     <Feather name="arrow-left" size={24} color="black" />
@@ -588,6 +709,37 @@ export default function WeatherPage() {
                 </View>
                 <View style={styles.iconButton} />
             </View>
+            
+            <View style={styles.searchContainer}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Nhập địa chỉ..."
+                    value={searchQuery}
+                    onChangeText={(text) => {
+                        setSearchQuery(text);
+                        fetchSuggestions(text); // Gọi API gợi ý khi người dùng nhập
+                    }}
+                />
+                <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+                    <Text style={styles.searchButtonText}>Tìm kiếm</Text>
+                </TouchableOpacity>
+            </View>
+
+             {suggestions.length > 0 && (
+                <FlatList
+                    data={suggestions}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.suggestionItem}
+                            onPress={() => handleSelectSuggestion(item)}
+                        >
+                            <Text style={styles.suggestionText}>{item.name}</Text>
+                        </TouchableOpacity>
+                    )}
+                    style={styles.suggestionsList}
+                />
+            )}
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Location and Date */}
@@ -667,6 +819,47 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#fff8f0", // Peachy background color
         paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    },
+    searchContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 20,
+        marginTop: 10,
+    },
+    searchInput: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        padding: 10,
+        marginRight: 10,
+    },
+    searchButton: {
+        backgroundColor: "#000",
+        padding: 10,
+        borderRadius: 8,
+    },
+    searchButtonText: {
+        color: "#fff",
+        fontSize: 16,
+    },
+     suggestionsList: {
+        maxHeight: 200,
+        backgroundColor: "#fff",
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        marginHorizontal: 20,
+        marginTop: 5,
+    },
+    suggestionItem: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: "#eee",
+    },
+    suggestionText: {
+        fontSize: 16,
+        color: "#333",
     },
     header: {
         flexDirection: "row",

@@ -5,6 +5,7 @@ import {
   TextInput,
   FlatList,
   Image,
+  Platform,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
     backgroundColor: BACKGROUND,
   },
   header: {
-    padding: 10,
+    paddingTop: 10,
     // backgroundColor: '#fff',
     // borderBottomWidth: 1,
     // borderBottomColor: '#000',
@@ -319,6 +320,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 20,
     paddingHorizontal: 10,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 0,
   },
   searchIcon: {
     marginRight: 8,
@@ -334,7 +336,7 @@ const styles = StyleSheet.create({
     // backgroundColor: '#fff',
     // borderBottomWidth: 1,
     // borderBottomColor: '#000',
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
   tab: {
     alignItems: 'center',
