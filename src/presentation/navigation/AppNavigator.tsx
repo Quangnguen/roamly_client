@@ -1,46 +1,56 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { CardStyleInterpolators } from '@react-navigation/stack';
-import LoginPage from '../pages/LoginPage'
-import HomePage from '../pages/HomePage'
-import { SafeAreaView } from 'react-native'
-import RegisterPage from '../pages/RegisterPage'
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { FontAwesome } from '@expo/vector-icons'
-import SearchPage from '../pages/SearchPage'
-import CreatePostPage from '../pages/CreatePostPage'
-import NotifyPage from '../pages/NotifyPage'
-import AccountPage from '../pages/AccountPage'
-import EditProfilePage from '../pages/EditProfilePage'
-import ChatPage from '../pages/ChatPage'
-import WeatherPage from '../pages/WeatherPage'
-
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { FontAwesome } from '@expo/vector-icons';
+import LoginPage from '../pages/LoginPage';
+import HomePage from '../pages/HomePage';
+import RegisterPage from '../pages/RegisterPage';
+import SearchPage from '../pages/SearchPage';
+import CreatePostPage from '../pages/CreatePostPage';
+import NotifyPage from '../pages/NotifyPage';
+import AccountPage from '../pages/AccountPage';
+import EditProfilePage from '../pages/EditProfilePage';
+import ChatPage from '../pages/ChatPage';
+import WeatherPage from '../pages/WeatherPage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BACKGROUND } from '@/src/const/constants';
 
 export type RootStackParamList = {
-  Login: undefined
-  Home: undefined
-  Register: undefined
-  Auth: undefined
-  InApp: undefined
-  EditProfilePage: undefined
-  CreatePostPage: undefined
-  SearchPage: undefined
-  NotifyPage: undefined
-  AccountPage: undefined
-  ChatPage: undefined
-  WeatherPage: undefined
-}
+  Login: undefined;
+  Home: undefined;
+  Register: undefined;
+  Auth: undefined;
+  InApp: undefined;
+  EditProfilePage: undefined;
+  CreatePostPage: undefined;
+  SearchPage: undefined;
+  NotifyPage: undefined;
+  AccountPage: undefined;
+  ChatPage: undefined;
+  WeatherPage: undefined;
+};
 
-const Stack = createNativeStackNavigator<RootStackParamList>()
-const Tab = createBottomTabNavigator()
+type TabParamList = {
+  Home: undefined;
+  Search: undefined;
+  Post: undefined;
+  Notify: undefined;
+  Account: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
 
 export default function AppNavigator() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
-
-      <Stack.Navigator screenOptions={{
-        headerShown: false, gestureEnabled: true, // Cho phép vuốt quay lại
-        gestureDirection: 'horizontal', // Vuốt theo chiều ngang 
-      }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+        }}
+      >
         <Stack.Screen name="Auth" component={AuthNavigator} />
         <Stack.Screen name="InApp" component={InAppNavigator} />
         <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
@@ -48,63 +58,69 @@ export default function AppNavigator() {
         <Stack.Screen name="WeatherPage" component={WeatherPage} />
       </Stack.Navigator>
     </SafeAreaView>
-  )
+  );
 }
 
 const AuthNavigator = () => {
   return (
-    <Stack.Navigator screenOptions={{
-      headerShown: false,
-
-    }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
       <Stack.Screen name="Login" component={LoginPage} />
       <Stack.Screen name="Register" component={RegisterPage} />
     </Stack.Navigator>
-  )
-}
+  );
+};
 
 const InAppNavigator = () => {
   return (
-    <Tab.Navigator initialRouteName="Home"
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+    <Tab.Navigator
+      initialRouteName="Home"
+      screenOptions={({ route }: { route: RouteProp<TabParamList, keyof TabParamList> }) => ({
+        tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
+          let iconName: keyof typeof FontAwesome.glyphMap;
           if (route.name === 'Home') {
             iconName = 'home';
           } else if (route.name === 'Search') {
             iconName = 'search';
-          }
-          else if (route.name === 'Post') {
-
+          } else if (route.name === 'Post') {
             iconName = 'plus-square';
-          }
-          else if (route.name === 'Notify') {
+          } else if (route.name === 'Notify') {
             iconName = 'heart';
           } else {
-            iconName = 'user'
+            iconName = 'user';
           }
-          return <FontAwesome name={iconName as any} size={size} color={color} />
+          return <FontAwesome name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: 'tomato',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          borderTopColor: 'black',   // ✅ viền trên màu xanh lá
-          borderTopWidth: 1,         // ✅ độ dày viền
-          elevation: 5,              // (Android) thêm bóng đổ nếu muốn
+          borderTopColor: "#000",
+          borderTopWidth: 1,
+          elevation: 5,
+          backgroundColor: BACKGROUND,
+          height: 60,
+          paddingBottom: 5,
+          paddingTop: 5,
         },
       })}
-
     >
-
       <Tab.Screen name="Home" component={HomePage} />
       <Tab.Screen name="Search" component={SearchPage} />
-      <Tab.Screen name="Post" component={CreatePostPage} options={{
-        tabBarStyle: { display: 'none' }, // Ẩn thanh tab khi ở màn hình này
-        headerShown: false, // Ẩn header nếu cần
-      }} />
+      <Tab.Screen
+        name="Post"
+        component={CreatePostPage}
+        options={{
+          tabBarStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
       <Tab.Screen name="Notify" component={NotifyPage} />
       <Tab.Screen name="Account" component={AccountPage} />
     </Tab.Navigator>
-  )
-}
+  );
+};

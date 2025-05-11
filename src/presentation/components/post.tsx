@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
+import { BACKGROUND } from '@/src/const/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -64,10 +65,13 @@ const Post: React.FC<PostProps> = ({
 
       {/* Image */}
       <View style={styles.imageContainer}>
-        <Image  source={ imageUrl 
-            ? { uri: imageUrl } 
-            : require('../../../assets/images/avatar-test.jpg')}
-            style={styles.postImage}
+        <Image
+          source={
+            typeof imageUrl === 'string'
+              ? { uri: imageUrl }
+              : imageUrl // Nếu là require, sử dụng trực tiếp
+          }
+          style={styles.postImage}
         />
         <View style={styles.imageCounter}>
           <Text style={styles.imageCounterText}>
@@ -119,9 +123,11 @@ const Post: React.FC<PostProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: BACKGROUND,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#DADADA',
+    borderBottomColor: '#000',
+    borderTopColor: "#000",
+    borderTopWidth: 0.5,
   },
   header: {
     flexDirection: 'row',

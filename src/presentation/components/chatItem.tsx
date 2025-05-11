@@ -41,11 +41,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    color: "white",
     fontWeight: "500",
   },
   message: {
-    color: "#999",
+    color: "#666",
     fontSize: 14,
   },
   rightContainer: {

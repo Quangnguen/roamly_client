@@ -14,6 +14,7 @@ import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BACKGROUND } from '@/src/const/constants';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -177,7 +178,7 @@ const AccountPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: BACKGROUND,
   },
   header: {
     flexDirection: 'row',
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#DBDBDB',
+    borderBottomColor: '#000',
   },
   usernameContainer: {
     flexDirection: 'row',
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
   },
   editProfileButton: {
     borderWidth: 1,
-    borderColor: '#DBDBDB',
+    borderColor: '#000',
     borderRadius: 4,
     paddingVertical: 7,
     alignItems: 'center',

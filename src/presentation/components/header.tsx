@@ -1,6 +1,7 @@
 import type React from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
-import { Camera, MessageCircle, Send } from "lucide-react-native"
+// Đổi import icon:
+import { Feather } from '@expo/vector-icons'
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import type { RootStackParamList } from "../navigation/AppNavigator"
@@ -12,6 +13,7 @@ interface headerProps {
   onCameraPress?: () => void
   onMessagesPress?: () => void
   onDirectPress?: () => void
+  onWeatherPress?: () => void
 }
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -21,15 +23,10 @@ export const Header: React.FC<headerProps> = ({
   onCameraPress,
   onMessagesPress,
   onDirectPress,
+  onWeatherPress,
 }) => {
 
   const navigation = useNavigation<NavigationProp>()
-
-  // const handleCameraPress = () => {
-  //   if (onCameraPress) {
-  //     onCameraPress()
-  //   }
-  // }
 
   const handleMessagesPress = () => {
     navigation.navigate("ChatPage")
@@ -57,27 +54,30 @@ export const Header: React.FC<headerProps> = ({
     }
   };
 
-
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handleCameraPress} style={styles.iconContainer}>
-        <Camera size={24} color="#000" />
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={handleCameraPress} style={styles.iconContainer}>
+          <Feather name="camera" size={24} color="#000" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onWeatherPress} style={styles.iconContainer}>
+          <Feather name="cloud" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.logoText}>Roamly</Text>
 
       <View style={styles.rightIcons}>
         <TouchableOpacity onPress={handleMessagesPress} style={styles.iconContainer}>
-          <MessageCircle size={24} color="#000" />
+          <Feather name="message-circle" size={24} color="#000" />
           {unreadMessages > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadMessages}</Text>
             </View>
           )}
         </TouchableOpacity>
-
         <TouchableOpacity onPress={onDirectPress} style={styles.iconContainer}>
-          <Send size={24} color="#000" />
+          <Feather name="send" size={24} color="#000" />
         </TouchableOpacity>
       </View>
     </View>
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#DBDBDB",
-    backgroundColor: "#FFFFFF",
+    // backgroundColor: "red",
   },
   logoText: {
     fontFamily: "cursive",

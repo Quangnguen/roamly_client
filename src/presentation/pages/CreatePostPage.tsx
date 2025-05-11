@@ -12,17 +12,49 @@ import {
   StatusBar,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
 import { NavigationProp } from '@/src/utils/PropsNavigate';
 import { useNavigation } from 'expo-router';
+import { BACKGROUND } from '@/src/const/constants';
+import * as ImagePicker from 'expo-image-picker';
 
 const CreatePostPage = () => {
   const [postText, setPostText] = useState('');
-  const navigation: NavigationProp<'Home'> = useNavigation()
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [isEditingTopic, setIsEditingTopic] = useState(false); // State để kiểm soát chế độ chỉnh sửa
+  const [topic, setTopic] = useState('');
+
+  const navigation: NavigationProp<'Home'> = useNavigation();
+  
   const handleCancelPress = () => {
-    navigation.goBack()
-  }
+    navigation.goBack();
+    setPostText(''); // Xóa nội dung bài viết khi quay lại
+    setSelectedImages([]); // Xóa ảnh đã chọn khi quay lại
+    setIsEditingTopic(false); // Đặt lại chế độ chỉnh sửa chủ đề
+    setTopic(''); // Xóa chủ đề khi quay lại
+  };
+
+  const handlePickImages = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      alert('Bạn cần cấp quyền truy cập thư viện ảnh để sử dụng tính năng này.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const uris = result.assets.map((asset) => asset.uri);
+      setSelectedImages((prev) => [...prev, ...uris]);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -39,13 +71,13 @@ const CreatePostPage = () => {
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPress}>
               <Text style={styles.cancelText}>Hủy</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Thread mới</Text>
+            <Text style={styles.headerTitle}>Bài viết mới</Text>
             <View style={styles.rightIcons}>
               <TouchableOpacity style={styles.headerIcon}>
-                <Ionicons name="document-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="document-outline" size={24} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.headerIcon}>
-                <Ionicons name="happy-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="happy-outline" size={24} />
               </TouchableOpacity>
             </View>
           </View>
@@ -59,10 +91,33 @@ const CreatePostPage = () => {
               />
               <View style={styles.userInfo}>
                 <Text style={styles.username}>_aaron_3006</Text>
-                <Text style={styles.addTopic}>Thêm chủ đề</Text>
+
+                {/* Thêm chủ đề */}
+                {isEditingTopic ? (
+                  <TextInput
+                    style={styles.topicInput}
+                    value={topic}
+                    onChangeText={setTopic}
+                    onBlur={() => setIsEditingTopic(false)} // Khi mất focus, chuyển lại thành Text
+                    placeholder="Nhập chủ đề..."
+                    placeholderTextColor="#777"
+                  />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Keyboard.dismiss(); // Ẩn bàn phím và xóa focus khỏi "Có gì mới?"
+                      setIsEditingTopic(true); // Bật chế độ chỉnh sửa chủ đề
+                    }}
+                  >
+                    <Text style={styles.addTopic}>
+                      {topic || 'Thêm chủ đề'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
+            {/* TextInput "Có gì mới?" */}
             <TextInput
               style={styles.postInput}
               placeholder="Có gì mới?"
@@ -70,31 +125,41 @@ const CreatePostPage = () => {
               multiline
               value={postText}
               onChangeText={setPostText}
+              onFocus={() => setIsEditingTopic(false)} // Tắt chế độ chỉnh sửa chủ đề khi focus vào đây
             />
 
             <Text style={styles.addToThread}>Thêm vào thread</Text>
 
             {/* Media Icons */}
             <View style={styles.mediaIcons}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="images-outline" size={24} color="#FFFFFF" />
+              <TouchableOpacity style={styles.iconButton} onPress={handlePickImages}>
+                <Ionicons name="images-outline" size={24} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="camera-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="camera-outline" size={24} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <MaterialIcons name="gif" size={24} color="#FFFFFF" />
+                <MaterialIcons name="gif" size={24} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <FontAwesome name="microphone" size={22} color="#FFFFFF" />
+                <FontAwesome name="microphone" size={22} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="list-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="list-outline" size={24} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="location-outline" size={24} color="#FFFFFF" />
+                <Ionicons name="location-outline" size={24} />
               </TouchableOpacity>
             </View>
+
+            {/* Hiển thị danh sách ảnh đã chọn */}
+            {selectedImages.length > 0 && (
+              <ScrollView horizontal style={styles.selectedImagesContainer}>
+                {selectedImages.map((uri, index) => (
+                  <Image key={index} source={{ uri }} style={styles.selectedImage} />
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Footer */}
@@ -113,7 +178,6 @@ const CreatePostPage = () => {
           </View>
         </SafeAreaView>
       </TouchableWithoutFeedback>
-
     </KeyboardAvoidingView>
   );
 };
@@ -121,7 +185,7 @@ const CreatePostPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: BACKGROUND,
   },
   header: {
     flexDirection: 'row',
@@ -136,11 +200,9 @@ const styles = StyleSheet.create({
     width: 60,
   },
   cancelText: {
-    color: '#FFFFFF',
     fontSize: 16,
   },
   headerTitle: {
-    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -170,16 +232,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   username: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },
   addTopic: {
-    color: '#777777',
+    color: '#000',
     fontSize: 14,
   },
   postInput: {
-    color: '#FFFFFF',
     fontSize: 16,
     minHeight: 100,
     textAlignVertical: 'top',
@@ -197,6 +257,16 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     marginRight: 24,
+  },
+  selectedImagesContainer: {
+    marginTop: 16,
+    flexDirection: 'row',
+  },
+  selectedImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginRight: 10,
   },
   footer: {
     flexDirection: 'row',
@@ -221,11 +291,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   postButtonText: {
-    color: '#777777',
+    color: '#fff',
     fontWeight: '600',
   },
   postButtonTextActive: {
     color: '#000000',
+  },
+  topicInput: {
+    fontSize: 14,
+    color: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingVertical: 2,
+    marginTop: 4,
   },
 });
 
