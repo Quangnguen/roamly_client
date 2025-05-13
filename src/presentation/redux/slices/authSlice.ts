@@ -22,6 +22,8 @@ interface AuthState {
   user: AuthResponse | null;
   loading: boolean;
   error: string | null;
+  access_token: string | null; // Thêm access_token
+  refreshToken: string | null; // Thêm refreshToken
 }
 
 // Initial state
@@ -29,6 +31,8 @@ const initialState: AuthState = {
   user: null,
   loading: false,
   error: null,
+  access_token: null, // Khởi tạo access_token
+  refreshToken: null, // Khởi tạo refreshToken
 };
 
 // Login thunk
@@ -82,6 +86,8 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
+        state.access_token = action.payload.access_token;
+        state.refreshToken = action.payload.refresh_token;
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
