@@ -20,6 +20,8 @@ import { ScrollView, GestureHandlerRootView } from 'react-native-gesture-handler
 import Post from '../components/post';
 import { BACKGROUND } from '@/src/const/constants';
 import Card from '../components/card';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Tab = {
   name: string;
@@ -72,21 +74,25 @@ const addressCards = [
   {
     image: { uri: 'https://cafebiz.cafebizcdn.vn/2018/12/22/photo-2-15454504530612141260827.jpg' },
     title: 'Beautiful Location',
-    description: 'This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
+    totalFollowers: 100,
+    description: 'This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
   },
   {
     image: { uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
     title: 'Amazing View',
+    totalFollowers: 245,
     description: 'Experience the breathtaking views of Vietnam\'s natural beauty.',
   },
   {
     image: require('../../../assets/images/natural2.jpg'),
     title: 'Beautiful Location',
+    totalFollowers: 345,
     description: 'This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
   },
   {
     image: { uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
     title: 'Amazing View',
+    totalFollowers: 521,
     description: 'Experience the breathtaking views of Vietnam\'s natural beauty.',
   },
 ];
@@ -96,24 +102,28 @@ const homeStays = [
     image: { uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' },
     title: 'Cozy Home in Tokyo',
     rating: 4,
-    description: 'A cozy and comfortable home located in the heart of Tokyo.',
+    totalRaters: 100,
+    description: 'A cozy and comfortable home located in the heart of Tokyo.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
   },
   {
     image: { uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' },
     title: 'Luxury Villa in Vietnam',
     rating: 5,
+    totalRaters: 122,
     description: 'Experience the luxury of a private villa with breathtaking views.',
   },
   {
     image: { uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' },
     title: 'Cozy Home in Tokyo',
     rating: 4,
+    totalRaters: 15,
     description: 'A cozy and comfortable home located in the heart of Tokyo.',
   },
   {
     image: { uri: 'https://khachsandep.vn/storage/files/Homestay/thiet-ke-homestay.jpeg' },
     title: 'Luxury Villa in Vietnam',
     rating: 5,
+    totalRaters: 235,
     description: 'Experience the luxury of a private villa with breathtaking views.',
   },
 ];
@@ -178,6 +188,7 @@ const users = [
 const SearchPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('Post');
   const [searchText, setSearchText] = useState<string>('');
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleClearSearch = () => {
     setSearchText('');
@@ -262,6 +273,14 @@ const SearchPage: React.FC = () => {
                   image={card.image}
                   title={card.title}
                   description={card.description}
+                  totalFollowers={card.totalFollowers}
+                  onPress={() => navigation.navigate('DetailPage', {
+                    type: 'address',
+                    image: card.image,
+                    title: card.title,
+                    description: card.description,
+                    totalFollowers: card.totalFollowers,
+                  })}
                 />
               ))}
             </ScrollView>
@@ -278,6 +297,14 @@ const SearchPage: React.FC = () => {
                   description={homeStay.description}
                   rating={homeStay.rating}
                   cardHeight={250}
+                  totalRaters={homeStay.totalRaters}
+                  onPress={() => navigation.navigate('HomeStayDetailPage', {
+                    image: homeStay.image,
+                    title: homeStay.title,
+                    description: homeStay.description,
+                    rating: homeStay.rating,
+                    totalRaters: homeStay.totalRaters,
+                  })}
                 />
               ))}
             </ScrollView>
@@ -310,9 +337,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 10,
-    // backgroundColor: '#fff',
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#000',
   },
   searchBarContainer: {
     flexDirection: 'row',
@@ -321,6 +345,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: Platform.OS === 'ios' ? 10 : 0,
+    marginHorizontal: 10,
+    marginBottom: 10,
   },
   searchIcon: {
     marginRight: 8,

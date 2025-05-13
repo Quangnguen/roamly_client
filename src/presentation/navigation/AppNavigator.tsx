@@ -12,6 +12,7 @@ import AccountPage from '../pages/AccountPage';
 import EditProfilePage from '../pages/EditProfilePage';
 import ChatPage from '../pages/ChatPage';
 import WeatherPage from '../pages/WeatherPage';
+import HomeStayDetailPage from '../pages/HomeStayDetailPage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BACKGROUND } from '@/src/const/constants';
 
@@ -28,6 +29,22 @@ export type RootStackParamList = {
   AccountPage: undefined;
   ChatPage: undefined;
   WeatherPage: undefined;
+  DetailPage: {
+    type: 'address' | 'homestay';
+    image: any;
+    title: string;
+    description: string;
+    totalFollowers?: number;
+    rating?: number;
+    totalRaters?: number;
+  };
+  HomeStayDetailPage: {
+    image: any;
+    title: string;
+    description: string;
+    rating: number;
+    totalRaters: number;
+  };
 };
 
 type TabParamList = {
@@ -56,6 +73,7 @@ export default function AppNavigator() {
         <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
         <Stack.Screen name="ChatPage" component={ChatPage} />
         <Stack.Screen name="WeatherPage" component={WeatherPage} />
+        <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
       </Stack.Navigator>
     </SafeAreaView>
   );
@@ -101,7 +119,7 @@ const InAppNavigator = () => {
         tabBarStyle: {
           borderTopColor: "#000",
           borderTopWidth: 1,
-          elevation: 5,
+          elevation: 0,
           backgroundColor: BACKGROUND,
           height: 60,
           paddingBottom: 5,
