@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import type { RootStackParamList } from "../navigation/AppNavigator"
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
+import { BACKGROUND } from "@/src/const/constants"
 
 interface headerProps {
   unreadMessages?: number
@@ -35,18 +36,18 @@ export const Header: React.FC<headerProps> = ({
   const handleCameraPress = async () => {
     // Yêu cầu quyền
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-  
+
     if (permissionResult.status !== 'granted') {
       Alert.alert("Quyền bị từ chối", "Ứng dụng cần quyền truy cập camera để tiếp tục.");
       return;
     }
-  
+
     // Mở camera
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       quality: 1,
     });
-  
+
     if (!result.canceled) {
       const imageUri = result.assets[0].uri;
       console.log("Ảnh đã chụp:", imageUri);
@@ -93,6 +94,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#DBDBDB",
+    backgroundColor: BACKGROUND,
     // backgroundColor: "red",
   },
   logoText: {

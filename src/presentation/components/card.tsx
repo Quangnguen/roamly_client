@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, Touchable, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -15,6 +15,9 @@ interface CardProps {
   rating?: number;
   achievements?: string;
   cardHeight?: number;
+  totalFollowers?: number;
+  totalRaters?: number;
+  onPress?: () => void;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -25,19 +28,36 @@ const Card: React.FC<CardProps> = ({
   description,
   rating,
   achievements,
-  cardHeight = 200,
+  cardHeight = 220,
+  totalFollowers,
+  totalRaters,
+  onPress,
 }) => {
   const renderContent = () => {
     switch (type) {
       case 'address':
         return (
-          <View style={[styles.card, { height: cardHeight }]}>
+          <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={[styles.card, { height: cardHeight }]}>
             <Image source={image} style={styles.cardImage} />
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>{title}</Text>
-              <Text style={styles.cardDescription}>{description}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <View>
+                    <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                    <Ionicons name="people" size={16} color="#000" />
+                    <Text>   {totalFollowers}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.followCard} onPress={() => {}}>
+                  <Text>Theo dõi</Text>
+                  <Ionicons name="add" size={16} color="#000" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.cardDescription} numberOfLines={2}>{description}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         );
 
       case 'user':
@@ -54,34 +74,35 @@ const Card: React.FC<CardProps> = ({
               />
             </View>
             <View style={styles.infoContainer}>
-              <Text style={styles.name}>{title}</Text>
-              <Text style={styles.achievements}>{achievements}</Text>
-              <Text style={styles.description}>{description}</Text>
+              <Text style={styles.name} numberOfLines={2}>{title}</Text>
+              <Text style={styles.achievements} numberOfLines={2}>{achievements}</Text>
+              <Text style={styles.description} numberOfLines={2}>{description}</Text>
             </View>
           </View>
         );
 
       case 'homestay':
         return (
-          <View style={[styles.card, { height: cardHeight }]}>
+          <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={[styles.card, { height: cardHeight }]}>
             <Image source={image} style={styles.cardImage} />
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>{title}</Text>
+              <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
               {rating && (
                 <View style={styles.ratingContainer}>
                   {[...Array(5)].map((_, index) => (
                     <Ionicons
                       key={index}
                       name={index < rating ? 'star' : 'star-outline'}
-                      size={16}
+                      size={18}
                       color="#FFD700"
                     />
                   ))}
+                  <Text style={{ marginLeft: 5 }}>({totalRaters})</Text>
                 </View>
               )}
-              <Text style={styles.cardDescription}>{description}</Text>
+              <Text style={styles.cardDescription} numberOfLines={2}>{description}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         );
 
       default:
@@ -93,11 +114,19 @@ const Card: React.FC<CardProps> = ({
 };
 
 const styles = StyleSheet.create({
+  followCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#000',
+    borderWidth: 1,
+    padding: 5,
+    borderRadius: 8,
+  },
   card: {
     width: cardWidth,
     borderRadius: 15,
     overflow: 'hidden',
-    backgroundColor: 'rgba(215, 243, 215, 0.9)',
+    backgroundColor: 'rgb(200, 245, 200)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -105,6 +134,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginVertical: 10,
     alignSelf: 'center',
+    paddingBottom: 8,
   },
   cardImage: {
     width: '100%',
@@ -128,7 +158,6 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     flexDirection: 'row',
-    marginBottom: 5,
   },
   userCard: {
     flexDirection: 'row',
@@ -136,7 +165,7 @@ const styles = StyleSheet.create({
     width: cardWidth,
     padding: 10,
     borderRadius: 10,
-    backgroundColor: 'rgba(215, 243, 215, 0.9)',
+    backgroundColor: 'rgb(215, 243, 215)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
