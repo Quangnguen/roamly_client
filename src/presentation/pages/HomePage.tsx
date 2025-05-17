@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, ImageSourcePropType } from 'react-native'
 import { Header } from '../components/header'
 import FollowList from '../components/follower'
 import Post from '../components/post'
@@ -6,6 +6,12 @@ import { useNavigation } from '@react-navigation/native'
 import { NavigationProp } from "@/src/utils/PropsNavigate"
 import { useEffect, useRef, useState } from 'react'
 import { BACKGROUND } from '@/src/const/constants'
+
+// Định nghĩa kiểu dữ liệu cho ảnh
+type ImageItem = {
+  id: string;
+  uri: string | ImageSourcePropType;
+};
 
 const HomePage = () => {
 
@@ -17,72 +23,76 @@ const HomePage = () => {
       username: 'joshua_J',
       isVerified: true,
       location: 'Tokyo, Japan',
-      imageUrl: require('../../../assets/images/natural1.jpg'),
+      images: [
+        { id: '1', uri: require('../../../assets/images/natural1.jpg') },
+        { id: '2', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
+        { id: '3', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
+      ],
       likedBy: 'craig_love',
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
-      currentImageIndex: 1,
-      totalImages: 3,
     },
     {
       id: '2',
       username: 'joshua_J',
       isVerified: true,
       location: 'Tokyo, Japan',
-      imageUrl: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+      images: [
+        { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
+      ],
       likedBy: 'craig_love',
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
-      currentImageIndex: 1,
-      totalImages: 3,
     },
     {
       id: '3',
       username: 'joshua_J',
       isVerified: true,
       location: 'Tokyo, Japan',
-      imageUrl: require('../../../assets/images/natural1.jpg'),
+      images: [
+        { id: '1', uri: require('../../../assets/images/natural1.jpg') },
+        { id: '2', uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' }
+      ],
       likedBy: 'craig_love',
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
-      currentImageIndex: 1,
-      totalImages: 3,
     },
     {
       id: '4',
       username: 'joshua_J',
       isVerified: true,
       location: 'Tokyo, Japan',
-      imageUrl: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+      images: [
+        { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
+      ],
       likedBy: 'craig_love',
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
-      currentImageIndex: 1,
-      totalImages: 3,
     },
     {
       id: '5',
       username: 'joshua_J',
       isVerified: true,
       location: 'Tokyo, Japan',
-      imageUrl: require('../../../assets/images/natural1.jpg'),
+      images: [
+        { id: '1', uri: require('../../../assets/images/natural1.jpg') }
+      ],
       likedBy: 'craig_love',
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
-      currentImageIndex: 1,
-      totalImages: 3,
     },
     {
       id: '6',
       username: 'joshua_J',
       isVerified: true,
       location: 'Tokyo, Japan',
-      imageUrl: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+      images: [
+        { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
+        { id: '2', uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' }
+      ],
       likedBy: 'craig_love',
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
-      currentImageIndex: 1,
-      totalImages: 3,
     },
   ];
 
@@ -102,12 +112,10 @@ const HomePage = () => {
             username={post.username}
             isVerified={post.isVerified}
             location={post.location}
-            imageUrl={post.imageUrl}
+            images={post.images}
             likedBy={post.likedBy}
             likesCount={post.likesCount}
             caption={post.caption}
-            currentImageIndex={post.currentImageIndex}
-            totalImages={post.totalImages}
           />
         ))}
       </ScrollView>

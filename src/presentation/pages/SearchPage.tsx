@@ -34,9 +34,21 @@ type Tab = {
 const { width } = Dimensions.get('window');
 const imageSize: number = width / 3 - 2;
 
+// Định nghĩa kiểu dữ liệu cho ảnh
+type ImageItem = {
+  id: string;
+  uri: string | ImageSourcePropType;
+};
+
 interface Post {
   id: string;
-  image: ImageSourcePropType;
+  username: string;
+  isVerified: boolean;
+  location: string;
+  images: ImageItem[];
+  likedBy: string;
+  likesCount: number;
+  caption: string;
 }
 
 const tabs: Tab[] = [
@@ -52,24 +64,24 @@ const posts = [
     username: 'joshua_J',
     isVerified: true,
     location: 'Tokyo, Japan',
-    imageUrl: 'https://vietluxtour.com/Upload/images/2023/KhamPhaNuocNgoai/%C4%90%E1%BB%8Ba%20%C4%90i%E1%BB%83m%20Du%20L%E1%BB%8Bch%20H%C3%A0n%20Qu%E1%BB%91c/dia-diem-du-lich-han-quoc-main-min.jpg',
+    images: [
+      { id: '1', uri: 'https://vietluxtour.com/Upload/images/2023/KhamPhaNuocNgoai/%C4%90%E1%BB%8Ba%20%C4%90i%E1%BB%83m%20Du%20L%E1%BB%8Bch%20H%C3%A0n%20Qu%E1%BB%91c/dia-diem-du-lich-han-quoc-main-min.jpg' }
+    ],
     likedBy: 'craig_love',
     likesCount: 44686,
     caption: 'The game in Japan was amazing and I want to share some photos',
-    currentImageIndex: 1,
-    totalImages: 3,
   },
   {
     id: '2',
     username: 'joshua_J',
     isVerified: true,
     location: 'Tokyo, Japan',
-    imageUrl: 'https://images.vietnamtourism.gov.vn/vn/images/2020/Thang_9/_DSC3768.JPG',
+    images: [
+      { id: '1', uri: 'https://images.vietnamtourism.gov.vn/vn/images/2020/Thang_9/_DSC3768.JPG' }
+    ],
     likedBy: 'craig_love',
     likesCount: 44686,
     caption: 'The game in Japan was amazing and I want to share some photos',
-    currentImageIndex: 1,
-    totalImages: 3,
   },
 ];
 
@@ -212,12 +224,10 @@ const SearchPage: React.FC = () => {
                   username={post.username}
                   isVerified={post.isVerified}
                   location={post.location}
-                  imageUrl={post.imageUrl}
+                  images={post.images}
                   likedBy={post.likedBy}
                   likesCount={post.likesCount}
                   caption={post.caption}
-                  currentImageIndex={post.currentImageIndex}
-                  totalImages={post.totalImages}
                 />
               ))}
             </ScrollView>
