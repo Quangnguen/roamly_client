@@ -14,6 +14,15 @@ export const saveTokens = async (accessToken: string, refreshToken: string, expi
   ]);
 };
 
+export const getAccessToken = async () => {
+  try {
+    return await AsyncStorage.getItem('accessToken');
+  } catch (error) {
+    console.error('Failed to get access token:', error);
+    return null;
+  }
+};
+
 // Lấy token
 export const getTokens = async () => {
   const tokens = await AsyncStorage.multiGet([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TOKEN_EXPIRY_KEY]);

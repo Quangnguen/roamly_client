@@ -1,14 +1,17 @@
-import { User } from '../../domain/models/User';
+import { UserApiResponse } from '@/src/types/UserResponseInterface';
 
 export interface UserRepository {
-  getInfo(id: string): Promise<User>;
+  getInfo(): Promise<UserApiResponse>;
   updateInfo(userData: {
     name?: string;
     email?: string;
     username?: string;
     bio?: string;
     profilePic?: string;
-    privateAccount?: boolean;
-  }): Promise<User>;
+    private?: boolean;
+  }): Promise<UserApiResponse>;
   updatePassword(oldPassword: string, newPassword: string): Promise<void>;
+  softDelete(): Promise<void>;
+  getUsers(): Promise<any>;
+  getUserById(userId: string): Promise<UserApiResponse>;
 }

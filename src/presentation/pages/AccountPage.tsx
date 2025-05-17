@@ -16,8 +16,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BACKGROUND } from '@/src/const/constants';
 import PostList from '../components/postList';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchUserProfile } from '../redux/slices/userSlice';
-import { RootState } from '../redux/store';
+import { fetchUserProfile, clearMessage } from '../redux/slices/userSlice';
+import { RootState, AppDispatch } from '../redux/store';
+import Toast from 'react-native-toast-message';
+import MemoriesGrid from '../components/memory';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -28,19 +30,83 @@ type StoryHighlight = {
   image: string;
 };
 
+const fakeMemories = [
+  {
+    id: '1',
+    images: [
+      'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg',
+      'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+    ],
+    date: '2024-05-01',
+    location: 'Đà Lạt',
+    diary: 'Một ngày tuyệt vời ở Đà Lạt cùng bạn bè!',
+  },
+  {
+    id: '2',
+    images: [
+      'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg',
+      'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg',
+    ],
+    date: '2024-04-15',
+    location: 'Hà Nội',
+    diary: 'Tham quan phố cổ Hà Nội, thưởng thức phở và cà phê trứng.',
+  },
+  {
+    id: '3',
+    images: [
+      'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg',
+    ],
+    date: '2024-03-20',
+    location: 'Măng Đen',
+    diary: 'Khám phá thiên nhiên hoang sơ ở Măng Đen.',
+  },
+  {
+    id: '4',
+    images: [
+      'https://khachsandep.vn/storage/files/Homestay/thiet-ke-homestay.jpeg',
+    ],
+    date: '2024-02-10',
+    location: 'Nha Trang',
+    diary: 'Tắm biển và thưởng thức hải sản tươi ngon ở Nha Trang.',
+  },
+  {
+    id: '5',
+    images: [
+      'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+    ],
+    date: '2024-01-05',
+    location: 'Sapa',
+    diary: 'Ngắm tuyết rơi và leo núi Fansipan.',
+  },
+];
+
 const AccountPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
-  const dispatch = useDispatch();
-  const { user, loading, error } = useSelector((state: RootState) => state.user);
+  const dispatch = useDispatch<AppDispatch>();
+  const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { user: authUser } = useSelector((state: RootState) => state.auth);
+  const [isOpen, setIsOpen] = useState(false)
+
+  const toggleMenu = () => {
+    setIsOpen(!isOpen)
+  }
+  console.log('message: ', message);
+  useEffect(() => {
+      dispatch(fetchUserProfile());
+  }, [dispatch]);
 
   useEffect(() => {
-    if (authUser?.user?.id) {
-      dispatch(fetchUserProfile(authUser.user.id));
+    if (message) {
+      Toast.show({
+        type: status === 'success' ? 'success' : 'error',
+        text1: message,
+        onHide: () => {
+        dispatch(clearMessage());
+      },
+      });
     }
-  }, [dispatch, authUser]);
+  }, [message, status]);
 
-  console.log('User data:', user);
 
   // Mock data
   const userStats = {
@@ -48,6 +114,17 @@ const AccountPage: React.FC = () => {
     followers: 834,
     following: 162,
   };
+
+   const menuItems = [
+    { icon: <Feather name="archive" size={20} color="black" />, label: "Archive" },
+    { icon: <Feather name="clock" size={20} color="black" />, label: "Your Activity" },
+    { icon: <Feather name="tag" size={20} color="black" />, label: "Nametag" },
+    { icon: <Feather name="bookmark" size={20} color="black" />, label: "Saved" },
+    { icon: <Feather name="users" size={20} color="black" />, label: "Close Friends" },
+    { icon: <Feather name="user-plus" size={20} color="black" />, label: "Discover People" },
+    { icon: <Feather name="facebook" size={20} color="black" />, label: "Open Facebook" },
+    { icon: <Feather name="settings" size={20} color="black" />, label: "Settings" },
+  ]
 
   const navigation = useNavigation<NavigationProp>();
 
@@ -88,18 +165,19 @@ const AccountPage: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      
       <FlatList
-        data={[]} // Không có dữ liệu chính, dùng mảng rỗng
-        keyExtractor={(item, index) => index.toString()} // Khóa duy nhất cho mỗi phần tử
+        data={[]}
+        keyExtractor={(item: any, index: any) => index.toString()}
         ListHeaderComponent={
           <>
             {/* Header */}
             <View style={styles.header}>
               <View></View>
               <View style={styles.usernameContainer}>
-                <Text style={styles.username}>jacob_w</Text>
+                <Text style={styles.username}>{profile?.username}</Text>
               </View>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={toggleMenu}>
                 <Feather name="menu" size={24} color="black" />
               </TouchableOpacity>
             </View>
@@ -117,11 +195,11 @@ const AccountPage: React.FC = () => {
                     <Text style={styles.statLabel}>Posts</Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{userStats.followers}</Text>
+                    <Text style={styles.statNumber}>{profile?.followers?.length ?? 0}</Text>
                     <Text style={styles.statLabel}>Followers</Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{userStats.following}</Text>
+                    <Text style={styles.statNumber}>{profile?.following?.length ?? 0}</Text>
                     <Text style={styles.statLabel}>Following</Text>
                   </View>
                 </View>
@@ -129,10 +207,9 @@ const AccountPage: React.FC = () => {
 
               {/* Bio */}
               <View style={styles.bioContainer}>
-                <Text style={styles.name}>Jacob Ward</Text>
+                <Text style={styles.name}>{profile?.name}</Text>
                 <Text style={styles.bioText}>
-                  Digital goodies designer @pixsellz{'\n'}
-                  Everything is designed.
+                  {profile?.bio || 'This is a sample bio. Update it in your profile settings.'}
                 </Text>
               </View>
 
@@ -141,28 +218,8 @@ const AccountPage: React.FC = () => {
                 <Text style={styles.editProfileText}>Edit Profile</Text>
               </TouchableOpacity>
 
-              {/* Story Highlights */}
-              <FlatList
-                data={storyHighlights}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => item.id}
-                style={styles.highlightsContainer}
-                renderItem={({ item }) => (
-                  <View style={styles.highlightItem}>
-                    <View style={styles.highlightImageContainer}>
-                      {item.name === 'New' ? (
-                        <View style={styles.newHighlightContainer}>
-                          <Feather name="plus" size={24} color="black" />
-                        </View>
-                      ) : (
-                        <Image source={{ uri: item.image }} style={styles.highlightImage} />
-                      )}
-                    </View>
-                    <Text style={styles.highlightName}>{item.name}</Text>
-                  </View>
-                )}
-              />
+              
+
             </View>
 
             {/* Tab Selector */}
@@ -183,8 +240,65 @@ const AccountPage: React.FC = () => {
           </>
         }
         renderItem={null} // Không có dữ liệu chính để hiển thị
-        ListFooterComponent={activeTab === 'grid' ? <PostList posts={posts} /> : null} // Hiển thị danh sách bài đăng
+        ListFooterComponent={activeTab === 'grid' ?
+           <PostList posts={posts} /> : 
+           <MemoriesGrid memories={fakeMemories} userId={authUser?.user?.id ?? ''} />} // Hiển thị danh sách bài đăng
       />
+      {isOpen && (
+        <>
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.1)',
+              zIndex: 998,
+              height: Dimensions.get('window').height,
+            }}
+            activeOpacity={1}
+            onPress={() => setIsOpen(false)}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0, // điều chỉnh nếu cần
+              width: 250,
+              bottom: 0,
+              backgroundColor: '#fff',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 10,
+              zIndex: 999,
+            }}
+          >
+            <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Text style={{ paddingHorizontal: 16, paddingVertical: 8, fontWeight: 'bold' }}>{profile?.username}</Text>
+            </View>
+            <View>
+              {menuItems.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                  onPress={() => {
+                    setIsOpen(false);
+                    // Thêm xử lý cho từng menu item nếu cần
+                  }}
+                >
+                  <View style={{ marginRight: 12 }}>{item.icon}</View>
+                  <Text>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 };
@@ -193,6 +307,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BACKGROUND,
+    position: 'relative',
   },
   header: {
     flexDirection: 'row',

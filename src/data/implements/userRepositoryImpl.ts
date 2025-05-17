@@ -1,34 +1,13 @@
 import { UserRepository } from '../repositories/userRepository';
-import { getUserProfile, updateUserProfile, changePassword } from '../api/userApi';
-import { User } from '../../domain/models/User';
+import { getUserProfile, updateUserProfile, changePassword, getUsers, getUserById as getUserByIdApi } from '../api/userApi';
+import { UserApiResponse } from '@/src/types/UserResponseInterface';
 
 export class UserRepositoryImpl implements UserRepository {
-  async getInfo(id: string): Promise<User> {
-    console.log('Fetching user info for ID:', id);
+  async getInfo(): Promise<UserApiResponse> {
     try {
-      const response = await getUserProfile(id);
-      console.log('getInfo response:', response);
-
-      const data = response;
-      const user: User = {
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        username: data.username,
-        token: data.token,
-        bio: data.bio,
-        profilePic: data.profilePic,
-        accountStatus: data.accountStatus,
-        role: data.role,
-        private: data.private,
-        followers: data.followers,
-        following: data.following,
-        refreshToken: data.refreshToken,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-        deletedAt: data.deletedAt,
-      };
-      return user;
+      const response = await getUserProfile();
+      
+      return response;
     } catch (error) {
       console.error('Failed to fetch user info:', error);
       throw new Error('Failed to fetch user info');
@@ -41,33 +20,13 @@ export class UserRepositoryImpl implements UserRepository {
     username?: string;
     bio?: string;
     profilePic?: string;
-    privateAccount?: boolean;
-  }): Promise<User> {
+    private?: boolean;
+  }): Promise<UserApiResponse> {
     console.log('Updating user profile with data:', userData);
     try {
       const response = await updateUserProfile(userData);
-      console.log('updateUserProfile response:', response);
-
-      const data = response.data;
-      const user: User = {
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        username: data.username,
-        token: data.token,
-        bio: data.bio,
-        profilePic: data.profilePic,
-        accountStatus: data.accountStatus,
-        role: data.role,
-        private: data.private,
-        followers: data.followers,
-        following: data.following,
-        refreshToken: data.refreshToken,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-        deletedAt: data.deletedAt,
-      };
-      return user;
+     
+      return response;
     } catch (error) {
       console.error('Failed to update user profile:', error);
       throw new Error('Failed to update user profile');
@@ -89,6 +48,55 @@ export class UserRepositoryImpl implements UserRepository {
     } catch (error) {
       console.error('Failed to update password:', error);
       throw new Error('Failed to update password');
+    }
+  }
+
+  async softDelete(): Promise<void> {
+    console.log('Soft deleting user...');
+    try {
+      const response = await changePassword({ oldPassword: '', newPassword: '' });
+      console.log('softDelete response:', response);
+
+      if (response.status === 200) {
+        console.log('User soft deleted successfully');
+        return;
+      } else {
+        throw new Error('Failed to soft delete user');
+      }
+    } catch (error) {
+      console.error('Failed to soft delete user:', error);
+      throw new Error('Failed to soft delete user');
+    }
+  }
+
+  async getUsers(): Promise<any> {
+    console.log('Fetching all users...');
+    try {
+      const response = await getUsers();
+
+      if (response.statusCode === 200) {
+        return response;
+      } else {
+        throw new Error('Failed to fetch users');
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      throw new Error('Failed to fetch users');
+    }
+  }
+
+  async getUserById(userId: string): Promise<any> {
+    console.log('Fetching user by ID:', userId);
+    try {
+      const response = await getUserByIdApi(userId);
+      console.log('getUserById response:', response);
+      if (response.statusCode === 200) {
+        return response;
+      } 
+      throw new Error('Failed to fetch user by ID');
+    } catch (error) {
+      console.error('Failed to fetch user by ID:', error);
+      throw new Error('Failed to fetch user by ID');
     }
   }
 }

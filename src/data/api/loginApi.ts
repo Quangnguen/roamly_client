@@ -3,8 +3,9 @@ import { saveTokens } from '../../utils/tokenStorage'
 
 
 export const loginApi = async (email: string, password: string) => {
+  console.log('login api:', email, password)
   try {
-    const response = await fetch(`http://192.168.100.236:3000/auth/login`, {
+    const response = await fetch(`http://192.168.145.1:3000/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -18,6 +19,7 @@ export const loginApi = async (email: string, password: string) => {
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.log('errorData', errorData);
       throw new Error('Đăng nhập thất bại..', errorData.message);
     }
 

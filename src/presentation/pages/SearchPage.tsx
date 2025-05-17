@@ -22,6 +22,9 @@ import { BACKGROUND } from '@/src/const/constants';
 import Card from '../components/card';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store';
+import { getUsers } from '../redux/slices/userSlice';
 
 type Tab = {
   name: string;
@@ -99,6 +102,7 @@ const addressCards = [
 
 const homeStays = [
   {
+    id: '1',
     image: { uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' },
     title: 'Cozy Home in Tokyo',
     rating: 4,
@@ -106,6 +110,7 @@ const homeStays = [
     description: 'A cozy and comfortable home located in the heart of Tokyo.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
   },
   {
+    id: '2',
     image: { uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' },
     title: 'Luxury Villa in Vietnam',
     rating: 5,
@@ -113,6 +118,7 @@ const homeStays = [
     description: 'Experience the luxury of a private villa with breathtaking views.',
   },
   {
+    id: '3',
     image: { uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' },
     title: 'Cozy Home in Tokyo',
     rating: 4,
@@ -120,6 +126,7 @@ const homeStays = [
     description: 'A cozy and comfortable home located in the heart of Tokyo.',
   },
   {
+    id: '4',
     image: { uri: 'https://khachsandep.vn/storage/files/Homestay/thiet-ke-homestay.jpeg' },
     title: 'Luxury Villa in Vietnam',
     rating: 5,
@@ -128,67 +135,19 @@ const homeStays = [
   },
 ];
 
-const users = [
-  {
-    avatar: 'https://ih1.redbubble.net/image.976620401.4882/flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
-    name: 'Joshua J.',
-    achievements: '3 địa danh',
-    description: 'A travel enthusiast who loves exploring new places.',
-  },
-  {
-    avatar: 'https://static.wikia.nocookie.net/attack-on-titan/images/9/98/Mikasa_Ackermann_%28Anime%29_%28845%29.webp/revision/latest/scale-to-width/360?cb=20220410210635&path-prefix=vi',
-    name: 'Karen Nine',
-    achievements: '5 địa danh',
-    description: 'Photographer and adventurer.',
-  },
-  {
-    avatar: 'https://files.idyllic.app/files/static/2911074',
-    name: 'Zack John',
-    achievements: '10 địa danh',
-    description: 'Loves hiking and nature photography.',
-  },
-  {
-    avatar: 'https://ih1.redbubble.net/image.976620401.4882/flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
-    name: 'Joshua J.',
-    achievements: '3 địa danh',
-    description: 'A travel enthusiast who loves exploring new places.',
-  },
-  {
-    avatar: 'https://static.wikia.nocookie.net/attack-on-titan/images/9/98/Mikasa_Ackermann_%28Anime%29_%28845%29.webp/revision/latest/scale-to-width/360?cb=20220410210635&path-prefix=vi',
-    name: 'Karen Nine',
-    achievements: '5 địa danh',
-    description: 'Photographer and adventurer.',
-  },
-  {
-    avatar: 'https://files.idyllic.app/files/static/2911074',
-    name: 'Zack John',
-    achievements: '10 địa danh',
-    description: 'Loves hiking and nature photography.',
-  },
-  {
-    avatar: 'https://ih1.redbubble.net/image.976620401.4882/flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
-    name: 'Joshua J.',
-    achievements: '3 địa danh',
-    description: 'A travel enthusiast who loves exploring new places.',
-  },
-  {
-    avatar: 'https://static.wikia.nocookie.net/attack-on-titan/images/9/98/Mikasa_Ackermann_%28Anime%29_%28845%29.webp/revision/latest/scale-to-width/360?cb=20220410210635&path-prefix=vi',
-    name: 'Karen Nine',
-    achievements: '5 địa danh',
-    description: 'Photographer and adventurer.',
-  },
-  {
-    avatar: 'https://files.idyllic.app/files/static/2911074',
-    name: 'Zack John',
-    achievements: '10 địa danh',
-    description: 'Loves hiking and nature photography.',
-  },
-];
+
 
 const SearchPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('Post');
   const [searchText, setSearchText] = useState<string>('');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const dispatch = useDispatch<AppDispatch>();
+  const { users, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
+
+
+  useEffect(() => {
+    dispatch(getUsers());
+  }, [dispatch]);
 
   const handleClearSearch = () => {
     setSearchText('');
@@ -290,7 +249,7 @@ const SearchPage: React.FC = () => {
             <ScrollView contentContainerStyle={styles.addressContainer}>
               {homeStays.map((homeStay, index) => (
                 <Card
-                  key={index}
+                  key={homeStay.id}
                   type="homestay"
                   image={homeStay.image}
                   title={homeStay.title}
@@ -299,11 +258,7 @@ const SearchPage: React.FC = () => {
                   cardHeight={250}
                   totalRaters={homeStay.totalRaters}
                   onPress={() => navigation.navigate('HomeStayDetailPage', {
-                    image: homeStay.image,
-                    title: homeStay.title,
-                    description: homeStay.description,
-                    rating: homeStay.rating,
-                    totalRaters: homeStay.totalRaters,
+                    id: homeStay.id,
                   })}
                 />
               ))}
@@ -312,14 +267,18 @@ const SearchPage: React.FC = () => {
 
           {activeTab === 'User' && (
             <ScrollView contentContainerStyle={styles.addressContainer}>
-              {users.map((user, index) => (
+              {(Array.isArray(users) ? users : []).map((user, index) => (
                 <Card
-                  key={index}
+                  key={user.id}
                   type="user"
-                  avatar={user.avatar}
-                  title={user.name}
-                  description={user.description}
-                  achievements={user.achievements}
+                  avatar={user.profilePic || undefined}
+                  title={user.name || user.username || 'No name'}
+                  description={user.name || ''}
+                  achievements={user.name || undefined}
+                  onPress={() => navigation.navigate('InfoAccPage', {
+                    id: user.id ?? '',
+                    // Có thể truyền thêm các trường khác nếu cần
+                  })}
                 />
               ))}
             </ScrollView>

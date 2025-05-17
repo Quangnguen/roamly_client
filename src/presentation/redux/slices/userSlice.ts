@@ -1,12 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { dependencies } from '../../../dependencies/dependencies';
 import { User } from '../../../domain/models/User';
+import { UserApiResponse } from '@/src/types/UserResponseInterface';
 
 // Define the shape of the user state
 interface UserState {
   user: User | null;
   loading: boolean;
   error: string | null;
+  message: string | null;
+  status: string | null;
+  statusCode?: number | null; // Thêm dòng này
+  users: User[] | null; // Thêm dòng này
+  profile: User | null; // Thêm dòng này
 }
 
 // Initial state
@@ -14,15 +20,33 @@ const initialState: UserState = {
   user: null,
   loading: false,
   error: null,
+  message: null,
+  status: null,
+  statusCode: null, // Thêm dòng này
+  users: null, // Thêm dòng này
+  profile: null, // Thêm dòng này
 };
 
 // Fetch user profile thunk
 export const fetchUserProfile = createAsyncThunk(
   'user/fetchUserProfile',
-  async (id: string, thunkAPI) => {
+  async (_: void, thunkAPI) => {
     try {
-      const response = await dependencies.userUsecase.getInfo(id);
-      return response;
+      const response = await dependencies.userUsecase.getInfo();
+      return response as UserApiResponse; // Chuyển đổi kiểu dữ liệu
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || 'Failed to fetch user profile');
+    }
+  }
+);
+
+export const getUserById = createAsyncThunk(
+  'user/getUserById',
+  async (userId: string, thunkAPI) => {
+    try {
+      console.log('userId:', userId);
+      const response = await dependencies.userUsecase.getUserById(userId);
+      return response as UserApiResponse; // Chuyển đổi kiểu dữ liệu
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to fetch user profile');
     }
@@ -39,13 +63,14 @@ export const updateUserProfile = createAsyncThunk(
       username?: string;
       bio?: string;
       profilePic?: string;
-      privateAccount?: boolean;
+      private?: boolean;
     },
     thunkAPI
   ) => {
     try {
       const response = await dependencies.userUsecase.updateInfo(userData);
-      return response;
+      console.log('updateUserProfile response userslice:', response);
+      return response as UserApiResponse; // Chuyển đổi kiểu dữ liệu
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to update user profile');
     }
@@ -67,6 +92,31 @@ export const updatePassword = createAsyncThunk(
   }
 );
 
+export const softDelete = createAsyncThunk(
+  'user/softDelete',
+  async (userId: string, thunkAPI) => {
+    try {
+      const response = await dependencies.userUsecase.softDelete();
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || 'Failed to soft delete user');
+    }
+  }
+);
+
+export const getUsers = createAsyncThunk(
+  'user/getUsers',
+  async (_: void, thunkAPI) => {
+    try {
+      const response = await dependencies.userUsecase.getUsers();
+      console.log('getUsers response:', response);
+      return response;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || 'Failed to get users');
+    }
+  }
+);
+
 // User slice
 const userSlice = createSlice({
   name: 'user',
@@ -76,6 +126,11 @@ const userSlice = createSlice({
       state.user = null;
       state.error = null;
     },
+    clearMessage: (state) => {
+      state.message = null;
+      state.status = null;
+      state.statusCode = null; // Thêm dòng này
+    }
   },
   extraReducers: (builder) => {
     // Fetch user profile cases
@@ -86,7 +141,10 @@ const userSlice = createSlice({
       })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.profile = action.payload.data ?? null;
+        state.message = action.payload.message; // Cập nhật message từ action.payload.message
+        state.status = action.payload.status; // Cập nhật status từ action.payload.status
+        state.statusCode = action.payload.statusCode; // Cập nhật statusCode từ action.payload.statusCode
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
@@ -101,8 +159,13 @@ const userSlice = createSlice({
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.data ?? null; // Cập nhật user từ action.payload.data
+        state.message = action.payload.message; // Cập nhật message từ action.payload.message 
+        state.status = action.payload.status; // Cập nhật status từ action.payload.status
+        state.statusCode = action.payload.statusCode; // Cập nhật statusCode từ action.payload.statusCode
+        
       })
+      
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
@@ -121,11 +184,66 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+
+    // Soft delete cases
+    builder
+      .addCase(softDelete.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(softDelete.fulfilled, (state) => {
+        state.loading = false;
+        state.message = 'Tài khoản của bạn sẽ bị xóa sau 30 ngày';
+      })
+      .addCase(softDelete.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+    
+    // Get users cases
+    builder
+      .addCase(getUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = action.payload.data; // <-- phải là .data
+        state.message = action.payload.message; // Cập nhật message từ action.payload.message 
+        state.status = action.payload.status; // Cập nhật status từ action.payload.status
+        state.statusCode = action.payload.statusCode; // Cập nhật statusCode từ action.payload.statusCode
+      })
+      .addCase(getUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+    
+    // Get user by ID cases
+    builder
+      .addCase(getUserById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getUserById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.data ?? null;
+        state.message = action.payload.message;
+        state.status = action.payload.status;
+        state.statusCode = action.payload.statusCode;
+      })
+      .addCase(getUserById.rejected, (state, action) => {
+        state.loading = false;
+        // Chỉ set user về null nếu thực sự không tìm thấy user (404)
+        if (action.payload && typeof action.payload === 'string' && action.payload.includes('not found')) {
+          state.user = null;
+        }
+        state.error = action.payload as string;
+      });
   },
 });
 
 // Export actions
-export const { clearUser } = userSlice.actions;
+export const { clearUser, clearMessage } = userSlice.actions;
 
 // Export reducer
 export default userSlice.reducer;
