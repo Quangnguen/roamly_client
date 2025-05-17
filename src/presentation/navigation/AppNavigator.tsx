@@ -11,6 +11,7 @@ import NotifyPage from '../pages/NotifyPage';
 import AccountPage from '../pages/AccountPage';
 import EditProfilePage from '../pages/EditProfilePage';
 import ChatPage from '../pages/ChatPage';
+import ChatDetailPage from '../pages/ChatDetailPage';
 import WeatherPage from '../pages/WeatherPage';
 import HomeStayDetailPage from '../pages/HomeStayDetailPage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,11 @@ export type RootStackParamList = {
   NotifyPage: undefined;
   AccountPage: undefined;
   ChatPage: undefined;
+  ChatDetailPage: {
+    chatId: string;
+    name: string;
+    avatar: string;
+  };
   WeatherPage: undefined;
   DetailPage: {
     type: 'address' | 'homestay';
@@ -72,6 +78,7 @@ export default function AppNavigator() {
         <Stack.Screen name="InApp" component={InAppNavigator} />
         <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
         <Stack.Screen name="ChatPage" component={ChatPage} />
+        <Stack.Screen name="ChatDetailPage" component={ChatDetailPage} />
         <Stack.Screen name="WeatherPage" component={WeatherPage} />
         <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
       </Stack.Navigator>

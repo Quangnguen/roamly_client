@@ -1,14 +1,26 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import type { ChatItemType } from "../../types/chatItem"
+import { useNavigation } from "@react-navigation/native"
+import { NavigationProp } from "@/src/utils/PropsNavigate"
 
 interface ChatItemProps {
   chat: ChatItemType
 }
 
 const ChatItem = ({ chat }: ChatItemProps) => {
+  const navigation: NavigationProp<'ChatDetailPage'> = useNavigation();
+
+  const handlePress = () => {
+    navigation.navigate('ChatDetailPage', {
+      chatId: chat.id,
+      name: chat.name,
+      avatar: chat.avatar
+    });
+  };
+
   return (
-    <TouchableOpacity style={styles.container}>
+    <TouchableOpacity style={styles.container} onPress={handlePress}>
       <Image source={{ uri: chat.avatar }} style={styles.avatar} />
 
       <View style={styles.contentContainer}>

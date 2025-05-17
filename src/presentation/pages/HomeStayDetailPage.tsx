@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, TextInput, Dimensions, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, TextInput, Dimensions, FlatList, ActivityIndicator, ImageSourcePropType, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
@@ -12,7 +12,7 @@ type HomeStayDetailPageRouteProp = RouteProp<RootStackParamList, 'HomeStayDetail
 // Mô hình dữ liệu cho ảnh
 type ImageItem = {
     id: string;
-    uri: string;
+    uri: string | ImageSourcePropType;
 };
 
 // Mô hình dữ liệu cho đánh giá
@@ -31,72 +31,73 @@ const posts = [
         username: 'joshua_J',
         isVerified: true,
         location: 'Tokyo, Japan',
-        imageUrl: require('../../../assets/images/natural1.jpg'),
+        images: [
+            { id: '1', uri: require('../../../assets/images/natural1.jpg') }
+        ],
         likedBy: 'craig_love',
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
-        currentImageIndex: 1,
-        totalImages: 3,
     },
     {
         id: '2',
         username: 'joshua_J',
         isVerified: true,
         location: 'Tokyo, Japan',
-        imageUrl: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+        images: [
+            { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
+        ],
         likedBy: 'craig_love',
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
-        currentImageIndex: 1,
-        totalImages: 3,
     },
     {
         id: '3',
         username: 'joshua_J',
         isVerified: true,
         location: 'Tokyo, Japan',
-        imageUrl: require('../../../assets/images/natural1.jpg'),
+        images: [
+            { id: '1', uri: require('../../../assets/images/natural1.jpg') },
+            { id: '2', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
+        ],
         likedBy: 'craig_love',
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
-        currentImageIndex: 1,
-        totalImages: 3,
     },
     {
         id: '4',
         username: 'joshua_J',
         isVerified: true,
         location: 'Tokyo, Japan',
-        imageUrl: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+        images: [
+            { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
+        ],
         likedBy: 'craig_love',
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
-        currentImageIndex: 1,
-        totalImages: 3,
     },
     {
         id: '5',
         username: 'joshua_J',
         isVerified: true,
         location: 'Tokyo, Japan',
-        imageUrl: require('../../../assets/images/natural1.jpg'),
+        images: [
+            { id: '1', uri: require('../../../assets/images/natural1.jpg') }
+        ],
         likedBy: 'craig_love',
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
-        currentImageIndex: 1,
-        totalImages: 3,
     },
     {
         id: '6',
         username: 'joshua_J',
         isVerified: true,
         location: 'Tokyo, Japan',
-        imageUrl: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2',
+        images: [
+            { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
+        ],
         likedBy: 'craig_love',
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
-        currentImageIndex: 1,
-        totalImages: 3,
     },
 ];
 
@@ -183,13 +184,42 @@ const HomeStayDetailPage: React.FC = () => {
     const [showFullDescription, setShowFullDescription] = useState(false);
     const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
     const [isFavorite, setIsFavorite] = useState(false);
+    const [isScrolling, setIsScrolling] = useState(false);
 
     const flatListRef = useRef<FlatList>(null);
 
-    // Tối ưu hiệu suất với useCallback
-    const handleImageChange = useCallback((index: number) => {
-        setActiveImageIndex(index);
+    const handleScrollBegin = useCallback(() => {
+        setIsScrolling(true);
     }, []);
+
+    const handleImageScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (isScrolling) {
+            const slideSize = screenWidth;
+            const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+            if (index >= 0 && index < mockImages.length) {
+                setActiveImageIndex(index);
+            }
+        }
+    }, [isScrolling, mockImages.length, screenWidth]);
+
+    const handleScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        setIsScrolling(false);
+        const slideSize = screenWidth;
+        const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+        if (index >= 0 && index < mockImages.length) {
+            setActiveImageIndex(index);
+        }
+    }, [mockImages.length, screenWidth]);
+
+    const goToImage = useCallback((index: number) => {
+        if (index >= 0 && index < mockImages.length) {
+            flatListRef.current?.scrollToOffset({
+                offset: index * screenWidth,
+                animated: true
+            });
+            setActiveImageIndex(index);
+        }
+    }, [mockImages.length, screenWidth]);
 
     // Xử lý khi người dùng bấm yêu thích
     const toggleFavorite = useCallback(() => {
@@ -199,7 +229,7 @@ const HomeStayDetailPage: React.FC = () => {
     const renderImageItem = useCallback(({ item }: { item: ImageItem }) => (
         <View style={{ width: screenWidth }}>
             <Image
-                source={{ uri: item.uri }}
+                source={typeof item.uri === 'string' ? { uri: item.uri } : item.uri}
                 style={{ width: '100%', height: 280 }}
                 resizeMode="cover"
             />
@@ -277,20 +307,17 @@ const HomeStayDetailPage: React.FC = () => {
                         renderItem={renderImageItem}
                         horizontal
                         pagingEnabled
-                        decelerationRate="fast"
+                        showsHorizontalScrollIndicator={false}
                         snapToInterval={screenWidth}
                         snapToAlignment="center"
-                        showsHorizontalScrollIndicator={false}
-                        onScroll={(e) => {
-                            const slideSize = screenWidth;
-                            const x = e.nativeEvent.contentOffset.x;
-                            const currentIndex = Math.round(x / slideSize);
-                            if (currentIndex !== activeImageIndex) {
-                                setActiveImageIndex(currentIndex);
-                            }
-                        }}
-                        scrollEventThrottle={16}
+                        decelerationRate={0.9}
+                        onScrollBeginDrag={handleScrollBegin}
+                        onScroll={handleImageScroll}
+                        onMomentumScrollEnd={handleScrollEnd}
                         keyExtractor={(item) => item.id}
+                        disableIntervalMomentum={true}
+                        snapToOffsets={mockImages.map((_, index) => index * screenWidth)}
+                        scrollEventThrottle={16}
                     />
 
                     {/* Nút quay lại đặt bên trong hình */}
@@ -462,12 +489,10 @@ const HomeStayDetailPage: React.FC = () => {
                         username={post.username}
                         isVerified={post.isVerified}
                         location={post.location}
-                        imageUrl={post.imageUrl}
+                        images={post.images}
                         likedBy={post.likedBy}
                         likesCount={post.likesCount}
                         caption={post.caption}
-                        currentImageIndex={post.currentImageIndex}
-                        totalImages={post.totalImages}
                     />
                 ))}
             </ScrollView>

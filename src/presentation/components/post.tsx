@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,35 +6,93 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  FlatList,
+  ImageSourcePropType,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { BACKGROUND } from '@/src/const/constants';
 
 const { width } = Dimensions.get('window');
 
+// Định nghĩa kiểu dữ liệu cho ảnh
+type ImageItem = {
+  id: string;
+  uri: string | ImageSourcePropType;
+};
+
 interface PostProps {
   username: string;
   isVerified: boolean;
   location: string;
-  imageUrl: string;
+  images: ImageItem[];
   likedBy: string;
   likesCount: number;
   caption: string;
-  currentImageIndex: number;
-  totalImages: number;
 }
 
 const Post: React.FC<PostProps> = ({
   username = 'joshua_J',
   isVerified = true,
   location = 'Tokyo, Japan',
-  imageUrl = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-LhKXgWZZXVwVm29H8Ay2tt6J90DBga.png',
+  images = [
+    { 
+      id: '1', 
+      uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-LhKXgWZZXVwVm29H8Ay2tt6J90DBga.png' 
+    }
+  ],
   likedBy = 'craig_love',
   likesCount = 44686,
   caption = 'The game in Japan was amazing and I want to share some photos',
-  currentImageIndex = 1,
-  totalImages = 3,
 }) => {
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
+
+  const renderImageItem = useCallback(({ item }: { item: ImageItem }) => (
+    <View style={{ width }}>
+      <Image
+        source={typeof item.uri === 'string' ? { uri: item.uri } : item.uri}
+        style={styles.postImage}
+        resizeMode="cover"
+      />
+    </View>
+  ), []);
+
+  const handleScrollBegin = useCallback(() => {
+    setIsScrolling(true);
+  }, []);
+
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isScrolling) {
+      const slideSize = width;
+      const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+      if (index >= 0 && index < images.length) {
+        setActiveImageIndex(index);
+      }
+    }
+  }, [isScrolling, images.length]);
+
+  const handleScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setIsScrolling(false);
+    const slideSize = width;
+    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    if (index >= 0 && index < images.length) {
+      setActiveImageIndex(index);
+    }
+  }, [images.length]);
+
+  const goToImage = useCallback((index: number) => {
+    if (index >= 0 && index < images.length) {
+      flatListRef.current?.scrollToOffset({
+        offset: index * width,
+        animated: true
+      });
+      setActiveImageIndex(index);
+    }
+  }, [images.length]);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -63,21 +121,34 @@ const Post: React.FC<PostProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* Image */}
+      {/* Image Carousel */}
       <View style={styles.imageContainer}>
-        <Image
-          source={
-            typeof imageUrl === 'string'
-              ? { uri: imageUrl }
-              : imageUrl // Nếu là require, sử dụng trực tiếp
-          }
-          style={styles.postImage}
+        <FlatList
+          ref={flatListRef}
+          data={images}
+          renderItem={renderImageItem}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={width}
+          snapToAlignment="center"
+          decelerationRate={0.9}
+          onScrollBeginDrag={handleScrollBegin}
+          onScroll={handleScroll}
+          onMomentumScrollEnd={handleScrollEnd}
+          keyExtractor={(item) => item.id}
+          disableIntervalMomentum={true}
+          snapToOffsets={images.map((_, index) => index * width)}
+          scrollEventThrottle={16}
         />
-        <View style={styles.imageCounter}>
-          <Text style={styles.imageCounterText}>
-            {currentImageIndex}/{totalImages}
-          </Text>
-        </View>
+        
+        {images.length > 1 && (
+          <View style={styles.imageCounter}>
+            <Text style={styles.imageCounterText}>
+              {activeImageIndex + 1}/{images.length}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Action Buttons */}
@@ -93,11 +164,27 @@ const Post: React.FC<PostProps> = ({
             <Feather name="send" size={24} color="#262626" />
           </TouchableOpacity>
         </View>
-        <View style={styles.carouselIndicator}>
-          <View style={[styles.dot, styles.activeDot]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-        </View>
+        
+        {images.length > 1 && (
+          <View style={styles.carouselIndicatorContainer}>
+            <View style={styles.carouselIndicator}>
+              {images.map((_, index) => (
+                <TouchableOpacity 
+                  key={index}
+                  onPress={() => goToImage(index)}
+                >
+                  <View 
+                    style={[
+                      styles.dot, 
+                      index === activeImageIndex && styles.activeDot
+                    ]} 
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+        
         <TouchableOpacity>
           <Feather name="bookmark" size={24} color="#262626" />
         </TouchableOpacity>
@@ -204,11 +291,15 @@ const styles = StyleSheet.create({
   actionButton: {
     marginRight: 16,
   },
+  carouselIndicatorContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
   carouselIndicator: {
     flexDirection: 'row',
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -30,
+    justifyContent: 'center',
   },
   dot: {
     width: 6,
