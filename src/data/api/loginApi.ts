@@ -1,3 +1,4 @@
+import { authorizedRequest } from '@/src/utils/authorizedRequest';
 import { API_BASE_URL } from '../../const/api'
 import { saveTokens } from '../../utils/tokenStorage'
 
@@ -42,6 +43,30 @@ export const loginApi = async (email: string, password: string) => {
     throw error instanceof Error ? error : new Error('Đã xảy ra lỗi khi đăng nhập');
   }
 };
+
+export const logoutApi = async () => {
+  try {
+   const response = await authorizedRequest(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Xóa token sau khi đăng xuất
+    await saveTokens('', '', 0); // Xóa token
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.log('errorData', errorData);
+      throw new Error('Đăng xuất thất bại..', errorData.message);
+    }
+
+    return response;
+  } catch (error) {
+    throw error instanceof Error ? error : new Error('Đã xảy ra lỗi khi đăng xuất');
+  }
+}
 
 // export const loginApi = async (email: string, password: string) => {
 //   try {

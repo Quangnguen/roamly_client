@@ -8,6 +8,8 @@ interface User {
   email: string;
   username: string;
   name: string;
+  phoneNumber: string | '';
+
 }
 
 // Define the shape of the auth response
@@ -66,15 +68,24 @@ export const register = createAsyncThunk(
   }
 );
 
+export const logout = createAsyncThunk(
+  "auth/logout",
+  async (_, thunkAPI) => {
+    try {
+      const response = await dependencies.loginUseCase.logout();
+      return response;
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.message || "Đăng xuất thất bại");
+    }
+  }
+);
+
 // Auth slice
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    logout: (state) => {
-      state.user = null;
-      state.error = null;
-    },
+   
   },
   extraReducers: (builder) => {
     // Login cases
@@ -108,11 +119,27 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+
+    // Logout cases
+    builder
+      .addCase(logout.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.access_token = null; // Xóa access_token khi đăng xuất
+        state.refreshToken = null; // Xóa refreshToken khi đăng xuất
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 
 // Export actions
-export const { logout } = authSlice.actions;
 
 // Export reducer
 export default authSlice.reducer;

@@ -14,7 +14,7 @@ interface UserState {
   users: User[] | null; // Thêm dòng này
   profile: User | null; // Thêm dòng này
 }
-
+ 
 // Initial state
 const initialState: UserState = {
   user: null,
@@ -33,7 +33,9 @@ export const fetchUserProfile = createAsyncThunk(
   async (_: void, thunkAPI) => {
     try {
       const response = await dependencies.userUsecase.getInfo();
+      console.log('fetchUserProfile response:', response);
       return response as UserApiResponse; // Chuyển đổi kiểu dữ liệu
+
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to fetch user profile');
     }

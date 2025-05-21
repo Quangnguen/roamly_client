@@ -34,6 +34,8 @@ const EditProfilePage: React.FC = () => {
   })
 
   const handleDone = () => {
+
+    console.log('profileData', profileData);
     dispatch(updateUserProfile({
       name: profileData.name,
       email: profileData.email,
@@ -127,7 +129,7 @@ const EditProfilePage: React.FC = () => {
             <Text style={styles.label}>Bio</Text>
             <TextInput
               style={styles.input}
-              value={profileData.bio}
+              value={profile?.bio}
               multiline={true}
               onChangeText={(text: string) => handleChange('bio', text)}
             />

@@ -53,8 +53,7 @@
     "react-redux": "^9.2.0",
     "reflect-metadata": "^0.2.2",
     "tailwindcss-react-native": "^1.7.10",
-    "tsyringe": "^4.9.1",
-    "expo-media-library": "~17.1.6"
+    "tsyringe": "^4.9.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

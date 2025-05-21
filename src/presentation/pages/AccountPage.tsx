@@ -8,6 +8,9 @@ import {
   SafeAreaView,
   FlatList,
   Dimensions,
+  Modal,
+  TouchableWithoutFeedback,
+  ScrollView,
 } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -17,6 +20,7 @@ import { BACKGROUND } from '@/src/const/constants';
 import PostList from '../components/postList';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserProfile, clearMessage } from '../redux/slices/userSlice';
+import { logout } from '../redux/slices/authSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
 import MemoriesGrid from '../components/memory';
@@ -80,12 +84,17 @@ const fakeMemories = [
   },
 ];
 
+// Fake followers và following cho profile
+
 const AccountPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
   const dispatch = useDispatch<AppDispatch>();
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { user: authUser } = useSelector((state: RootState) => state.auth);
   const [isOpen, setIsOpen] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<'followers' | 'following' | null>(null);
+  const navigation = useNavigation<NavigationProp>();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
@@ -115,7 +124,7 @@ const AccountPage: React.FC = () => {
     following: 162,
   };
 
-   const menuItems = [
+  const menuItems = [
     { icon: <Feather name="archive" size={20} color="black" />, label: "Archive" },
     { icon: <Feather name="clock" size={20} color="black" />, label: "Your Activity" },
     { icon: <Feather name="tag" size={20} color="black" />, label: "Nametag" },
@@ -124,9 +133,11 @@ const AccountPage: React.FC = () => {
     { icon: <Feather name="user-plus" size={20} color="black" />, label: "Discover People" },
     { icon: <Feather name="facebook" size={20} color="black" />, label: "Open Facebook" },
     { icon: <Feather name="settings" size={20} color="black" />, label: "Settings" },
+    { icon: <Feather name="help-circle" size={20} color="black" />, label: "Help" },
+    { icon: <Feather name="shield" size={20} color="black" />, label: "Privacy Policy" },
+    { icon: <Feather name="log-out" size={20} color="black" />, label: "Log Out" },
   ]
 
-  const navigation = useNavigation<NavigationProp>();
 
   const handleEditProfilePage = () => {
     navigation.navigate('EditProfilePage');
@@ -163,7 +174,20 @@ const AccountPage: React.FC = () => {
     },
   ];
 
+  const handleOpenModal = (type: 'followers' | 'following') => {
+    setModalType(type);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setModalType(null);
+  };
+
   return (
+
+
+
     <SafeAreaView style={styles.container}>
       
       <FlatList
@@ -194,14 +218,14 @@ const AccountPage: React.FC = () => {
                     <Text style={styles.statNumber}>{userStats.posts}</Text>
                     <Text style={styles.statLabel}>Posts</Text>
                   </View>
-                  <View style={styles.statItem}>
+                  <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followers')}>
                     <Text style={styles.statNumber}>{profile?.followers?.length ?? 0}</Text>
                     <Text style={styles.statLabel}>Followers</Text>
-                  </View>
-                  <View style={styles.statItem}>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('following')}>
                     <Text style={styles.statNumber}>{profile?.following?.length ?? 0}</Text>
                     <Text style={styles.statLabel}>Following</Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -288,6 +312,11 @@ const AccountPage: React.FC = () => {
                   }}
                   onPress={() => {
                     setIsOpen(false);
+                    if (item.label === 'Log Out') {
+                      console.log('Log Out');
+                      dispatch(logout());
+                      navigation.replace('Auth');
+                    }
                     // Thêm xử lý cho từng menu item nếu cần
                   }}
                 >
@@ -299,6 +328,72 @@ const AccountPage: React.FC = () => {
           </View>
         </>
       )}
+
+      {/* Modal hiển thị danh sách followers/following */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseModal}
+      >
+        <TouchableWithoutFeedback onPress={handleCloseModal}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }}>
+            <TouchableWithoutFeedback>
+              <View style={{
+                backgroundColor: '#fff',
+                marginTop: 100,
+                marginHorizontal: 30,
+                borderRadius: 10,
+                padding: 20,
+                maxHeight: '70%',
+              }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>
+                  {modalType === 'followers' ? 'Followers' : 'Following'}
+                </Text>
+                <ScrollView>
+                  {(modalType === 'followers' ? profile?.followers : profile?.following)?.map((user: any) => (
+                    <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image
+                          source={{ uri: user.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+                          style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }}
+                        />
+                        <View>
+                          <Text style={{ fontWeight: '500' }}>{user.username}</Text>
+                          {user.followedAt && (
+                            <Text style={{ color: '#888', fontSize: 12 }}>
+                              Đã theo dõi từ: {user.followedAt}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                      {modalType === 'following' && (
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: '#eee',
+                            borderRadius: 6,
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                          }}
+                          onPress={() => {
+                            // TODO: Thêm logic hủy theo dõi ở đây
+                            alert(`Đã hủy theo dõi ${user.username}`);
+                          }}
+                        >
+                          <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 13 }}>Đang theo dõi</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+                  {((modalType === 'followers' ? profile?.followers : profile?.following)?.length === 0) && (
+                    <Text style={{ color: '#888', textAlign: 'center' }}>No users found.</Text>
+                  )}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
