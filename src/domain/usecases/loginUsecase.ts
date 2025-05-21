@@ -9,4 +9,9 @@ export class LoginUseCase {
     console.log('login use case:', 2)
     return await this.repo.login(email, password)
   }
+
+  async logout(): Promise<void> {
+    // Implement logout logic if needed
+    return await this.repo.logout()
+  }
 }
