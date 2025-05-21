@@ -62,6 +62,7 @@ const Card: React.FC<CardProps> = ({
 
       case 'user':
         return (
+          <TouchableOpacity activeOpacity={0.8} onPress={onPress} >
           <View style={styles.userCard}>
             <View style={styles.avatarContainer}>
               <Image
@@ -79,6 +80,7 @@ const Card: React.FC<CardProps> = ({
               <Text style={styles.description} numberOfLines={2}>{description}</Text>
             </View>
           </View>
+          </TouchableOpacity>
         );
 
       case 'homestay':

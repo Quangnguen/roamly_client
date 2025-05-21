@@ -104,7 +104,7 @@ const HomePage = () => {
         onMessagesPress={() => console.log("Messages pressed")}
         onDirectPress={() => console.log("Direct pressed")}
         onWeatherPress={() => navigation.navigate('WeatherPage')} />
-      <FollowList />
+      {/* <FollowList /> */}
       <ScrollView>
         {posts.map((post) => (
           <Post

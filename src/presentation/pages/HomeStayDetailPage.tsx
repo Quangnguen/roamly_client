@@ -168,6 +168,8 @@ const amenities = [
     { id: '4', icon: 'snowflake-o', name: 'Điều hòa' },
     { id: '5', icon: 'coffee', name: 'Bữa sáng' },
     { id: '6', icon: 'paw', name: 'Thú cưng' },
+    { id: '7', icon: 'paw', name: 'Bếp' },
+    { id: '6', icon: 'paw', name: 'Bình nóng lạnh' },
 ];
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -175,7 +177,7 @@ const { width: screenWidth } = Dimensions.get('window');
 const HomeStayDetailPage: React.FC = () => {
     const route = useRoute<HomeStayDetailPageRouteProp>();
     const navigation = useNavigation();
-    const { image, title, description, rating, totalRaters } = route.params;
+    const { id } = route.params;
 
     const [userRating, setUserRating] = useState(0);
     const [userComment, setUserComment] = useState('');
@@ -349,24 +351,32 @@ const HomeStayDetailPage: React.FC = () => {
                 <View style={styles.contentContainer}>
                     {/* Header thông tin */}
                     <View>
-                        <Text style={styles.title}>{title}</Text>
+                        <Text style={styles.title}>Homstay A</Text>
 
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                            <Text style={{ fontSize: 14, color: '#666', marginRight: 16 }}>
+                                <Text style={{ fontWeight: 'bold', color: '#222' }}>123</Text> lượt thích
+                            </Text>
+                            <Text style={{ fontSize: 14, color: '#666' }}>
+                                <Text style={{ fontWeight: 'bold', color: '#222' }}>45</Text> Following
+                            </Text>
+                        </View>
                         {/* Rating với giao diện mới */}
                         <View style={styles.ratingContainer}>
                             <View style={styles.starsContainer}>
                                 {Array.from({ length: 5 }).map((_, idx) => (
                                     <Ionicons
                                         key={idx}
-                                        name={idx < rating ? "star" : "star-outline"}
+                                        name={idx < 5 ? "star" : "star-outline"}
                                         size={22}
-                                        color={idx < rating ? "#FFD700" : "#ccc"}
+                                        color={idx < 5 ? "#FFD700" : "#ccc"}
                                         style={{ marginRight: 2 }}
                                     />
                                 ))}
                             </View>
                             <View style={styles.ratingCountContainer}>
-                                <Text style={styles.ratingCount}>{rating.toFixed(1)}</Text>
-                                <Text style={styles.ratingTotal}>({totalRaters} đánh giá)</Text>
+                                <Text style={styles.ratingCount}>5</Text>
+                                <Text style={styles.ratingTotal}>(100 đánh giá)</Text>
                             </View>
                         </View>
 
@@ -393,7 +403,7 @@ const HomeStayDetailPage: React.FC = () => {
                             style={styles.description}
                             numberOfLines={showFullDescription ? undefined : 3}
                         >
-                            {description}
+                            Dưới đây là fake data mẫu cho trang HomeStayDetailPage, bạn có thể thay thế các biến như title, description, rating, totalRaters, ... bằng dữ liệu này để hiển thị đúng với từng homestay theo id.
                         </Text>
                         <TouchableOpacity
                             onPress={() => setShowFullDescription(!showFullDescription)}

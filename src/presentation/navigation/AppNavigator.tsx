@@ -16,6 +16,8 @@ import WeatherPage from '../pages/WeatherPage';
 import HomeStayDetailPage from '../pages/HomeStayDetailPage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BACKGROUND } from '@/src/const/constants';
+import InfoAccPage from '../pages/InfoAccPage';
+import AddressDetailPage from '../pages/AddressDetailPage';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -35,21 +37,14 @@ export type RootStackParamList = {
     avatar: string;
   };
   WeatherPage: undefined;
-  DetailPage: {
-    type: 'address' | 'homestay';
-    image: any;
-    title: string;
-    description: string;
-    totalFollowers?: number;
-    rating?: number;
-    totalRaters?: number;
+  InfoAccPage: {
+    id: string;
   };
   HomeStayDetailPage: {
-    image: any;
-    title: string;
-    description: string;
-    rating: number;
-    totalRaters: number;
+    id: string;
+  };
+  AddressDetailPage: {
+    id: string;
   };
 };
 
@@ -81,6 +76,8 @@ export default function AppNavigator() {
         <Stack.Screen name="ChatDetailPage" component={ChatDetailPage} />
         <Stack.Screen name="WeatherPage" component={WeatherPage} />
         <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
+        <Stack.Screen name="InfoAccPage" component={InfoAccPage} />
+        <Stack.Screen name="AddressDetailPage" component={AddressDetailPage} />
       </Stack.Navigator>
     </SafeAreaView>
   );

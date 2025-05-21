@@ -60,7 +60,7 @@ const CreatePostPage = () => {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20} // Điều chỉnh khoảng cách khi bàn phím bật
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView style={styles.container}>
@@ -154,11 +154,34 @@ const CreatePostPage = () => {
 
             {/* Hiển thị danh sách ảnh đã chọn */}
             {selectedImages.length > 0 && (
-              <ScrollView horizontal style={styles.selectedImagesContainer}>
-                {selectedImages.map((uri, index) => (
-                  <Image key={index} source={{ uri }} style={styles.selectedImage} />
-                ))}
-              </ScrollView>
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <ScrollView
+                  horizontal
+                  style={styles.selectedImagesContainer}
+                  contentContainerStyle={{ paddingHorizontal: 10, flexGrow: 1 }}
+                  showsHorizontalScrollIndicator={true}
+                  keyboardShouldPersistTaps="handled" // Đảm bảo cuộn không bị chặn
+                  scrollEventThrottle={16}
+                >
+                  {/* Thêm khoảng trống ở đầu */}
+                  <View style={{ width: 10 }} />
+                  {selectedImages.map((uri, index) => (
+                    <View key={index} style={styles.imageWrapper}>
+                      <Image source={{ uri }} style={styles.selectedImage} />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => {
+                          setSelectedImages((prev) => prev.filter((image, i) => i !== index));
+                        }}
+                      >
+                        <Ionicons name="close" size={20} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  {/* Thêm khoảng trống ở cuối */}
+                  <View style={{ width: 10 }} />
+                </ScrollView>
+              </TouchableWithoutFeedback>
             )}
           </View>
 
@@ -261,12 +284,27 @@ const styles = StyleSheet.create({
   selectedImagesContainer: {
     marginTop: 16,
     flexDirection: 'row',
+    paddingHorizontal: 10, // Thêm khoảng cách ngang
+  },
+  imageWrapper: {
+    position: 'relative',
+    marginRight: 10, // Khoảng cách giữa các ảnh
   },
   selectedImage: {
     width: 100,
     height: 100,
     borderRadius: 10,
-    marginRight: 10,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   footer: {
     flexDirection: 'row',

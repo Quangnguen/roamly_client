@@ -37,9 +37,9 @@ const Post: React.FC<PostProps> = ({
   isVerified = true,
   location = 'Tokyo, Japan',
   images = [
-    { 
-      id: '1', 
-      uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-LhKXgWZZXVwVm29H8Ay2tt6J90DBga.png' 
+    {
+      id: '1',
+      uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-LhKXgWZZXVwVm29H8Ay2tt6J90DBga.png'
     }
   ],
   likedBy = 'craig_love',
@@ -120,6 +120,12 @@ const Post: React.FC<PostProps> = ({
           <Feather name="more-horizontal" size={24} color="#262626" />
         </TouchableOpacity>
       </View>
+      {/* Caption */}
+      <View style={styles.captionContainer}>
+        <Text style={styles.caption}>
+          {caption}
+        </Text>
+      </View>
 
       {/* Image Carousel */}
       <View style={styles.imageContainer}>
@@ -141,7 +147,7 @@ const Post: React.FC<PostProps> = ({
           snapToOffsets={images.map((_, index) => index * width)}
           scrollEventThrottle={16}
         />
-        
+
         {images.length > 1 && (
           <View style={styles.imageCounter}>
             <Text style={styles.imageCounterText}>
@@ -149,6 +155,35 @@ const Post: React.FC<PostProps> = ({
             </Text>
           </View>
         )}
+      </View>
+
+      {/* Image Indicators */}
+      {images.length > 1 && (
+        <View style={styles.carouselIndicatorContainer}>
+          <View style={styles.carouselIndicator}>
+            {images.map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => goToImage(index)}
+              >
+                <View
+                  style={[
+                    styles.dot,
+                    index === activeImageIndex && styles.activeDot
+                  ]}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Likes */}
+      <View style={styles.likesContainer}>
+        <Text style={styles.likes}>
+          Liked by <Text style={styles.bold}>{likedBy}</Text> and{' '}
+          <Text style={styles.bold}>{likesCount.toLocaleString()} others</Text>
+        </Text>
       </View>
 
       {/* Action Buttons */}
@@ -164,46 +199,17 @@ const Post: React.FC<PostProps> = ({
             <Feather name="send" size={24} color="#262626" />
           </TouchableOpacity>
         </View>
-        
-        {images.length > 1 && (
-          <View style={styles.carouselIndicatorContainer}>
-            <View style={styles.carouselIndicator}>
-              {images.map((_, index) => (
-                <TouchableOpacity 
-                  key={index}
-                  onPress={() => goToImage(index)}
-                >
-                  <View 
-                    style={[
-                      styles.dot, 
-                      index === activeImageIndex && styles.activeDot
-                    ]} 
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-        
+
+
+
         <TouchableOpacity>
           <Feather name="bookmark" size={24} color="#262626" />
         </TouchableOpacity>
       </View>
 
-      {/* Likes */}
-      <View style={styles.likesContainer}>
-        <Text style={styles.likes}>
-          Liked by <Text style={styles.bold}>{likedBy}</Text> and{' '}
-          <Text style={styles.bold}>{likesCount.toLocaleString()} others</Text>
-        </Text>
-      </View>
 
-      {/* Caption */}
-      <View style={styles.captionContainer}>
-        <Text style={styles.caption}>
-          <Text style={styles.bold}>{username}</Text> {caption}
-        </Text>
-      </View>
+
+
     </View>
   );
 };
@@ -292,9 +298,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   carouselIndicatorContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    paddingVertical: 8,
     alignItems: 'center',
   },
   carouselIndicator: {
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
   },
   captionContainer: {
     paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingBottom: 4,
   },
   caption: {
     fontSize: 14,

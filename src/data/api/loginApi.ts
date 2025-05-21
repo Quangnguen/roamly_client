@@ -1,6 +1,11 @@
+// import { API_BASE_URL } from '../../const/api'
+// import { saveTokens } from '../../utils/tokenStorage'
+
+
 // export const loginApi = async (email: string, password: string) => {
+//   console.log('login api:', email, password)
 //   try {
-//     const response = await fetch('http://192.168.0.101:3000/auth/login', {
+//     const response = await fetch(`http://192.168.145.1:3000/auth/login`, {
 //       method: 'POST',
 //       headers: {
 //         'Content-Type': 'application/json',
@@ -11,14 +16,15 @@
 //       }),
 //     });
 
-//     console.log('login api', 4);
 
 //     if (!response.ok) {
 //       const errorData = await response.json();
-//       throw new Error('Đăng nhập thất bại..');
+//       console.log('errorData', errorData);
+//       throw new Error('Đăng nhập thất bại..', errorData.message);
 //     }
 
 //     const data = await response.json();
+//     await saveTokens(data.access_token, data.refresh_token, 12 * 60 * 60); // Lưu token (12 giờ)
 //     return {
 //       access_token: data.access_token,
 //       refresh_token: data.refresh_token,

@@ -1,27 +1,56 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  TouchableOpacity, 
-  TextInput, 
-  SafeAreaView, 
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  SafeAreaView,
   StatusBar,
-  ScrollView
+  ScrollView,
+  Switch // Thêm import Switch
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUserProfile, updateUserProfile } from '../redux/slices/userSlice';
+import { RootState, AppDispatch } from '../redux/store';
 
 const EditProfilePage: React.FC = () => {
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { profile, loading, error } = useSelector((state: RootState) => state.user);
+  const { user: authUser } = useSelector((state: RootState) => state.auth);
+  const [isAccountLocked, setIsAccountLocked] = useState<boolean>(!!profile?.private);
+
+
   const [profileData, setProfileData] = useState({
-    name: 'Jacob West',
-    username: 'jacob_w',
-    website: '',
-    bio: 'Digital goodies designer @pixsellz.\nEverything is designed.',
-    email: 'jacob.west@gmail.com',
-    phone: '+1 202 555 0147',
-    gender: 'Male'
-  });
+    
+    name: profile?.name || '',
+    username: profile?.username || '',
+    bio: profile?.bio || '',
+    email: profile?.email || '',
+    private: profile?.private || false,
+  })
+
+  const handleDone = () => {
+    dispatch(updateUserProfile({
+      name: profileData.name,
+      email: profileData.email,
+      username: profileData.username,
+      bio: profileData.bio,
+      private: isAccountLocked,
+    }));
+    navigation.goBack();
+  };
+
+  useEffect(() => {
+      dispatch(fetchUserProfile());
+  }, [dispatch]);
+  
+  useEffect(() => {
+    setIsAccountLocked(!!profile?.private);
+  }, [profile?.private]);
   
   const navigation = useNavigation();
   const handleChange = (field: any, value: any) => {
@@ -46,7 +75,7 @@ const EditProfilePage: React.FC = () => {
           <Text style={styles.cancelButton} onPress={handleCancelEdit}>Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleDone}>
           <Text style={styles.doneButton}>Done</Text>
         </TouchableOpacity>
       </View>
@@ -65,25 +94,25 @@ const EditProfilePage: React.FC = () => {
         
         {/* Form Fields */}
         <View style={styles.formContainer}>
-          <View style={styles.formRow}>
+            <View style={styles.formRow}>
             <Text style={styles.label}>Name</Text>
             <TextInput
               style={styles.input}
               value={profileData.name}
-              onChangeText={(text) => handleChange('name', text)}
+              onChangeText={(text: string) => handleChange('name', text)}
             />
-          </View>
+            </View>
           
           <View style={styles.formRow}>
             <Text style={styles.label}>Username</Text>
             <TextInput
               style={styles.input}
               value={profileData.username}
-              onChangeText={(text) => handleChange('username', text)}
+              onChangeText={(text: string) => handleChange('username', text)}
             />
           </View>
           
-          <View style={styles.formRow}>
+          {/* <View style={styles.formRow}>
             <Text style={styles.label}>Website</Text>
             <TextInput
               style={styles.input}
@@ -92,7 +121,7 @@ const EditProfilePage: React.FC = () => {
               placeholderTextColor="#C7C7CC"
               onChangeText={(text) => handleChange('website', text)}
             />
-          </View>
+          </View> */}
           
           <View style={styles.formRow}>
             <Text style={styles.label}>Bio</Text>
@@ -100,7 +129,7 @@ const EditProfilePage: React.FC = () => {
               style={styles.input}
               value={profileData.bio}
               multiline={true}
-              onChangeText={(text) => handleChange('bio', text)}
+              onChangeText={(text: string) => handleChange('bio', text)}
             />
           </View>
         </View>
@@ -121,7 +150,7 @@ const EditProfilePage: React.FC = () => {
             <TextInput
               style={styles.input}
               value={profileData.email}
-              onChangeText={(text) => handleChange('email', text)}
+              onChangeText={(text: string) => handleChange('email', text)}
             />
           </View>
           
@@ -129,8 +158,8 @@ const EditProfilePage: React.FC = () => {
             <Text style={styles.label}>Phone</Text>
             <TextInput
               style={styles.input}
-              value={profileData.phone}
-              onChangeText={(text) => handleChange('phone', text)}
+              value="000012325346"
+              onChangeText={(text: string) => handleChange('phone', text)}
             />
           </View>
           
@@ -138,11 +167,20 @@ const EditProfilePage: React.FC = () => {
             <Text style={styles.label}>Gender</Text>
             <TextInput
               style={styles.input}
-              value={profileData.gender}
-              onChangeText={(text) => handleChange('gender', text)}
+              value="Male"
+              onChangeText={(text: string) => handleChange('gender', text)}
             />
           </View>
+        <View style={styles.formRow}>
+          <Text style={styles.label}>Tài khoản cá nhân</Text>
+          <Switch
+            value={isAccountLocked}
+            onValueChange={setIsAccountLocked}
+          />
         </View>
+        </View>
+
+        {/* Khóa tài khoản */}
       </ScrollView>
     </SafeAreaView>
   );
@@ -203,7 +241,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E0E0E0',
   },
   label: {
-    width: 90,
+    width: 120,
     fontSize: 16,
   },
   input: {
@@ -229,6 +267,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#8E8E93',
     textTransform: 'uppercase',
+  },
+  lockAccountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 0.5,
+    borderTopColor: '#E0E0E0',
+    marginTop: 16,
+  },
+  lockAccountLabel: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '500',
   },
 });
 

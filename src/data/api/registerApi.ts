@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "@/src/const/api";
 
 interface User {
   id: string;
@@ -21,7 +22,7 @@ export const registerApi = async (
   
   try {
     console.log('registerApi', email, password, name, username)
-    const response = await fetch('http://192.168.0.101:3000/auth/register', {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
