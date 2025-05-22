@@ -14,7 +14,7 @@ interface UserState {
   users: User[] | null; // Thêm dòng này
   profile: User | null; // Thêm dòng này
 }
- 
+
 // Initial state
 const initialState: UserState = {
   user: null,
@@ -87,7 +87,8 @@ export const updatePassword = createAsyncThunk(
     thunkAPI
   ) => {
     try {
-      await dependencies.userUsecase.updatePassword(oldPassword, newPassword);
+      const response = await dependencies.userUsecase.updatePassword(oldPassword, newPassword);
+      return response as any; // Chuyển đổi kiểu dữ liệu
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to update password');
     }
@@ -165,9 +166,9 @@ const userSlice = createSlice({
         state.message = action.payload.message; // Cập nhật message từ action.payload.message 
         state.status = action.payload.status; // Cập nhật status từ action.payload.status
         state.statusCode = action.payload.statusCode; // Cập nhật statusCode từ action.payload.statusCode
-        
+
       })
-      
+
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
@@ -181,6 +182,9 @@ const userSlice = createSlice({
       })
       .addCase(updatePassword.fulfilled, (state) => {
         state.loading = false;
+        state.message = 'Mật khẩu đã được cập nhật';
+        state.status = 'success';
+        state.statusCode = 200;
       })
       .addCase(updatePassword.rejected, (state, action) => {
         state.loading = false;
@@ -201,7 +205,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
-    
+
     // Get users cases
     builder
       .addCase(getUsers.pending, (state) => {
@@ -219,7 +223,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
-    
+
     // Get user by ID cases
     builder
       .addCase(getUserById.pending, (state) => {

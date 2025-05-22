@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#DBDBDB",
-    backgroundColor: BACKGROUND,
+    backgroundColor: BACKGROUND
     // backgroundColor: "red",
   },
   logoText: {

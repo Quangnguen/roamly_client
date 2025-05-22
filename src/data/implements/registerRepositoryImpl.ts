@@ -5,7 +5,7 @@ import { User } from '@/src/domain/models/User'
 
 export class RegisterRepositoryImpl implements RegisterRepository {
 
-  async register(email: string, password: string, name: string, username: string): Promise<User> {
-    return (await registerApi(email, password, name, username)) as any
+  async register(email: string, password: string, name: string, username: string, phoneNumber: string): Promise<User> {
+    return (await registerApi(email, password, name, username, phoneNumber)) as any
   }
 }

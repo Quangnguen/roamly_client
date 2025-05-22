@@ -5,10 +5,10 @@ export interface UserUpdateInterface {
     bio?: string;
     profilePic?: string;
     private?: boolean;
-   
+
 }
 
 export interface UserChangePasswordInterface {
-     oldPassword: string;
+    oldPassword: string;
     newPassword: string;
 }

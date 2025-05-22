@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useAppDispatch } from '../redux/hook'; // Adjust path to your hook
-import { register } from '../redux/slices/authSlice'; // Adjust path to authSlice
-import { RootStackParamList } from '../navigation/AppNavigator'; // Adjust path to AppNavigator
+import { useAppDispatch } from '../redux/hook';
+import { register } from '../redux/slices/authSlice';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { FloatingLabelInput } from 'react-native-floating-label-input';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
@@ -20,18 +22,23 @@ const RegisterScreen = ({ navigation }: Props) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
 
   const handleRegister = async () => {
-    if (!email || !password || !name || !username) {
+    if (!email || !password || !name || !username || !phoneNumber) {
       Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ thông tin.');
       return;
     }
 
     setLoading(true);
     try {
-      await dispatch(register({ email, password, name, username })).unwrap();
+      console.log("-----------------------")
+      console.log("type of phoneNumber", typeof phoneNumber)
+      console.log('register', email, password, name, username, phoneNumber);
+      console.log("-----------------------")
+      await dispatch(register({ email, password, name, username, phoneNumber })).unwrap();
       Alert.alert('Đăng ký thành công!', '', [
         {
           text: 'OK',
@@ -50,66 +57,120 @@ const RegisterScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Đăng ký</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Đăng ký</Text>
 
-      <TextInput
-        placeholder="Họ và tên"
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-        autoCapitalize="words"
-        editable={!loading}
-      />
+        <View style={styles.inputContainer}>
+          <FloatingLabelInput
+            label="Họ và tên"
+            value={name}
+            onChangeText={setName}
+            containerStyles={styles.input}
+            customLabelStyles={{
+              colorFocused: '#2196F3',
+              fontSizeFocused: 12,
+            }}
+            labelStyles={{
+              backgroundColor: '#f5f5f5',
+              paddingHorizontal: 5,
+            }}
+            inputStyles={styles.inputText}
+            editable={!loading}
+          />
 
-      <TextInput
-        placeholder="Tên đăng nhập"
-        style={styles.input}
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-        editable={!loading}
-      />
+          <FloatingLabelInput
+            label="Tên đăng nhập"
+            value={username}
+            onChangeText={setUsername}
+            containerStyles={styles.input}
+            customLabelStyles={{
+              colorFocused: '#2196F3',
+              fontSizeFocused: 12,
+            }}
+            labelStyles={{
+              backgroundColor: '#f5f5f5',
+              paddingHorizontal: 5,
+            }}
+            inputStyles={styles.inputText}
+            editable={!loading}
+          />
 
-      <TextInput
-        placeholder="Email"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        editable={!loading}
-      />
+          <FloatingLabelInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            containerStyles={styles.input}
+            customLabelStyles={{
+              colorFocused: '#2196F3',
+              fontSizeFocused: 12,
+            }}
+            labelStyles={{
+              backgroundColor: '#f5f5f5',
+              paddingHorizontal: 5,
+            }}
+            inputStyles={styles.inputText}
+            keyboardType="email-address"
+            editable={!loading}
+          />
 
-      <TextInput
-        placeholder="Mật khẩu"
-        secureTextEntry
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        autoCapitalize="none"
-        editable={!loading}
-      />
+          <FloatingLabelInput
+            label="Số điện thoại"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            containerStyles={styles.input}
+            customLabelStyles={{
+              colorFocused: '#2196F3',
+              fontSizeFocused: 12,
+            }}
+            labelStyles={{
+              backgroundColor: '#f5f5f5',
+              paddingHorizontal: 5,
+            }}
+            inputStyles={styles.inputText}
+            keyboardType="phone-pad"
+            editable={!loading}
+          />
 
-      <TouchableOpacity
-        onPress={handleRegister}
-        style={[styles.button, loading && styles.buttonDisabled]}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Đăng ký</Text>
-        )}
-      </TouchableOpacity>
+          <FloatingLabelInput
+            label="Mật khẩu"
+            value={password}
+            onChangeText={setPassword}
+            containerStyles={styles.input}
+            customLabelStyles={{
+              colorFocused: '#2196F3',
+              fontSizeFocused: 12,
+            }}
+            labelStyles={{
+              backgroundColor: '#f5f5f5',
+              paddingHorizontal: 5,
+            }}
+            inputStyles={styles.inputText}
+            isPassword
+            editable={!loading}
+          />
+        </View>
 
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Login')}
-        disabled={loading}
-      >
-        <Text style={styles.link}>Đã có tài khoản? Đăng nhập</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          onPress={handleRegister}
+          style={[styles.button, loading && styles.buttonDisabled]}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Đăng ký</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Login')}
+          disabled={loading}
+        >
+          <Text style={styles.link}>Đã có tài khoản? Đăng nhập</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -129,15 +190,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333',
   },
+  inputContainer: {
+    marginBottom: 20,
+  },
   input: {
-    height: 50,
     borderWidth: 1,
     borderColor: '#ccc',
-    marginBottom: 15,
     paddingHorizontal: 15,
     borderRadius: 8,
     backgroundColor: '#fff',
+    marginBottom: 15,
+    height: 55,
+  },
+  inputText: {
     fontSize: 16,
+    color: '#333',
   },
   button: {
     backgroundColor: '#2196F3',

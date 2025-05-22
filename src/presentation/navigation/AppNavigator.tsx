@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BACKGROUND } from '@/src/const/constants';
 import InfoAccPage from '../pages/InfoAccPage';
 import AddressDetailPage from '../pages/AddressDetailPage';
+import TravelPlaceDetailPage from '../pages/TravelPlaceDetailPage';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -44,6 +45,9 @@ export type RootStackParamList = {
     id: string;
   };
   AddressDetailPage: {
+    id: string;
+  };
+  TravelPlaceDetailPage: {
     id: string;
   };
 };
@@ -78,6 +82,7 @@ export default function AppNavigator() {
         <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
         <Stack.Screen name="InfoAccPage" component={InfoAccPage} />
         <Stack.Screen name="AddressDetailPage" component={AddressDetailPage} />
+        <Stack.Screen name="TravelPlaceDetailPage" component={TravelPlaceDetailPage} />
       </Stack.Navigator>
     </SafeAreaView>
   );

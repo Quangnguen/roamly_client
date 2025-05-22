@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { BACKGROUND } from '@/src/const/constants';
+import ImageView from 'react-native-image-viewing';
 
 const { width } = Dimensions.get('window');
 
@@ -27,7 +28,7 @@ interface PostProps {
   isVerified: boolean;
   location: string;
   images: ImageItem[];
-  likedBy: string;
+  commentsCount: number;
   likesCount: number;
   caption: string;
 }
@@ -42,23 +43,58 @@ const Post: React.FC<PostProps> = ({
       uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-LhKXgWZZXVwVm29H8Ay2tt6J90DBga.png'
     }
   ],
-  likedBy = 'craig_love',
+  commentsCount = 1236,
   likesCount = 44686,
   caption = 'The game in Japan was amazing and I want to share some photos',
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isImageViewVisible, setIsImageViewVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const [isScrolling, setIsScrolling] = useState(false);
 
-  const renderImageItem = useCallback(({ item }: { item: ImageItem }) => (
+  const goToImage = useCallback((index: number) => {
+    if (index >= 0 && index < images.length) {
+      flatListRef.current?.scrollToOffset({
+        offset: index * width,
+        animated: true
+      });
+      setActiveImageIndex(index);
+    }
+  }, [images.length]);
+
+  const handleImagePress = useCallback((index: number) => {
+    setActiveImageIndex(index);
+    setIsImageViewVisible(true);
+  }, []);
+
+  const renderImageItem = useCallback(({ item, index }: { item: ImageItem; index: number }) => (
     <View style={{ width }}>
-      <Image
-        source={typeof item.uri === 'string' ? { uri: item.uri } : item.uri}
-        style={styles.postImage}
-        resizeMode="cover"
-      />
+      <TouchableOpacity onPress={() => handleImagePress(index)}>
+        <Image
+          source={typeof item.uri === 'string' ? { uri: item.uri } : item.uri}
+          style={styles.postImage}
+          resizeMode="cover"
+        />
+      </TouchableOpacity>
+      {images.length > 1 && (
+        <View style={styles.carouselIndicator}>
+          {images.map((_, idx) => (
+            <TouchableOpacity
+              key={idx}
+              onPress={() => goToImage(idx)}
+            >
+              <View
+                style={[
+                  styles.dot,
+                  idx === activeImageIndex && styles.activeDot
+                ]}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
-  ), []);
+  ), [activeImageIndex, images.length, goToImage, handleImagePress]);
 
   const handleScrollBegin = useCallback(() => {
     setIsScrolling(true);
@@ -83,15 +119,10 @@ const Post: React.FC<PostProps> = ({
     }
   }, [images.length]);
 
-  const goToImage = useCallback((index: number) => {
-    if (index >= 0 && index < images.length) {
-      flatListRef.current?.scrollToOffset({
-        offset: index * width,
-        animated: true
-      });
-      setActiveImageIndex(index);
-    }
-  }, [images.length]);
+  // Chuyển đổi mảng images để phù hợp với ImageView
+  const imageViewImages = images.map(img => ({
+    uri: typeof img.uri === 'string' ? img.uri : Image.resolveAssetSource(img.uri).uri
+  }));
 
   return (
     <View style={styles.container}>
@@ -157,33 +188,20 @@ const Post: React.FC<PostProps> = ({
         )}
       </View>
 
-      {/* Image Indicators */}
-      {images.length > 1 && (
-        <View style={styles.carouselIndicatorContainer}>
-          <View style={styles.carouselIndicator}>
-            {images.map((_, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => goToImage(index)}
-              >
-                <View
-                  style={[
-                    styles.dot,
-                    index === activeImageIndex && styles.activeDot
-                  ]}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
+      {/* Image Viewer Modal */}
+      <ImageView
+        images={imageViewImages}
+        imageIndex={activeImageIndex}
+        visible={isImageViewVisible}
+        onRequestClose={() => setIsImageViewVisible(false)}
+        swipeToCloseEnabled={true}
+        doubleTapToZoomEnabled={true}
+      />
 
       {/* Likes */}
       <View style={styles.likesContainer}>
-        <Text style={styles.likes}>
-          Liked by <Text style={styles.bold}>{likedBy}</Text> and{' '}
-          <Text style={styles.bold}>{likesCount.toLocaleString()} others</Text>
-        </Text>
+        <Text style={styles.bold}>{likesCount.toLocaleString()} likes</Text>
+        <Text style={styles.bold}>  {commentsCount.toLocaleString()} comments</Text>
       </View>
 
       {/* Action Buttons */}
@@ -200,16 +218,10 @@ const Post: React.FC<PostProps> = ({
           </TouchableOpacity>
         </View>
 
-
-
         <TouchableOpacity>
           <Feather name="bookmark" size={24} color="#262626" />
         </TouchableOpacity>
       </View>
-
-
-
-
     </View>
   );
 };
@@ -297,27 +309,33 @@ const styles = StyleSheet.create({
   actionButton: {
     marginRight: 16,
   },
-  carouselIndicatorContainer: {
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
   carouselIndicator: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#C4C4C4',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     marginHorizontal: 2,
   },
   activeDot: {
-    backgroundColor: '#3897F0',
+    backgroundColor: '#fff',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   likesContainer: {
     paddingHorizontal: 12,
     marginBottom: 6,
+    flexDirection: 'row',
   },
   likes: {
     fontSize: 14,

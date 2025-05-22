@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons, Feather } from "@expo/vector-icons"
 import ChatItem from "../components/chatItem"
@@ -122,24 +122,30 @@ const ChatPage: React.FC = () => {
     navigation.goBack()
   }
 
+  const handlePressOutside = () => {
+    Keyboard.dismiss()
+  }
   return (
 
 
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress}>
-          <Ionicons name="chevron-back" size={24} />
-        </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={[]}>
+      <TouchableWithoutFeedback onPress={handlePressOutside}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBackPress}>
+            <Ionicons name="chevron-back" size={24} />
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.userContainer}>
-          <Text style={styles.username}>jacob_w</Text>
-          <Ionicons name="chevron-down" size={18} />
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.userContainer}>
+            <Text style={styles.username}>jacob_w</Text>
+            <Ionicons name="chevron-down" size={18} />
+          </TouchableOpacity>
 
-        <TouchableOpacity>
-          <Feather name="plus" size={24} />
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity>
+            <Feather name="plus" size={24} />
+          </TouchableOpacity>
+        </View>
+      </TouchableWithoutFeedback>
+
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -176,6 +182,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 8,
+    paddingTop: 16,
   },
   userContainer: {
     flexDirection: "row",
@@ -196,7 +203,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   searchInput: {
     marginLeft: 8,

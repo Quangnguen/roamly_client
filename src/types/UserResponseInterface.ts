@@ -7,3 +7,4 @@ export interface UserApiResponse {
   statusCode: number;
   error?: string;
 }
+

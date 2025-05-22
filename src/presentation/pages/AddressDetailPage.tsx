@@ -7,21 +7,35 @@ import ImageViewing from 'react-native-image-viewing';
 import AddressDetails from '@/src/types/addressDetailInterface';
 import SquareCard from '../components/squareCardForHomeStay';
 import Post from '../components/post';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
 const { width } = Dimensions.get('window');
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const AddressDetailPage = () => {
     const route = useRoute();
-    const navigation = useNavigation();
+    const navigation = useNavigation<NavigationProp>();
     const { id } = route.params as { id: string };
     const [isFollowing, setIsFollowing] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
 
     const toggleFollow = () => {
         setIsFollowing(prev => !prev);
+    };
+
+    const handleScroll = (event: any) => {
+        const contentOffset = event.nativeEvent.contentOffset;
+        const imageIndex = Math.round(contentOffset.x / width);
+        setCurrentIndex(imageIndex);
+    };
+
+    const toggleFullScreenPreview = () => {
+        setIsFullScreenPreview(!isFullScreenPreview);
     };
 
     const posts = [
@@ -35,8 +49,8 @@ const AddressDetailPage = () => {
                 { id: '2', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
                 { id: '3', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
             ],
-            likedBy: 'craig_love',
             likesCount: 44686,
+            commentsCount: 1236,
             caption: 'The game in Japan was amazing and I want to share some photos',
         },
         {
@@ -47,8 +61,8 @@ const AddressDetailPage = () => {
             images: [
                 { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
             ],
-            likedBy: 'craig_love',
             likesCount: 44686,
+            commentsCount: 1236,
             caption: 'The game in Japan was amazing and I want to share some photos',
         },
         {
@@ -60,8 +74,8 @@ const AddressDetailPage = () => {
                 { id: '1', uri: require('../../../assets/images/natural1.jpg') },
                 { id: '2', uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' }
             ],
-            likedBy: 'craig_love',
             likesCount: 44686,
+            commentsCount: 1236,
             caption: 'The game in Japan was amazing and I want to share some photos',
         },
         {
@@ -72,7 +86,7 @@ const AddressDetailPage = () => {
             images: [
                 { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
             ],
-            likedBy: 'craig_love',
+            commentsCount: 1236,
             likesCount: 44686,
             caption: 'The game in Japan was amazing and I want to share some photos',
         },
@@ -84,7 +98,7 @@ const AddressDetailPage = () => {
             images: [
                 { id: '1', uri: require('../../../assets/images/natural1.jpg') }
             ],
-            likedBy: 'craig_love',
+            commentsCount: 1236,
             likesCount: 44686,
             caption: 'The game in Japan was amazing and I want to share some photos',
         },
@@ -97,7 +111,7 @@ const AddressDetailPage = () => {
                 { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
                 { id: '2', uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' }
             ],
-            likedBy: 'craig_love',
+            commentsCount: 1236,
             likesCount: 44686,
             caption: 'The game in Japan was amazing and I want to share some photos',
         },
@@ -126,30 +140,66 @@ const AddressDetailPage = () => {
             {
                 id: '1',
                 name: 'Homestay 1',
-                address: 'Hội An, Quảng Nam, Việt Nam',
+                address: 'Địa danh 1',
                 imageUri: 'https://picsum.photos/id/1011/200/300',
                 rating: 4.8,
+                numberOfReviews: 100,
             },
             {
                 id: '2',
                 name: 'Homestay 2',
-                address: 'Hội An, Quảng Nam, Việt Nam',
+                address: 'Địa danh 2',
                 imageUri: 'https://picsum.photos/id/1012/200/300',
-                rating: 4.8,
+                rating: 2.8,
+                numberOfReviews: 200,
             },
             {
                 id: '3',
                 name: 'Homestay 3',
-                address: 'Hội An, Quảng Nam, Việt Nam',
+                address: 'Địa danh 3',
                 imageUri: 'https://picsum.photos/id/1013/200/300',
-                rating: 4.8,
+                rating: 3.5,
+                numberOfReviews: 300,
             },
             {
                 id: '4',
                 name: 'Homestay 4',
-                address: 'Hội An, Quảng Nam, Việt Nam',
+                address: 'Địa danh 4',
                 imageUri: 'https://picsum.photos/id/1014/200/300',
                 rating: 4.8,
+                numberOfReviews: 400,
+            },
+        ],
+        travelPlaces: [
+            {
+                id: '1',
+                name: 'Travel Place 1',
+                imageUri: 'https://picsum.photos/id/1011/200/300',
+                numberOfLikes: 123,
+            },
+            {
+                id: '2',
+                name: 'Travel Place 2',
+                imageUri: 'https://picsum.photos/id/1012/200/300',
+                numberOfLikes: 234,
+            },
+            {
+                id: '3',
+                name: 'Travel Place 3',
+                imageUri: 'https://picsum.photos/id/1013/200/300',
+                numberOfLikes: 231,
+            },
+            {
+                id: '4',
+                name: 'Travel Place 4',
+                imageUri: 'https://picsum.photos/id/1014/200/300',
+                numberOfLikes: 234,
+            },
+            {
+                id: '5',
+                name: 'Travel Place 5',
+                imageUri: 'https://picsum.photos/id/1015/200/300',
+                numberOfLikes: 125,
             },
         ]
     };
@@ -159,7 +209,7 @@ const AddressDetailPage = () => {
             {/* Ảnh địa điểm với nút quay lại */}
             <View style={styles.imageContainer}>
                 <Image
-                    source={{ uri: 'https://picsum.photos/800/400' }}
+                    source={{ uri: placeDetails.images[0].uri }}
                     style={styles.image}
                     resizeMode="cover"
                 />
@@ -211,32 +261,78 @@ const AddressDetailPage = () => {
                     </Text>
                 </TouchableOpacity>
 
-                {/* Tiện ích */}
-                <Text style={styles.sectionTitle}>Ảnh</Text>
-                <ScrollView horizontal={true} style={styles.horizontalScrollView}>
-                    {placeDetails.images.map((image, index) => (
-                        <TouchableOpacity key={index} onPress={() => { setCurrentIndex(index); setIsVisible(true); }}>
-                            <Image source={image} style={styles.smallImage} />
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-                <View style={styles.amenitiesContainer}>
-                    <ImageViewing
-                        images={placeDetails.images}
-                        imageIndex={currentIndex}
-                        visible={isVisible}
-                        onRequestClose={() => setIsVisible(false)}
-                    />
-                </View>
-                <View>
-                    <Text style={styles.sectionTitle}>Homestay</Text>
-                    <ScrollView horizontal={true} style={styles.horizontalScrollView}>
-                        {placeDetails.homestayes.map((homestay, index) => (
-                            <SquareCard key={index} address={homestay.address} imageUri={homestay.imageUri} name={homestay.name} rating={homestay.rating} id={homestay.id} />
+                {/* Ảnh */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Ảnh</Text>
+                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                        {placeDetails.images.map((image, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                onPress={() => {
+                                    setCurrentIndex(index);
+                                    setIsVisible(true);
+                                }}
+                            >
+                                <Image
+                                    source={{ uri: image.uri }}
+                                    style={styles.galleryImage}
+                                />
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
                 </View>
 
+                {/* Image Viewer */}
+                <ImageViewing
+                    images={placeDetails.images}
+                    imageIndex={currentIndex}
+                    visible={isVisible}
+                    onRequestClose={() => setIsVisible(false)}
+                />
+
+                <View>
+                    <Text style={styles.sectionTitle}>Địa điểm du lịch</Text>
+                    <ScrollView horizontal={true} style={styles.horizontalScrollView}
+                        showsHorizontalScrollIndicator={false}
+                    >
+                        {placeDetails.travelPlaces.map((travelPlace) => (
+                            <SquareCard
+                                key={travelPlace.id}
+                                imageUri={travelPlace.imageUri}
+                                name={travelPlace.name}
+                                id={travelPlace.id}
+                                numberOfLikes={travelPlace.numberOfLikes}
+                                type='place'
+                                onPress={() => navigation.navigate('TravelPlaceDetailPage', {
+                                    id: travelPlace.id,
+                                })}
+                            />
+                        ))}
+                    </ScrollView>
+                </View>
+                <View>
+                    <Text style={styles.sectionTitle}>Homestay</Text>
+                    <ScrollView horizontal={true} style={styles.horizontalScrollView}
+                        showsHorizontalScrollIndicator={false}
+                    >
+                        {placeDetails.homestayes.map((homestay) => (
+                            <SquareCard
+                                key={homestay.id}
+                                address={homestay.address}
+                                imageUri={homestay.imageUri}
+                                name={homestay.name}
+                                rating={homestay.rating}
+                                id={homestay.id}
+                                numberOfReviews={homestay.numberOfReviews}
+                                type='homestay'
+                                onPress={() => navigation.navigate('HomeStayDetailPage', {
+                                    id: homestay.id,
+                                })}
+                            />
+                        ))}
+                    </ScrollView>
+                </View>
+                <Text style={styles.sectionTitle}>Bài viết</Text>
 
             </View>
             <View>
@@ -247,8 +343,8 @@ const AddressDetailPage = () => {
                         isVerified={post.isVerified}
                         location={post.location}
                         images={post.images}
-                        likedBy={post.likedBy}
                         likesCount={post.likesCount}
+                        commentsCount={post.commentsCount}
                         caption={post.caption}
                     />
                 ))}
@@ -395,6 +491,63 @@ const styles = StyleSheet.create({
         height: 100,
         marginRight: 8,
         borderRadius: 10,
+    },
+    fullScreenPreview: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'black',
+        zIndex: 1000,
+        height: width, // Sử dụng width để tạo hình vuông
+    },
+    fullScreenImageWrapper: {
+        width: width,
+        height: width,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullScreenImage: {
+        width: width,
+        height: width,
+        resizeMode: 'contain',
+    },
+    closeFullScreenButton: {
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        zIndex: 1001,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: 20,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imageCounter: {
+        position: 'absolute',
+        top: 16,
+        right: 70,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    imageCounterText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    section: {
+        marginBottom: 24,
+        position: 'relative',
+    },
+    galleryImage: {
+        width: 200,
+        height: 150,
+        borderRadius: 8,
+        marginRight: 8,
     },
 });
 

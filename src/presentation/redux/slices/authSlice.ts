@@ -8,7 +8,7 @@ interface User {
   email: string;
   username: string;
   name: string;
-  phoneNumber: string | '';
+  phoneNumber: string;
 
 }
 
@@ -55,12 +55,12 @@ export const login = createAsyncThunk(
 export const register = createAsyncThunk(
   "auth/register",
   async (
-    { email, password, name, username }: { email: string; password: string; name: string; username: string },
+    { email, password, name, username, phoneNumber }: { email: string; password: string; name: string; username: string; phoneNumber: string },
     thunkAPI
   ) => {
     try {
-      console.log("register thunk", email, password, name, username);
-      const response = await dependencies.registerUseCase.execute(email, password, name, username);
+      console.log("register thunk", email, password, name, username, phoneNumber);
+      const response = await dependencies.registerUseCase.execute(email, password, name, username, phoneNumber);
       return response as unknown as AuthResponse;
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.message || "Đăng ký thất bại");
@@ -85,7 +85,7 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-   
+
   },
   extraReducers: (builder) => {
     // Login cases

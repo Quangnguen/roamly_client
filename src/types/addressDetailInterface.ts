@@ -1,4 +1,7 @@
-interface AddressDetails {
+import Homestay from "./homestayInterface";
+import TravelPlace from "./travelPlaceInterface";
+
+export default interface AddressDetails {
     id: string; // ID của địa điểm
     name: string; // Tên của địa điểm
     numberFollowers: number; // Số lượng đánh giá
@@ -8,4 +11,6 @@ interface AddressDetails {
     isFollowing: boolean; // Trạng thái theo dõi
     rating: number; // Đánh giá của địa điểm
     reviewsCount: number;
+    homestayes: Homestay[];
+    travelPlaces: TravelPlace[];
 }

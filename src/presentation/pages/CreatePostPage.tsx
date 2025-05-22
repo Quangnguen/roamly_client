@@ -13,34 +13,39 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  Dimensions,
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { NavigationProp } from '@/src/utils/PropsNavigate';
 import { useNavigation } from 'expo-router';
-import { BACKGROUND } from '@/src/const/constants';
+import { BACKGROUND, PRIMARY } from '@/src/const/constants';
 import * as ImagePicker from 'expo-image-picker';
+
+const { width } = Dimensions.get('window');
 
 const CreatePostPage = () => {
   const [postText, setPostText] = useState('');
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [isEditingTopic, setIsEditingTopic] = useState(false); // State để kiểm soát chế độ chỉnh sửa
+  const [selectedImages, setSelectedImages] = useState<Array<{ uri: string }>>([]);
+  const [isEditingTopic, setIsEditingTopic] = useState(false);
   const [topic, setTopic] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
 
   const navigation: NavigationProp<'Home'> = useNavigation();
-  
+
   const handleCancelPress = () => {
     navigation.goBack();
-    setPostText(''); // Xóa nội dung bài viết khi quay lại
-    setSelectedImages([]); // Xóa ảnh đã chọn khi quay lại
-    setIsEditingTopic(false); // Đặt lại chế độ chỉnh sửa chủ đề
-    setTopic(''); // Xóa chủ đề khi quay lại
+    setPostText('');
+    setSelectedImages([]);
+    setIsEditingTopic(false);
+    setTopic('');
   };
 
-  const handlePickImages = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      alert('Bạn cần cấp quyền truy cập thư viện ảnh để sử dụng tính năng này.');
+    if (status !== 'granted') {
+      alert('Xin lỗi, chúng tôi cần quyền truy cập thư viện ảnh để thực hiện chức năng này!');
       return;
     }
 
@@ -48,160 +53,214 @@ const CreatePostPage = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 1,
+      aspect: [4, 3],
     });
 
     if (!result.canceled) {
-      const uris = result.assets.map((asset) => asset.uri);
-      setSelectedImages((prev) => [...prev, ...uris]);
+      const newImages = result.assets.map(image => ({ uri: image.uri }));
+      setSelectedImages(prevImages => [...prevImages, ...newImages]);
     }
   };
 
+  const removeImage = (index: number) => {
+    setSelectedImages(prevImages => prevImages.filter((_, i) => i !== index));
+    if (currentImageIndex >= index && currentImageIndex > 0) {
+      setCurrentImageIndex(prev => prev - 1);
+    }
+  };
+
+  const handleScroll = (event: any) => {
+    const contentOffset = event.nativeEvent.contentOffset;
+    const imageIndex = Math.round(contentOffset.x / width);
+    setCurrentImageIndex(imageIndex);
+  };
+
+  const toggleFullScreenPreview = () => {
+    setIsFullScreenPreview(!isFullScreenPreview);
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20} // Điều chỉnh khoảng cách khi bàn phím bật
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={styles.container}>
-          <StatusBar barStyle="light-content" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPress}>
-              <Text style={styles.cancelText}>Hủy</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Bài viết mới</Text>
-            <View style={styles.rightIcons}>
-              <TouchableOpacity style={styles.headerIcon}>
-                <Ionicons name="document-outline" size={24} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.headerIcon}>
-                <Ionicons name="happy-outline" size={24} />
-              </TouchableOpacity>
-            </View>
-          </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPress}>
+          <Text style={styles.cancelText}>Hủy</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Bài viết mới</Text>
+        <View style={styles.rightIcons}>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Ionicons name="document-outline" size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Ionicons name="happy-outline" size={24} />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-          {/* Content */}
-          <View style={styles.content}>
-            <View style={styles.userSection}>
-              <Image
-                source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
-                style={styles.avatar}
-              />
-              <View style={styles.userInfo}>
-                <Text style={styles.username}>_aaron_3006</Text>
+      {/* Scrollable Content */}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView
+          style={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.content}>
+              <View style={styles.userSection}>
+                <Image
+                  source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                  style={styles.avatar}
+                />
+                <View style={styles.userInfo}>
+                  <Text style={styles.username}>_aaron_3006</Text>
 
-                {/* Thêm chủ đề */}
-                {isEditingTopic ? (
-                  <TextInput
-                    style={styles.topicInput}
-                    value={topic}
-                    onChangeText={setTopic}
-                    onBlur={() => setIsEditingTopic(false)} // Khi mất focus, chuyển lại thành Text
-                    placeholder="Nhập chủ đề..."
-                    placeholderTextColor="#777"
-                  />
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => {
-                      Keyboard.dismiss(); // Ẩn bàn phím và xóa focus khỏi "Có gì mới?"
-                      setIsEditingTopic(true); // Bật chế độ chỉnh sửa chủ đề
-                    }}
-                  >
-                    <Text style={styles.addTopic}>
-                      {topic || 'Thêm chủ đề'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                  {/* Thêm chủ đề */}
+                  {isEditingTopic ? (
+                    <TextInput
+                      style={styles.topicInput}
+                      value={topic}
+                      onChangeText={setTopic}
+                      onBlur={() => setIsEditingTopic(false)}
+                      placeholder="Nhập chủ đề..."
+                      placeholderTextColor="#777"
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setIsEditingTopic(true);
+                      }}
+                    >
+                      <Text style={styles.addTopic}>
+                        {topic || 'Thêm chủ đề'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
 
-            {/* TextInput "Có gì mới?" */}
-            <TextInput
-              style={styles.postInput}
-              placeholder="Có gì mới?"
-              placeholderTextColor="#777777"
-              multiline
-              value={postText}
-              onChangeText={setPostText}
-              onFocus={() => setIsEditingTopic(false)} // Tắt chế độ chỉnh sửa chủ đề khi focus vào đây
-            />
+              {/* TextInput "Có gì mới?" */}
+              <TextInput
+                style={styles.postInput}
+                placeholder="Có gì mới?"
+                placeholderTextColor="#777777"
+                multiline
+                value={postText}
+                onChangeText={setPostText}
+                onFocus={() => setIsEditingTopic(false)}
+              />
 
-            <Text style={styles.addToThread}>Thêm vào thread</Text>
+              <Text style={styles.addToThread}>Thêm vào thread</Text>
 
-            {/* Media Icons */}
-            <View style={styles.mediaIcons}>
-              <TouchableOpacity style={styles.iconButton} onPress={handlePickImages}>
-                <Ionicons name="images-outline" size={24} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="camera-outline" size={24} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <MaterialIcons name="gif" size={24} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <FontAwesome name="microphone" size={22} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="list-outline" size={24} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="location-outline" size={24} />
-              </TouchableOpacity>
-            </View>
+              {/* Media Icons */}
+              <View style={styles.mediaIcons}>
+                <TouchableOpacity style={styles.iconButton} onPress={pickImage}>
+                  <Ionicons name="images-outline" size={24} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons name="camera-outline" size={24} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <MaterialIcons name="gif" size={24} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <FontAwesome name="microphone" size={22} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons name="list-outline" size={24} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons name="location-outline" size={24} />
+                </TouchableOpacity>
+              </View>
 
-            {/* Hiển thị danh sách ảnh đã chọn */}
-            {selectedImages.length > 0 && (
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                <ScrollView
-                  horizontal
-                  style={styles.selectedImagesContainer}
-                  contentContainerStyle={{ paddingHorizontal: 10, flexGrow: 1 }}
-                  showsHorizontalScrollIndicator={true}
-                  keyboardShouldPersistTaps="handled" // Đảm bảo cuộn không bị chặn
-                  scrollEventThrottle={16}
-                >
-                  {/* Thêm khoảng trống ở đầu */}
-                  <View style={{ width: 10 }} />
-                  {selectedImages.map((uri, index) => (
-                    <View key={index} style={styles.imageWrapper}>
-                      <Image source={{ uri }} style={styles.selectedImage} />
+              {/* Selected Images */}
+              {selectedImages.length > 0 && (
+                <View style={styles.selectedImagesSection}>
+                  {isFullScreenPreview ? (
+                    <View style={styles.fullScreenPreview}>
                       <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => {
-                          setSelectedImages((prev) => prev.filter((image, i) => i !== index));
-                        }}
+                        style={styles.closeFullScreenButton}
+                        onPress={toggleFullScreenPreview}
                       >
-                        <Ionicons name="close" size={20} color="#fff" />
+                        <Ionicons name="close" size={24} color="#fff" />
                       </TouchableOpacity>
+                      <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
+                      >
+                        {selectedImages.map((image, index) => (
+                          <View key={index} style={styles.fullScreenImageWrapper}>
+                            <Image source={{ uri: image.uri }} style={styles.fullScreenImage} />
+                          </View>
+                        ))}
+                      </ScrollView>
+                      {selectedImages.length > 1 && (
+                        <View style={styles.imageCounter}>
+                          <Text style={styles.imageCounterText}>
+                            {currentImageIndex + 1}/{selectedImages.length}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                  ))}
-                  {/* Thêm khoảng trống ở cuối */}
-                  <View style={{ width: 10 }} />
-                </ScrollView>
-              </TouchableWithoutFeedback>
-            )}
-          </View>
+                  ) : (
+                    <ScrollView
+                      horizontal
+                      style={styles.selectedImagesContainer}
+                      contentContainerStyle={{ paddingHorizontal: 10 }}
+                      showsHorizontalScrollIndicator={false}
+                    >
+                      {selectedImages.map((image, index) => (
+                        <View key={index} style={styles.imageWrapper}>
+                          <TouchableOpacity onPress={toggleFullScreenPreview}>
+                            <Image source={{ uri: image.uri }} style={styles.selectedImage} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.removeImageButton}
+                            onPress={() => {
+                              setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+                            }}
+                          >
+                            <Ionicons name="close" size={20} color="#fff" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Bất kỳ ai cũng có thể trả lời và trích dẫn
-            </Text>
-            <TouchableOpacity
-              style={[styles.postButton, postText.length > 0 ? styles.postButtonActive : {}]}
-              disabled={postText.length === 0}
-            >
-              <Text style={[styles.postButtonText, postText.length > 0 ? styles.postButtonTextActive : {}]}>
-                Đăng
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+              {/* Add some padding at the bottom for better scrolling */}
+              <View style={{ height: 100 }} />
+            </View>
+          </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Footer - Outside of KeyboardAvoidingView */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Bất kỳ ai cũng có thể trả lời và trích dẫn
+        </Text>
+        <TouchableOpacity
+          style={[styles.postButton, postText.length > 0 ? styles.postButtonActive : {}]}
+          disabled={postText.length === 0}
+        >
+          <Text style={[styles.postButtonText, postText.length > 0 ? styles.postButtonTextActive : {}]}>
+            Đăng
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -209,6 +268,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BACKGROUND,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -284,11 +349,10 @@ const styles = StyleSheet.create({
   selectedImagesContainer: {
     marginTop: 16,
     flexDirection: 'row',
-    paddingHorizontal: 10, // Thêm khoảng cách ngang
   },
   imageWrapper: {
     position: 'relative',
-    marginRight: 10, // Khoảng cách giữa các ảnh
+    marginRight: 10,
   },
   selectedImage: {
     width: 100,
@@ -306,6 +370,77 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  fullScreenPreview: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'black',
+    zIndex: 1000,
+  },
+  fullScreenImageWrapper: {
+    width: width,
+    height: width,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: width,
+    height: width,
+    resizeMode: 'contain',
+  },
+  closeFullScreenButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 1001,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageCounter: {
+    position: 'absolute',
+    top: 16,
+    right: 70,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  imageCounterText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  captionContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  captionInput: {
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    ...Platform.select({
+      ios: {
+        paddingTop: 0,
+      },
+    }),
+  },
+  addMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  addMoreText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: PRIMARY,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -313,6 +448,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 0.5,
     borderTopColor: '#333333',
+    backgroundColor: BACKGROUND,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   footerText: {
     color: '#777777',
@@ -342,6 +482,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
     paddingVertical: 2,
     marginTop: 4,
+  },
+  selectedImagesSection: {
+    marginTop: 16,
+    minHeight: 120,
   },
 });
 

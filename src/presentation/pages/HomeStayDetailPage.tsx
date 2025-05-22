@@ -34,7 +34,7 @@ const posts = [
         images: [
             { id: '1', uri: require('../../../assets/images/natural1.jpg') }
         ],
-        likedBy: 'craig_love',
+        commentsCount: 44686,
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -46,7 +46,7 @@ const posts = [
         images: [
             { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
         ],
-        likedBy: 'craig_love',
+        commentsCount: 44686,
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -59,7 +59,7 @@ const posts = [
             { id: '1', uri: require('../../../assets/images/natural1.jpg') },
             { id: '2', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
         ],
-        likedBy: 'craig_love',
+        commentsCount: 44686,
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -71,7 +71,7 @@ const posts = [
         images: [
             { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
         ],
-        likedBy: 'craig_love',
+        commentsCount: 44686,
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -83,7 +83,7 @@ const posts = [
         images: [
             { id: '1', uri: require('../../../assets/images/natural1.jpg') }
         ],
-        likedBy: 'craig_love',
+        commentsCount: 44686,
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -95,7 +95,7 @@ const posts = [
         images: [
             { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
         ],
-        likedBy: 'craig_love',
+        commentsCount: 44686,
         likesCount: 44686,
         caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -500,7 +500,7 @@ const HomeStayDetailPage: React.FC = () => {
                         isVerified={post.isVerified}
                         location={post.location}
                         images={post.images}
-                        likedBy={post.likedBy}
+                        commentsCount={post.commentsCount}
                         likesCount={post.likesCount}
                         caption={post.caption}
                     />

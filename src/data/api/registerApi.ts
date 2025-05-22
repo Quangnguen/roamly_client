@@ -5,6 +5,7 @@ interface User {
   email: string;
   username: string;
   name: string;
+  phoneNumber: string;
 }
 
 interface AuthResponse {
@@ -17,11 +18,12 @@ export const registerApi = async (
   email: string,
   password: string,
   name: string,
-  username: string
+  username: string,
+  phoneNumber: string
 ): Promise<AuthResponse> => {
-  
+
   try {
-    console.log('registerApi', email, password, name, username)
+    console.log('registerApi', email, password, name, username, phoneNumber)
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
@@ -32,10 +34,9 @@ export const registerApi = async (
         password,
         name,
         username,
+        phoneNumber
       }),
     });
-
-  
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -52,6 +53,7 @@ export const registerApi = async (
         email: data.user.email,
         username: data.user.username,
         name: data.user.name,
+        phoneNumber: data.user.phoneNumber,
       },
     };
   } catch (error) {

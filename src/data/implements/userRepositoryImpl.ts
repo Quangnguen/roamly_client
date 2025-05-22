@@ -6,7 +6,7 @@ export class UserRepositoryImpl implements UserRepository {
   async getInfo(): Promise<UserApiResponse> {
     try {
       const response = await getUserProfile();
-      
+
       return response;
     } catch (error) {
       console.error('Failed to fetch user info:', error);
@@ -25,7 +25,7 @@ export class UserRepositoryImpl implements UserRepository {
     console.log('Updating user profile with data:', userData);
     try {
       const response = await updateUserProfile(userData);
-     
+
       return response;
     } catch (error) {
       console.error('Failed to update user profile:', error);
@@ -39,7 +39,7 @@ export class UserRepositoryImpl implements UserRepository {
       const response = await changePassword({ oldPassword, newPassword });
       console.log('updatePassword response:', response);
 
-      if (response.status === 200) {
+      if (response.statusCode === 200) {
         console.log('Password updated successfully');
         return;
       } else {
@@ -92,7 +92,7 @@ export class UserRepositoryImpl implements UserRepository {
       console.log('getUserById response:', response);
       if (response.statusCode === 200) {
         return response;
-      } 
+      }
       throw new Error('Failed to fetch user by ID');
     } catch (error) {
       console.error('Failed to fetch user by ID:', error);

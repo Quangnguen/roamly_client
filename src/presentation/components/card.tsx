@@ -28,7 +28,7 @@ const Card: React.FC<CardProps> = ({
   description,
   rating,
   achievements,
-  cardHeight = 220,
+  cardHeight = 230,
   totalFollowers,
   totalRaters,
   onPress,
@@ -50,7 +50,7 @@ const Card: React.FC<CardProps> = ({
                     <Text>   {totalFollowers}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.followCard} onPress={() => {}}>
+                <TouchableOpacity style={styles.followCard} onPress={() => { }}>
                   <Text>Theo dõi</Text>
                   <Ionicons name="add" size={16} color="#000" />
                 </TouchableOpacity>
@@ -63,23 +63,23 @@ const Card: React.FC<CardProps> = ({
       case 'user':
         return (
           <TouchableOpacity activeOpacity={0.8} onPress={onPress} >
-          <View style={styles.userCard}>
-            <View style={styles.avatarContainer}>
-              <Image
-                source={
-                  avatar
-                    ? { uri: avatar }
-                    : require('../../../assets/images/avatar-test.jpg')
-                }
-                style={styles.avatar}
-              />
+            <View style={styles.userCard}>
+              <View style={styles.avatarContainer}>
+                <Image
+                  source={
+                    avatar
+                      ? { uri: avatar }
+                      : require('../../../assets/images/avatar-test.jpg')
+                  }
+                  style={styles.avatar}
+                />
+              </View>
+              <View style={styles.infoContainer}>
+                <Text style={styles.name} numberOfLines={2}>{title}</Text>
+                <Text style={styles.achievements} numberOfLines={2}>{achievements}</Text>
+                <Text style={styles.description} numberOfLines={2}>{description}</Text>
+              </View>
             </View>
-            <View style={styles.infoContainer}>
-              <Text style={styles.name} numberOfLines={2}>{title}</Text>
-              <Text style={styles.achievements} numberOfLines={2}>{achievements}</Text>
-              <Text style={styles.description} numberOfLines={2}>{description}</Text>
-            </View>
-          </View>
           </TouchableOpacity>
         );
 
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   cardContent: {
-    padding: 10,
+    padding: 20,
     flex: 1,
     justifyContent: 'center',
   },
@@ -153,10 +153,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 5,
+    marginTop: 10,
   },
   cardDescription: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 10
   },
   ratingContainer: {
     flexDirection: 'row',

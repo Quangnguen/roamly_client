@@ -24,6 +24,7 @@ import { logout } from '../redux/slices/authSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
 import MemoriesGrid from '../components/memory';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -91,17 +92,19 @@ const AccountPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { user: authUser } = useSelector((state: RootState) => state.auth);
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'followers' | 'following' | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const navigation = useNavigation<NavigationProp>();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
   }
   console.log('message: ', message);
+
   useEffect(() => {
-      dispatch(fetchUserProfile());
+    dispatch(fetchUserProfile());
   }, [dispatch]);
 
   useEffect(() => {
@@ -110,8 +113,8 @@ const AccountPage: React.FC = () => {
         type: status === 'success' ? 'success' : 'error',
         text1: message,
         onHide: () => {
-        dispatch(clearMessage());
-      },
+          dispatch(clearMessage());
+        },
       });
     }
   }, [message, status]);
@@ -131,7 +134,7 @@ const AccountPage: React.FC = () => {
     { icon: <Feather name="bookmark" size={20} color="black" />, label: "Saved" },
     { icon: <Feather name="users" size={20} color="black" />, label: "Close Friends" },
     { icon: <Feather name="user-plus" size={20} color="black" />, label: "Discover People" },
-    { icon: <Feather name="facebook" size={20} color="black" />, label: "Open Facebook" },
+    { icon: <Feather name="lock" size={20} color="black" />, label: "Change Password" },
     { icon: <Feather name="settings" size={20} color="black" />, label: "Settings" },
     { icon: <Feather name="help-circle" size={20} color="black" />, label: "Help" },
     { icon: <Feather name="shield" size={20} color="black" />, label: "Privacy Policy" },
@@ -189,7 +192,7 @@ const AccountPage: React.FC = () => {
 
 
     <SafeAreaView style={styles.container}>
-      
+
       <FlatList
         data={[]}
         keyExtractor={(item: any, index: any) => index.toString()}
@@ -242,7 +245,7 @@ const AccountPage: React.FC = () => {
                 <Text style={styles.editProfileText}>Edit Profile</Text>
               </TouchableOpacity>
 
-              
+
 
             </View>
 
@@ -265,8 +268,8 @@ const AccountPage: React.FC = () => {
         }
         renderItem={null} // Không có dữ liệu chính để hiển thị
         ListFooterComponent={activeTab === 'grid' ?
-           <PostList posts={posts} /> : 
-           <MemoriesGrid memories={fakeMemories} userId={authUser?.user?.id ?? ''} />} // Hiển thị danh sách bài đăng
+          <PostList posts={posts} /> :
+          <MemoriesGrid memories={fakeMemories} userId={authUser?.user?.id ?? ''} />} // Hiển thị danh sách bài đăng
       />
       {isOpen && (
         <>
@@ -312,6 +315,9 @@ const AccountPage: React.FC = () => {
                   }}
                   onPress={() => {
                     setIsOpen(false);
+                    if (item.label === 'Change Password') {
+                      setShowChangePassword(true);
+                    }
                     if (item.label === 'Log Out') {
                       console.log('Log Out');
                       dispatch(logout());
@@ -328,6 +334,12 @@ const AccountPage: React.FC = () => {
           </View>
         </>
       )}
+
+      {/* Modal đổi mật khẩu */}
+      <ChangePasswordModal
+        isVisible={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
 
       {/* Modal hiển thị danh sách followers/following */}
       <Modal

@@ -280,11 +280,11 @@ const ChatDetailPage: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={[]}>
             <KeyboardAvoidingView
                 style={styles.keyboardAvoidView}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 45 : 20}
             >
                 <TouchableWithoutFeedback onPress={handlePressOutside}>
                     <View style={styles.mainContent}>
@@ -412,7 +412,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingBottom: 12,
+        paddingTop: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
     },
@@ -464,8 +465,8 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#ccc',
         backgroundColor: BACKGROUND,
-        paddingBottom: Platform.OS === 'ios' ? 25 : 12,
-        marginBottom: Platform.OS === 'android' ? 5 : 0,
+        paddingBottom: Platform.OS === 'ios' ? 12 : 12,
+        marginBottom: Platform.OS === 'android' ? 0 : 0,
     },
     iconButton: {
         padding: 8,
