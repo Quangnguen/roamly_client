@@ -39,8 +39,14 @@ export const registerApi = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.log(errorData)
+      const text = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(text);
+      } catch {
+        errorData = { message: text };
+      }
+      console.log(errorData);
       throw new Error(errorData.message || 'Đăng ký thất bại');
     }
 

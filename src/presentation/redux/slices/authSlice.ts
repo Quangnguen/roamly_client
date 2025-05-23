@@ -42,7 +42,6 @@ export const login = createAsyncThunk(
   "auth/login",
   async ({ email, password }: { email: string; password: string }, thunkAPI) => {
     try {
-      console.log("login redux", 1)
       const response = await dependencies.loginUseCase.execute(email, password);
       return response as unknown as AuthResponse;
     } catch (err: any) {

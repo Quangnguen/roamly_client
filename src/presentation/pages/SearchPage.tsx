@@ -279,8 +279,9 @@ const SearchPage: React.FC = () => {
                   type="user"
                   avatar={user.profilePic || undefined}
                   title={user.name || user.username || 'No name'}
-                  description={user.name || ''}
-                  achievements={user.name || undefined}
+                  bio={user.bio || 'No bio'}
+                  description={user.bio || 'No description'}
+                  followers={Array.isArray(user.followers) ? user.followers.length : (user.followers || 0)}
                   onPress={() => navigation.navigate('InfoAccPage', {
                     id: user.id ?? '',
                     // Có thể truyền thêm các trường khác nếu cần

@@ -16,6 +16,8 @@ interface CardProps {
   achievements?: string;
   cardHeight?: number;
   totalFollowers?: number;
+  followers?: number;
+  bio?: string;
   totalRaters?: number;
   onPress?: () => void;
 }
@@ -31,6 +33,8 @@ const Card: React.FC<CardProps> = ({
   cardHeight = 230,
   totalFollowers,
   totalRaters,
+  bio,
+  followers,
   onPress,
 }) => {
   const renderContent = () => {
@@ -76,9 +80,13 @@ const Card: React.FC<CardProps> = ({
               </View>
               <View style={styles.infoContainer}>
                 <Text style={styles.name} numberOfLines={2}>{title}</Text>
-                <Text style={styles.achievements} numberOfLines={2}>{achievements}</Text>
-                <Text style={styles.description} numberOfLines={2}>{description}</Text>
+                <Text style={styles.achievements} numberOfLines={2}>{description}</Text>
+                <Text style={styles.description} numberOfLines={2}>{followers} Followers</Text>
               </View>
+              <TouchableOpacity style={styles.followCard} onPress={() => { /* TODO: handle follow */ }}>
+                <Text style={{ marginRight: 4 }}>Theo dõi</Text>
+                <Ionicons name="add" size={16} color="#000" />
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         );
@@ -207,4 +215,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Card; 
+export default Card;
