@@ -45,16 +45,7 @@ export const changePassword = async (passwordData: UserChangePasswordInterface) 
   });
 };
 
-// Theo dõi người dùng khác
-export const followUser = async (targetUserId: string) => {
-  return await authorizedRequest(`${API_BASE_URL}/users/follow`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ targetUserId }),
-  });
-};
+
 
 // Bỏ theo dõi người dùng khác
 export const unfollowUser = async (targetUserId: string) => {

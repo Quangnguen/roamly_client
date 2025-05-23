@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Dimensions, Touchable, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../redux/store';
+import { followUser } from '../redux/slices/followSlice';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.9;
@@ -16,11 +19,14 @@ interface CardProps {
   achievements?: string;
   cardHeight?: number;
   totalFollowers?: number;
+  userId?: string;
   followers?: number;
   bio?: string;
   totalRaters?: number;
   onPress?: () => void;
 }
+
+
 
 const Card: React.FC<CardProps> = ({
   type,
@@ -29,6 +35,7 @@ const Card: React.FC<CardProps> = ({
   title,
   description,
   rating,
+  userId,
   achievements,
   cardHeight = 230,
   totalFollowers,
@@ -37,6 +44,11 @@ const Card: React.FC<CardProps> = ({
   followers,
   onPress,
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const handleFollow = (followingId: string) => {
+    console.log('Follow');
+    dispatch(followUser(followingId));
+  }
   const renderContent = () => {
     switch (type) {
       case 'address':
@@ -83,7 +95,7 @@ const Card: React.FC<CardProps> = ({
                 <Text style={styles.achievements} numberOfLines={2}>{description}</Text>
                 <Text style={styles.description} numberOfLines={2}>{followers} Followers</Text>
               </View>
-              <TouchableOpacity style={styles.followCard} onPress={() => { /* TODO: handle follow */ }}>
+              <TouchableOpacity style={styles.followCard} onPress={() => userId && handleFollow(userId)}>
                 <Text style={{ marginRight: 4 }}>Theo dõi</Text>
                 <Ionicons name="add" size={16} color="#000" />
               </TouchableOpacity>

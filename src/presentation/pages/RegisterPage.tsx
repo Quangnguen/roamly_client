@@ -34,10 +34,6 @@ const RegisterScreen = ({ navigation }: Props) => {
 
     setLoading(true);
     try {
-      console.log("-----------------------")
-      console.log("type of phoneNumber", typeof phoneNumber)
-      console.log('register', email, password, name, username, phoneNumber);
-      console.log("-----------------------")
       await dispatch(register({ email, password, name, username, phoneNumber })).unwrap();
       Alert.alert('Đăng ký thành công!', '', [
         {
@@ -64,46 +60,74 @@ const RegisterScreen = ({ navigation }: Props) => {
         <View style={styles.inputContainer}>
           <FloatingLabelInput
             label="Họ và tên"
+            hint="Nhập họ và tên đầy đủ"
             value={name}
             onChangeText={setName}
             containerStyles={styles.input}
+            staticLabel={true}
             customLabelStyles={{
               colorFocused: '#2196F3',
               fontSizeFocused: 12,
+              colorBlurred: '#888',
+              fontSizeBlurred: 12,
+              topFocused: -6,
+              topBlurred: -6,
+              leftFocused: 15,
+              leftBlurred: 15,
             }}
             labelStyles={{
               backgroundColor: '#f5f5f5',
               paddingHorizontal: 5,
             }}
             inputStyles={styles.inputText}
+            hintTextColor="#ccc"
             editable={!loading}
+            showCountdown={false}
           />
 
           <FloatingLabelInput
             label="Tên đăng nhập"
+            hint="Chọn tên đăng nhập"
             value={username}
             onChangeText={setUsername}
             containerStyles={styles.input}
+            staticLabel={true}
             customLabelStyles={{
               colorFocused: '#2196F3',
               fontSizeFocused: 12,
+              colorBlurred: '#888',
+              fontSizeBlurred: 12,
+              topFocused: -6,
+              topBlurred: -6,
+              leftFocused: 15,
+              leftBlurred: 15,
             }}
             labelStyles={{
               backgroundColor: '#f5f5f5',
               paddingHorizontal: 5,
             }}
             inputStyles={styles.inputText}
+            hintTextColor="#ccc"
             editable={!loading}
+            showCountdown={false}
           />
 
           <FloatingLabelInput
             label="Email"
+            hint="Nhập địa chỉ email"
             value={email}
             onChangeText={setEmail}
             containerStyles={styles.input}
+            staticLabel={true}
             customLabelStyles={{
               colorFocused: '#2196F3',
               fontSizeFocused: 12,
+              colorBlurred: '#888',
+              fontSizeBlurred: 12,
+              topFocused: -6,
+              topBlurred: -6,
+              leftFocused: 15,
+              leftBlurred: 15,
             }}
             labelStyles={{
               backgroundColor: '#f5f5f5',
@@ -111,17 +135,27 @@ const RegisterScreen = ({ navigation }: Props) => {
             }}
             inputStyles={styles.inputText}
             keyboardType="email-address"
+            hintTextColor="#ccc"
             editable={!loading}
+            showCountdown={false}
           />
 
           <FloatingLabelInput
             label="Số điện thoại"
+            hint="Nhập số điện thoại"
             value={phoneNumber}
             onChangeText={setPhoneNumber}
             containerStyles={styles.input}
+            staticLabel={true}
             customLabelStyles={{
               colorFocused: '#2196F3',
               fontSizeFocused: 12,
+              colorBlurred: '#888',
+              fontSizeBlurred: 12,
+              topFocused: -6,
+              topBlurred: -6,
+              leftFocused: 15,
+              leftBlurred: 15,
             }}
             labelStyles={{
               backgroundColor: '#f5f5f5',
@@ -129,17 +163,27 @@ const RegisterScreen = ({ navigation }: Props) => {
             }}
             inputStyles={styles.inputText}
             keyboardType="phone-pad"
+            hintTextColor="#ccc"
             editable={!loading}
+            showCountdown={false}
           />
 
           <FloatingLabelInput
             label="Mật khẩu"
+            hint="Nhập mật khẩu (tối thiểu 6 ký tự)"
             value={password}
             onChangeText={setPassword}
             containerStyles={styles.input}
+            staticLabel={true}
             customLabelStyles={{
               colorFocused: '#2196F3',
               fontSizeFocused: 12,
+              colorBlurred: '#888',
+              fontSizeBlurred: 12,
+              topFocused: -6,
+              topBlurred: -6,
+              leftFocused: 15,
+              leftBlurred: 15,
             }}
             labelStyles={{
               backgroundColor: '#f5f5f5',
@@ -147,7 +191,9 @@ const RegisterScreen = ({ navigation }: Props) => {
             }}
             inputStyles={styles.inputText}
             isPassword
+            hintTextColor="#ccc"
             editable={!loading}
+            showCountdown={false}
           />
         </View>
 

@@ -67,7 +67,7 @@ const posts = [
     images: [
       { id: '1', uri: 'https://vietluxtour.com/Upload/images/2023/KhamPhaNuocNgoai/%C4%90%E1%BB%8Ba%20%C4%90i%E1%BB%83m%20Du%20L%E1%BB%8Bch%20H%C3%A0n%20Qu%E1%BB%91c/dia-diem-du-lich-han-quoc-main-min.jpg' }
     ],
-    likedBy: 'craig_love',
+    commentsCount: 44686,
     likesCount: 44686,
     caption: 'The game in Japan was amazing and I want to share some photos',
   },
@@ -79,7 +79,7 @@ const posts = [
     images: [
       { id: '1', uri: 'https://images.vietnamtourism.gov.vn/vn/images/2020/Thang_9/_DSC3768.JPG' }
     ],
-    likedBy: 'craig_love',
+    commentsCount: 44686,
     likesCount: 44686,
     caption: 'The game in Japan was amazing and I want to share some photos',
   },
@@ -225,7 +225,7 @@ const SearchPage: React.FC = () => {
                   isVerified={post.isVerified}
                   location={post.location}
                   images={post.images}
-                  likedBy={post.likedBy}
+                  commentsCount={post.commentsCount}
                   likesCount={post.likesCount}
                   caption={post.caption}
                 />
@@ -279,6 +279,7 @@ const SearchPage: React.FC = () => {
                   type="user"
                   avatar={user.profilePic || undefined}
                   title={user.name || user.username || 'No name'}
+                  userId={user.id}
                   bio={user.bio || 'No bio'}
                   description={user.bio || 'No description'}
                   followers={Array.isArray(user.followers) ? user.followers.length : (user.followers || 0)}
