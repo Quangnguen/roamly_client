@@ -25,6 +25,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { getUsers } from '../redux/slices/userSlice';
+import { getFollowing } from '../redux/slices/followSlice';
 
 type Tab = {
   name: string;
@@ -155,11 +156,16 @@ const SearchPage: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
   const { users, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
-
+  const { following, loading: followingLoading, error: followingError, message: followingMessage, status: followingStatus, statusCode: followingStatusCode } = useSelector((state: RootState) => state.follow);
 
   useEffect(() => {
-    dispatch(getUsers());
-  }, [dispatch]);
+    if (activeTab === 'User') {
+      dispatch(getUsers());
+      dispatch(getFollowing());
+      console.log('following');
+      console.log(following);
+    }
+  }, [dispatch, activeTab]);
 
   const handleClearSearch = () => {
     setSearchText('');
@@ -274,6 +280,7 @@ const SearchPage: React.FC = () => {
           {activeTab === 'User' && (
             <ScrollView contentContainerStyle={styles.addressContainer}>
               {(Array.isArray(users) ? users : []).map((user, index) => (
+
                 <Card
                   key={user.id}
                   type="user"

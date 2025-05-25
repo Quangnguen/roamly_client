@@ -28,7 +28,7 @@ const HomePage = () => {
         { id: '2', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
         { id: '3', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
       ],
-      likedBy: 'craig_love',
+      commentsCount: 44686,
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -40,7 +40,7 @@ const HomePage = () => {
       images: [
         { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
       ],
-      likedBy: 'craig_love',
+      commentsCount: 44686,
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -53,7 +53,7 @@ const HomePage = () => {
         { id: '1', uri: require('../../../assets/images/natural1.jpg') },
         { id: '2', uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' }
       ],
-      likedBy: 'craig_love',
+      commentsCount: 44686,
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -65,7 +65,7 @@ const HomePage = () => {
       images: [
         { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
       ],
-      likedBy: 'craig_love',
+      commentsCount: 44686,
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -77,7 +77,7 @@ const HomePage = () => {
       images: [
         { id: '1', uri: require('../../../assets/images/natural1.jpg') }
       ],
-      likedBy: 'craig_love',
+      commentsCount: 44686,
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -90,7 +90,7 @@ const HomePage = () => {
         { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
         { id: '2', uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' }
       ],
-      likedBy: 'craig_love',
+      commentsCount: 44686,
       likesCount: 44686,
       caption: 'The game in Japan was amazing and I want to share some photos',
     },
@@ -113,7 +113,7 @@ const HomePage = () => {
             isVerified={post.isVerified}
             location={post.location}
             images={post.images}
-            likedBy={post.likedBy}
+            commentsCount={post.commentsCount}
             likesCount={post.likesCount}
             caption={post.caption}
           />

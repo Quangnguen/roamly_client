@@ -32,9 +32,9 @@ export class followRepositoryImpl implements followRepository {
         }
     }
 
-    async getFollowing(userId: string): Promise<any> {
+    async getFollowing(): Promise<any> {
         try {
-            const response = await getFollowingApi(userId);
+            const response = await getFollowingApi();
             return response;
         } catch (error) {
             console.error('Failed to get following:', error);

@@ -14,7 +14,7 @@ export class followUsecase {
         return await this.followRepository.getFollowers(userId);
     }
 
-    async getFollowing(userId: string): Promise<any> {
-        return await this.followRepository.getFollowing(userId);
+    async getFollowing(): Promise<any> {
+        return await this.followRepository.getFollowing();
     }
 }

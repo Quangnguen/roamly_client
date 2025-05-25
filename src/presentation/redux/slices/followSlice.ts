@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { dependencies } from "../../../dependencies/dependencies";
 import { User } from "../../../domain/models/User";
+import { FollowingResponseInterface } from "@/src/types/FollowingResponseInterface";
 
 interface FollowState {
     loading: boolean;
@@ -8,8 +9,8 @@ interface FollowState {
     message: string | null;
     status: string | null;
     statusCode?: number | null;
-    followers: User[] | null;
-    following: User[] | null;
+    followers: FollowingResponseInterface[] | null;
+    following: FollowingResponseInterface[] | null;
 }
 
 const initialState: FollowState = {
@@ -64,9 +65,9 @@ export const getFollowers = createAsyncThunk(
 // Get following thunk
 export const getFollowing = createAsyncThunk(
     'follow/getFollowing',
-    async (userId: string, thunkAPI) => {
+    async (_: void, thunkAPI) => {
         try {
-            const response = await dependencies.followUsecase.getFollowing(userId);
+            const response = await dependencies.followUsecase.getFollowing();
             return response;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message || 'Không thể lấy danh sách đang theo dõi');
