@@ -68,6 +68,7 @@ export const getFollowing = createAsyncThunk(
     async (_: void, thunkAPI) => {
         try {
             const response = await dependencies.followUsecase.getFollowing();
+            console.log('response', response);
             return response;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message || 'Không thể lấy danh sách đang theo dõi');
@@ -146,7 +147,7 @@ export const followSlice = createSlice({
             })
             .addCase(getFollowing.fulfilled, (state, action) => {
                 state.loading = false;
-                state.following = action.payload.data;
+                state.following = action.payload;
                 state.message = action.payload.message;
                 state.status = action.payload.status;
                 state.statusCode = action.payload.statusCode;

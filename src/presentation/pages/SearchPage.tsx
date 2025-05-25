@@ -25,7 +25,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { getUsers } from '../redux/slices/userSlice';
-import { getFollowing } from '../redux/slices/followSlice';
+import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
 
 type Tab = {
   name: string;
@@ -279,23 +279,43 @@ const SearchPage: React.FC = () => {
 
           {activeTab === 'User' && (
             <ScrollView contentContainerStyle={styles.addressContainer}>
-              {(Array.isArray(users) ? users : []).map((user, index) => (
+              {(Array.isArray(users) ? users : []).map((user, index) => {
+                const isFollowing = following?.some(followingUser => followingUser.id === user.id);
 
-                <Card
-                  key={user.id}
-                  type="user"
-                  avatar={user.profilePic || undefined}
-                  title={user.name || user.username || 'No name'}
-                  userId={user.id}
-                  bio={user.bio || 'No bio'}
-                  description={user.bio || 'No description'}
-                  followers={Array.isArray(user.followers) ? user.followers.length : (user.followers || 0)}
-                  onPress={() => navigation.navigate('InfoAccPage', {
-                    id: user.id ?? '',
-                    // Có thể truyền thêm các trường khác nếu cần
-                  })}
-                />
-              ))}
+                const handleFollowPress = async () => {
+                  try {
+                    if (!user.id) return;
+
+                    if (isFollowing) {
+                      await dispatch(unfollowUser(user.id));
+                    } else {
+                      await dispatch(followUser(user.id));
+                    }
+                    // Refresh lại danh sách following sau khi thay đổi
+                    dispatch(getFollowing());
+                  } catch (error) {
+                    console.error('Error following/unfollowing user:', error);
+                  }
+                };
+
+                return (
+                  <Card
+                    key={user.id}
+                    type="user"
+                    avatar={user.profilePic || undefined}
+                    title={user.name || user.username || 'No name'}
+                    userId={user.id}
+                    bio={user.bio || 'No bio'}
+                    description={user.bio || 'No description'}
+                    followers={Array.isArray(user.followers) ? user.followers.length : (user.followers || 0)}
+                    isFollowing={isFollowing}
+                    onFollowPress={handleFollowPress}
+                    onPress={() => navigation.navigate('InfoAccPage', {
+                      id: user.id ?? '',
+                    })}
+                  />
+                );
+              })}
             </ScrollView>
           )}
         </SafeAreaView>

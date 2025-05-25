@@ -3,7 +3,6 @@ import { View, Text, Image, StyleSheet, Dimensions, Touchable, TouchableOpacity 
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../redux/store';
-import { followUser } from '../redux/slices/followSlice';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.9;
@@ -22,11 +21,11 @@ interface CardProps {
   userId?: string;
   followers?: number;
   bio?: string;
+  isFollowing?: boolean;
   totalRaters?: number;
   onPress?: () => void;
+  onFollowPress?: () => void;
 }
-
-
 
 const Card: React.FC<CardProps> = ({
   type,
@@ -42,13 +41,10 @@ const Card: React.FC<CardProps> = ({
   totalRaters,
   bio,
   followers,
+  isFollowing,
   onPress,
+  onFollowPress,
 }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const handleFollow = (followingId: string) => {
-    console.log('Follow');
-    dispatch(followUser(followingId));
-  }
   const renderContent = () => {
     switch (type) {
       case 'address':
@@ -66,9 +62,26 @@ const Card: React.FC<CardProps> = ({
                     <Text>   {totalFollowers}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.followCard} onPress={() => { }}>
-                  <Text>Theo dõi</Text>
-                  <Ionicons name="add" size={16} color="#000" />
+                <TouchableOpacity
+                  style={[
+                    styles.followCard,
+                    isFollowing && styles.followingCard
+                  ]}
+                  onPress={onFollowPress}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={isFollowing ? styles.followingText : styles.followText}>
+                      {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                    </Text>
+                    {!isFollowing && (
+                      <Ionicons
+                        name="add"
+                        size={16}
+                        color="#fff"
+                        style={{ marginLeft: 2 }}
+                      />
+                    )}
+                  </View>
                 </TouchableOpacity>
               </View>
               <Text style={styles.cardDescription} numberOfLines={2}>{description}</Text>
@@ -95,9 +108,36 @@ const Card: React.FC<CardProps> = ({
                 <Text style={styles.achievements} numberOfLines={2}>{description}</Text>
                 <Text style={styles.description} numberOfLines={2}>{followers} Followers</Text>
               </View>
-              <TouchableOpacity style={styles.followCard} onPress={() => userId && handleFollow(userId)}>
-                <Text style={{ marginRight: 4 }}>Theo dõi</Text>
-                <Ionicons name="add" size={16} color="#000" />
+              <TouchableOpacity
+                style={[
+                  styles.followCard,
+                  isFollowing && styles.followingCard
+                ]}
+                onPress={onFollowPress}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={isFollowing ? styles.followingText : styles.followText}>
+                    {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                  </Text>
+                  {!isFollowing && (
+                    <Ionicons
+                      name="add"
+                      size={16}
+                      color="#fff"
+                      style={{ marginLeft: 2 }}
+                    />
+                  )}
+                  {
+                    isFollowing && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color="#000"
+                        style={{ marginLeft: 2 }}
+                      />
+                    )
+                  }
+                </View>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -139,10 +179,30 @@ const styles = StyleSheet.create({
   followCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#000',
+    justifyContent: 'center',
     borderWidth: 1,
-    padding: 5,
-    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    backgroundColor: '#0095F6',
+    borderColor: '#0095F6',
+    minWidth: 90,
+  },
+  followingCard: {
+    backgroundColor: '#EFEFEF',
+    borderColor: '#DBDBDB',
+  },
+  followText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+    marginRight: 4,
+  },
+  followingText: {
+    color: '#262626',
+    fontWeight: '600',
+    fontSize: 14,
+    marginRight: 4,
   },
   card: {
     width: cardWidth,
@@ -187,25 +247,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: cardWidth,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgb(215, 243, 215)',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 15,
+    marginVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 5,
-    elevation: 3,
-    marginVertical: 10,
-    alignSelf: 'center',
+    elevation: 5,
   },
   avatarContainer: {
-    marginRight: 10,
+    marginRight: 15,
   },
   avatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
-    resizeMode: 'cover',
   },
   infoContainer: {
     flex: 1,
@@ -213,7 +271,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 4,
   },
   achievements: {
@@ -223,7 +280,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 12,
-    color: '#888',
+    color: '#999',
   },
 });
 
