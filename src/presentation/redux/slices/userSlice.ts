@@ -162,7 +162,7 @@ const userSlice = createSlice({
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.data ?? null; // Cập nhật user từ action.payload.data
+        state.profile = action.payload.data ?? null; // Cập nhật user từ action.payload.data
         state.message = action.payload.message; // Cập nhật message từ action.payload.message 
         state.status = action.payload.status; // Cập nhật status từ action.payload.status
         state.statusCode = action.payload.statusCode; // Cập nhật statusCode từ action.payload.statusCode

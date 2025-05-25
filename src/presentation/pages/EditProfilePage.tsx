@@ -9,12 +9,14 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  Switch // Thêm import Switch
+  Switch,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserProfile, updateUserProfile } from '../redux/slices/userSlice';
 import { RootState, AppDispatch } from '../redux/store';
+import { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } from 'expo-image-picker';
 
 const EditProfilePage: React.FC = () => {
 
@@ -22,38 +24,48 @@ const EditProfilePage: React.FC = () => {
   const { profile, loading, error } = useSelector((state: RootState) => state.user);
   const { user: authUser } = useSelector((state: RootState) => state.auth);
   const [isAccountLocked, setIsAccountLocked] = useState<boolean>(!!profile?.private);
+  const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    (async () => {
+      const { status } = await requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+      }
+    })();
+  }, []);
 
   const [profileData, setProfileData] = useState({
-    
+
     name: profile?.name || '',
     username: profile?.username || '',
     bio: profile?.bio || '',
     email: profile?.email || '',
     private: profile?.private || false,
+    phoneNumber: profile?.phoneNumber || '',
+    profilePic: profile?.profilePic || 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-hiZZ98WEvmBOkk3oAqffc3ReiwtEIO.png',
   })
 
   const handleDone = () => {
-
-    console.log('profileData', profileData);
     dispatch(updateUserProfile({
       name: profileData.name,
       email: profileData.email,
       username: profileData.username,
       bio: profileData.bio,
       private: isAccountLocked,
+      profilePic: profileData.profilePic,
     }));
     navigation.goBack();
   };
 
   useEffect(() => {
-      dispatch(fetchUserProfile());
+    dispatch(fetchUserProfile());
   }, [dispatch]);
-  
+
   useEffect(() => {
     setIsAccountLocked(!!profile?.private);
   }, [profile?.private]);
-  
+
   const navigation = useNavigation();
   const handleChange = (field: any, value: any) => {
     setProfileData({
@@ -67,10 +79,43 @@ const EditProfilePage: React.FC = () => {
 
   }
 
+  const changeProfilePic = async () => {
+    try {
+      setIsLoading(true);
+      const result = await launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+        base64: true,
+      });
+
+      console.log('Image picker result canceled:', result.canceled);
+
+      if (!result.canceled) {
+        console.log('Selected image URI:', result.assets[0].uri);
+        const newProfilePic = result.assets[0].uri;
+
+        setProfileData(prevData => {
+          console.log('Updating profile pic to:', newProfilePic);
+          return {
+            ...prevData,
+            profilePic: newProfilePic
+          };
+        });
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      alert('Có lỗi khi chọn ảnh. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
@@ -81,30 +126,38 @@ const EditProfilePage: React.FC = () => {
           <Text style={styles.doneButton}>Done</Text>
         </TouchableOpacity>
       </View>
-      
+
       <ScrollView style={styles.scrollView}>
         {/* Profile Photo */}
         <View style={styles.profilePhotoContainer}>
-          <Image 
-            source={{ uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-hiZZ98WEvmBOkk3oAqffc3ReiwtEIO.png' }} 
-            style={styles.profilePhoto} 
+          <Image
+            source={{
+              uri: profileData.profilePic,
+              cache: 'reload'
+            }}
+            style={styles.profilePhoto}
+            resizeMode="cover"
           />
-          <TouchableOpacity>
-            <Text style={styles.changePhotoText}>Change Profile Photo</Text>
-          </TouchableOpacity>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#007AFF" style={styles.loader} />
+          ) : (
+            <TouchableOpacity onPress={changeProfilePic}>
+              <Text style={styles.changePhotoText}>Change Profile Photo</Text>
+            </TouchableOpacity>
+          )}
         </View>
-        
+
         {/* Form Fields */}
         <View style={styles.formContainer}>
-            <View style={styles.formRow}>
+          <View style={styles.formRow}>
             <Text style={styles.label}>Name</Text>
             <TextInput
               style={styles.input}
               value={profileData.name}
               onChangeText={(text: string) => handleChange('name', text)}
             />
-            </View>
-          
+          </View>
+
           <View style={styles.formRow}>
             <Text style={styles.label}>Username</Text>
             <TextInput
@@ -113,7 +166,7 @@ const EditProfilePage: React.FC = () => {
               onChangeText={(text: string) => handleChange('username', text)}
             />
           </View>
-          
+
           {/* <View style={styles.formRow}>
             <Text style={styles.label}>Website</Text>
             <TextInput
@@ -124,28 +177,28 @@ const EditProfilePage: React.FC = () => {
               onChangeText={(text) => handleChange('website', text)}
             />
           </View> */}
-          
+
           <View style={styles.formRow}>
             <Text style={styles.label}>Bio</Text>
             <TextInput
               style={styles.input}
-              value={profile?.bio}
+              value={profileData.bio}
               multiline={true}
               onChangeText={(text: string) => handleChange('bio', text)}
             />
           </View>
         </View>
-        
+
         {/* Professional Account Button */}
         <TouchableOpacity style={styles.professionalButton}>
           <Text style={styles.professionalButtonText}>Switch to Professional Account</Text>
         </TouchableOpacity>
-        
+
         {/* Private Information Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>Private Information</Text>
         </View>
-        
+
         <View style={styles.formContainer}>
           <View style={styles.formRow}>
             <Text style={styles.label}>Email</Text>
@@ -155,16 +208,16 @@ const EditProfilePage: React.FC = () => {
               onChangeText={(text: string) => handleChange('email', text)}
             />
           </View>
-          
+
           <View style={styles.formRow}>
             <Text style={styles.label}>Phone</Text>
             <TextInput
               style={styles.input}
-              value="000012325346"
-              onChangeText={(text: string) => handleChange('phone', text)}
+              value={profileData.phoneNumber}
+              onChangeText={(text: string) => handleChange('phoneNumber', text)}
             />
           </View>
-          
+
           <View style={styles.formRow}>
             <Text style={styles.label}>Gender</Text>
             <TextInput
@@ -173,13 +226,13 @@ const EditProfilePage: React.FC = () => {
               onChangeText={(text: string) => handleChange('gender', text)}
             />
           </View>
-        <View style={styles.formRow}>
-          <Text style={styles.label}>Tài khoản cá nhân</Text>
-          <Switch
-            value={isAccountLocked}
-            onValueChange={setIsAccountLocked}
-          />
-        </View>
+          <View style={styles.formRow}>
+            <Text style={styles.label}>Tài khoản cá nhân</Text>
+            <Switch
+              value={isAccountLocked}
+              onValueChange={setIsAccountLocked}
+            />
+          </View>
         </View>
 
         {/* Khóa tài khoản */}
@@ -220,12 +273,14 @@ const styles = StyleSheet.create({
   },
   profilePhotoContainer: {
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 20,
+    gap: 10,
   },
   profilePhoto: {
     width: 90,
     height: 90,
     borderRadius: 45,
+    backgroundColor: '#f0f0f0',
   },
   changePhotoText: {
     color: '#007AFF',
@@ -284,6 +339,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     fontWeight: '500',
+  },
+  loader: {
+    marginTop: 10,
   },
 });
 

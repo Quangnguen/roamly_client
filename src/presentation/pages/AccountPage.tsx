@@ -222,11 +222,11 @@ const AccountPage: React.FC = () => {
                     <Text style={styles.statLabel}>Posts</Text>
                   </View>
                   <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followers')}>
-                    <Text style={styles.statNumber}>{profile?.followers?.length ?? 0}</Text>
+                    <Text style={styles.statNumber}>{profile?.followersCount ?? 0}</Text>
                     <Text style={styles.statLabel}>Followers</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('following')}>
-                    <Text style={styles.statNumber}>{profile?.following?.length ?? 0}</Text>
+                    <Text style={styles.statNumber}>{profile?.followingCount ?? 0}</Text>
                     <Text style={styles.statLabel}>Following</Text>
                   </TouchableOpacity>
                 </View>
