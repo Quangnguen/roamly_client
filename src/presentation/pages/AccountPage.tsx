@@ -11,20 +11,25 @@ import {
   Modal,
   TouchableWithoutFeedback,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BACKGROUND } from '@/src/const/constants';
 import PostList from '../components/postList';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchUserProfile, clearMessage } from '../redux/slices/userSlice';
+import { fetchUserProfile, clearMessage, uploadProfilePicture } from '../redux/slices/userSlice';
 import { logout } from '../redux/slices/authSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
 import MemoriesGrid from '../components/memory';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import { launchImageLibraryAsync } from 'expo-image-picker';
+import { getFollowers, getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
+
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -91,21 +96,42 @@ const AccountPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
   const dispatch = useDispatch<AppDispatch>();
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
+  const { followers, following, loading: followersLoading, error: followersError, message: followersMessage, status: followersStatus, statusCode: followersStatusCode } = useSelector((state: RootState) => state.follow);
   const { user: authUser } = useSelector((state: RootState) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<'followers' | 'following' | null>(null);
+  const [modalType, setModalType] = useState<'followers' | 'followings' | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const navigation = useNavigation<NavigationProp>();
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
   }
   console.log('message: ', message);
 
+  // Add useFocusEffect to refresh data when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      dispatch(fetchUserProfile());
+      dispatch(getFollowers());
+      dispatch(getFollowing());
+    }, [dispatch])
+  );
+
+  // Thêm useEffect để lắng nghe thay đổi của followers và following
   useEffect(() => {
-    dispatch(fetchUserProfile());
-  }, [dispatch]);
+    if (modalVisible) {
+      if (modalType === 'followers') {
+        dispatch(getFollowers());
+        dispatch(getFollowing()); // Cần cả following để check trạng thái
+      } else if (modalType === 'followings') {
+        dispatch(getFollowing());
+      }
+    }
+  }, [modalVisible, modalType]);
 
   useEffect(() => {
     if (message) {
@@ -177,14 +203,101 @@ const AccountPage: React.FC = () => {
     },
   ];
 
-  const handleOpenModal = (type: 'followers' | 'following') => {
+  const handleOpenModal = (type: 'followers' | 'followings') => {
     setModalType(type);
     setModalVisible(true);
+    if (type === 'followers') {
+      dispatch(getFollowers());
+    } else {
+      dispatch(getFollowing());
+    }
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     setModalType(null);
+  };
+
+  const changeProfilePic = async () => {
+    try {
+      setIsLoading(true);
+      const result = await launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        // Tạo FormData object
+        const formData = new FormData();
+
+        // Thêm file vào FormData
+        const fileUri = result.assets[0].uri;
+        const fileName = fileUri.split('/').pop() || 'photo.jpg';
+        const fileType = 'file';
+
+        formData.append('file', {
+          uri: fileUri,
+          name: fileName,
+          type: fileType,
+        } as any);
+
+        // Dispatch action để upload ảnh đại diện
+        await dispatch(uploadProfilePicture(formData));
+
+        // Sau khi upload thành công, fetch lại thông tin user
+        await dispatch(fetchUserProfile());
+        setShowAvatarModal(false);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Có lỗi khi cập nhật ảnh đại diện',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFollowUser = async (userId: string) => {
+    try {
+      await dispatch(followUser(userId));
+      // Refresh lại toàn bộ dữ liệu
+      dispatch(getFollowers());
+      dispatch(getFollowing());
+      dispatch(fetchUserProfile());
+    } catch (error) {
+      console.error('Error following user:', error);
+    }
+  };
+
+  const handleUnfollowUser = async (userId: string, username: string) => {
+    try {
+      await dispatch(unfollowUser(userId));
+      // Refresh lại toàn bộ dữ liệu
+      dispatch(getFollowers());
+      dispatch(getFollowing());
+      dispatch(fetchUserProfile());
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+    }
+  };
+
+  // Kiểm tra xem mình đã follow user này chưa
+  const isFollowingUser = (userId: string): boolean => {
+    return following?.some(followingUser => followingUser.id === userId) ?? false;
+  };
+
+  const handleFollowAction = async (userId: string, username: string, isAlreadyFollowing: boolean) => {
+    if (isAlreadyFollowing) {
+      // Trực tiếp unfollow không cần xác nhận
+      await handleUnfollowUser(userId, username);
+    } else {
+      // Nếu chưa follow thì follow
+      await handleFollowUser(userId);
+    }
   };
 
   return (
@@ -212,22 +325,24 @@ const AccountPage: React.FC = () => {
             {/* Profile Info */}
             <View style={styles.profileSection}>
               <View style={styles.profileInfo}>
-                <Image
-                  source={{ uri: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
-                  style={styles.profileImage}
-                />
+                <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
+                  <Image
+                    source={{ uri: profile?.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+                    style={styles.profileImage}
+                  />
+                </TouchableOpacity>
                 <View style={styles.statsContainer}>
                   <View style={styles.statItem}>
                     <Text style={styles.statNumber}>{userStats.posts}</Text>
                     <Text style={styles.statLabel}>Posts</Text>
                   </View>
                   <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followers')}>
-                    <Text style={styles.statNumber}>{profile?.followers?.length ?? 0}</Text>
+                    <Text style={styles.statNumber}>{profile?.followersCount ?? 0}</Text>
                     <Text style={styles.statLabel}>Followers</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('following')}>
-                    <Text style={styles.statNumber}>{profile?.following?.length ?? 0}</Text>
-                    <Text style={styles.statLabel}>Following</Text>
+                  <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followings')}>
+                    <Text style={styles.statNumber}>{profile?.followingsCount ?? 0}</Text>
+                    <Text style={styles.statLabel}>Followings</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -341,70 +456,133 @@ const AccountPage: React.FC = () => {
         onClose={() => setShowChangePassword(false)}
       />
 
-      {/* Modal hiển thị danh sách followers/following */}
+      {/* Modal hiển thị followers/following */}
       <Modal
         visible={modalVisible}
-        animationType="slide"
         transparent={true}
+        animationType="slide"
         onRequestClose={handleCloseModal}
       >
         <TouchableWithoutFeedback onPress={handleCloseModal}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }}>
-            <TouchableWithoutFeedback>
-              <View style={{
-                backgroundColor: '#fff',
-                marginTop: 100,
-                marginHorizontal: 30,
-                borderRadius: 10,
-                padding: 20,
-                maxHeight: '70%',
-              }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>
-                  {modalType === 'followers' ? 'Followers' : 'Following'}
-                </Text>
-                <ScrollView>
-                  {(modalType === 'followers' ? profile?.followers : profile?.following)?.map((user: any) => (
-                    <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, justifyContent: 'space-between' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Image
-                          source={{ uri: user.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
-                          style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }}
-                        />
-                        <View>
-                          <Text style={{ fontWeight: '500' }}>{user.username}</Text>
-                          {user.followedAt && (
-                            <Text style={{ color: '#888', fontSize: 12 }}>
-                              Đã theo dõi từ: {user.followedAt}
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
+                    <Feather name="x" size={28} color="black" />
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>
+                    {modalType === 'followers' ? 'Người theo dõi' : 'Đang theo dõi'}
+                  </Text>
+                  <View style={{ width: 28 }}>
+                    <Text> </Text>
+                  </View>
+                </View>
+
+                <ScrollView style={styles.modalScrollView}>
+                  {modalType === 'followers' ? (
+                    followers?.map((user) => {
+                      const isAlreadyFollowing = isFollowingUser(user.id);
+                      return (
+                        <TouchableOpacity key={user.id} style={styles.userItem}>
+                          <View style={styles.userInfo}>
+                            <Image
+                              source={{ uri: user.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+                              style={styles.userAvatar}
+                            />
+                            <View style={styles.userTextInfo}>
+                              <Text style={styles.userNameText}>{user.username}</Text>
+                              <Text style={styles.followDate}>
+                                Theo dõi từ: {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                              </Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[
+                              styles.followButton,
+                              isAlreadyFollowing ? styles.followingButton : styles.followButton
+                            ]}
+                            onPress={() => handleFollowAction(user.id, user.username, isAlreadyFollowing)}
+                          >
+                            <Text
+                              style={[
+                                styles.followButtonText,
+                                isAlreadyFollowing ? styles.followingButtonText : { color: '#FFFFFF' }
+                              ]}
+                            >
+                              {isAlreadyFollowing ? 'Đang theo dõi' : 'Theo dõi'}
                             </Text>
-                          )}
-                        </View>
-                      </View>
-                      {modalType === 'following' && (
-                        <TouchableOpacity
-                          style={{
-                            backgroundColor: '#eee',
-                            borderRadius: 6,
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                          }}
-                          onPress={() => {
-                            // TODO: Thêm logic hủy theo dõi ở đây
-                            alert(`Đã hủy theo dõi ${user.username}`);
-                          }}
-                        >
-                          <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 13 }}>Đang theo dõi</Text>
+                          </TouchableOpacity>
                         </TouchableOpacity>
-                      )}
-                    </View>
-                  ))}
-                  {((modalType === 'followers' ? profile?.followers : profile?.following)?.length === 0) && (
-                    <Text style={{ color: '#888', textAlign: 'center' }}>No users found.</Text>
+                      );
+                    })
+                  ) : (
+                    following?.map((user) => (
+                      <TouchableOpacity key={user.id} style={styles.userItem}>
+                        <View style={styles.userInfo}>
+                          <Image
+                            source={{ uri: user.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+                            style={styles.userAvatar}
+                          />
+                          <View style={styles.userTextInfo}>
+                            <Text style={styles.userNameText}>{user.username}</Text>
+                            <Text style={styles.followDate}>
+                              Theo dõi từ: {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                            </Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.followButton, styles.followingButton]}
+                          onPress={() => handleUnfollowUser(user.id, user.username)}
+                        >
+                          <Text style={[styles.followButtonText, styles.followingButtonText]}>
+                            Đang theo dõi
+                          </Text>
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                  {((modalType === 'followers' ? followers : following)?.length === 0) && (
+                    <Text style={styles.emptyText}>Không có người dùng nào</Text>
                   )}
                 </ScrollView>
               </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Modal hiển thị avatar phóng to */}
+      <Modal
+        visible={showAvatarModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAvatarModal(false)}
+      >
+        <View style={styles.avatarModalContainer}>
+          <TouchableOpacity
+            style={styles.avatarModalCloseButton}
+            onPress={() => setShowAvatarModal(false)}
+          >
+            <Feather name="x" size={24} color="white" />
+          </TouchableOpacity>
+          <Image
+            source={{ uri: profile?.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+            style={styles.avatarModalImage}
+            resizeMode="contain"
+          />
+          <TouchableOpacity
+            style={styles.changeAvatarButton}
+            onPress={changeProfilePic}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.changeAvatarButtonText}>Đổi ảnh đại diện</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -533,6 +711,123 @@ const styles = StyleSheet.create({
   activeTab: {
     borderBottomWidth: 1,
     borderBottomColor: 'black',
+  },
+  avatarModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarModalImage: {
+    width: 300,
+    height: 300,
+    borderRadius: 10,
+  },
+  avatarModalCloseButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1,
+    padding: 10,
+  },
+  changeAvatarButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginTop: 20,
+  },
+  changeAvatarButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    height: '85%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#DBDBDB',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  userItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#DBDBDB',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  userAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 16,
+  },
+  userTextInfo: {
+    flex: 1,
+  },
+  userNameText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  followDate: {
+    fontSize: 14,
+    color: '#8E8E8E',
+  },
+  followButton: {
+    backgroundColor: '#0095F6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  followingButton: {
+    backgroundColor: '#EFEFEF',
+  },
+  followButtonText: {
+    color: '#262626',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  followingButtonText: {
+    color: '#262626',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#8E8E8E',
+    marginTop: 24,
+    fontSize: 16,
   },
 });
 

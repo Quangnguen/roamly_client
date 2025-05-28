@@ -1,6 +1,9 @@
 import { UserRepository } from '../repositories/userRepository';
-import { getUserProfile, updateUserProfile, changePassword, getUsers, getUserById as getUserByIdApi } from '../api/userApi';
+import { getUserProfile, updateUserProfile, changePassword, getUsers, getUserById as getUserByIdApi, uploadProfilePicture } from '../api/userApi';
 import { UserApiResponse } from '@/src/types/UserResponseInterface';
+import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
+
+
 
 export class UserRepositoryImpl implements UserRepository {
   async getInfo(): Promise<UserApiResponse> {
@@ -69,10 +72,10 @@ export class UserRepositoryImpl implements UserRepository {
     }
   }
 
-  async getUsers(): Promise<any> {
-    console.log('Fetching all users...');
+  async getUsers(params?: GetUsersParams): Promise<any> {
+    console.log('Fetching all users with params:', params);
     try {
-      const response = await getUsers();
+      const response = await getUsers(params);
 
       if (response.statusCode === 200) {
         return response;
@@ -97,6 +100,16 @@ export class UserRepositoryImpl implements UserRepository {
     } catch (error) {
       console.error('Failed to fetch user by ID:', error);
       throw new Error('Failed to fetch user by ID');
+    }
+  }
+
+  async uploadProfilePicture(imageFile: FormData): Promise<UserApiResponse> {
+    try {
+      const response = await uploadProfilePicture(imageFile);
+      return response;
+    } catch (error) {
+      console.error('Failed to upload profile picture:', error);
+      throw new Error('Failed to upload profile picture');
     }
   }
 }

@@ -119,8 +119,8 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
 
   // Số liệu thống kê
   const postCount = 22;
-  const followersCount = user?.followers?.length ?? 123;
-  const followingCount = user?.following?.length ?? 45;
+  const followersCount = user?.followersCount ?? 0;
+  const followingCount = user?.followingsCount ?? 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -159,7 +159,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
                   </View>
                   <View style={styles.statItem}>
                     <Text style={styles.statNumber}>{followingCount}</Text>
-                    <Text style={styles.statLabel}>Following</Text>
+                    <Text style={styles.statLabel}>Followings</Text>
                   </View>
                 </View>
               </View>
@@ -172,7 +172,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
                 </Text>
               </View>
 
-              
+
             </View>
 
             {/* Tab Selector */}

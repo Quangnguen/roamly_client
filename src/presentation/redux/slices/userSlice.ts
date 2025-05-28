@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { dependencies } from '../../../dependencies/dependencies';
 import { User } from '../../../domain/models/User';
 import { UserApiResponse } from '@/src/types/UserResponseInterface';
+import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
 
 // Define the shape of the user state
 interface UserState {
@@ -107,15 +108,28 @@ export const softDelete = createAsyncThunk(
   }
 );
 
-export const getUsers = createAsyncThunk(
+export const getUsers = createAsyncThunk<any, GetUsersParams | undefined>(
   'user/getUsers',
-  async (_: void, thunkAPI) => {
+  async (params, thunkAPI) => {
     try {
-      const response = await dependencies.userUsecase.getUsers();
+      const response = await dependencies.userUsecase.getUsers(params);
       console.log('getUsers response:', response);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to get users');
+    }
+  }
+);
+
+// Upload profile picture thunk
+export const uploadProfilePicture = createAsyncThunk(
+  'user/uploadProfilePicture',
+  async (imageFile: FormData, thunkAPI) => {
+    try {
+      const response = await dependencies.userUsecase.uploadProfilePicture(imageFile);
+      return response as UserApiResponse;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || 'Failed to upload profile picture');
     }
   }
 );
@@ -162,7 +176,7 @@ const userSlice = createSlice({
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.data ?? null; // Cập nhật user từ action.payload.data
+        state.profile = action.payload.data ?? null; // Cập nhật user từ action.payload.data
         state.message = action.payload.message; // Cập nhật message từ action.payload.message 
         state.status = action.payload.status; // Cập nhật status từ action.payload.status
         state.statusCode = action.payload.statusCode; // Cập nhật statusCode từ action.payload.statusCode
@@ -214,7 +228,7 @@ const userSlice = createSlice({
       })
       .addCase(getUsers.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = action.payload.data; // <-- phải là .data
+        state.users = action.payload.data.users; // <-- phải là .data
         state.message = action.payload.message; // Cập nhật message từ action.payload.message 
         state.status = action.payload.status; // Cập nhật status từ action.payload.status
         state.statusCode = action.payload.statusCode; // Cập nhật statusCode từ action.payload.statusCode
@@ -243,6 +257,24 @@ const userSlice = createSlice({
         if (action.payload && typeof action.payload === 'string' && action.payload.includes('not found')) {
           state.user = null;
         }
+        state.error = action.payload as string;
+      });
+
+    // Upload profile picture cases
+    builder
+      .addCase(uploadProfilePicture.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(uploadProfilePicture.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload.data ?? null;
+        state.message = action.payload.message;
+        state.status = action.payload.status;
+        state.statusCode = action.payload.statusCode;
+      })
+      .addCase(uploadProfilePicture.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload as string;
       });
   },

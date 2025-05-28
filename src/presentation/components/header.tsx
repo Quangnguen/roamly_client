@@ -66,7 +66,7 @@ export const Header: React.FC<headerProps> = ({
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.logoText}>Roamly</Text>
+      <Text style={styles.logoText}>ViVu</Text>
 
       <View style={styles.rightIcons}>
         <TouchableOpacity onPress={handleMessagesPress} style={styles.iconContainer}>

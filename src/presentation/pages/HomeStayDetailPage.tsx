@@ -169,7 +169,7 @@ const amenities = [
     { id: '5', icon: 'coffee', name: 'Bữa sáng' },
     { id: '6', icon: 'paw', name: 'Thú cưng' },
     { id: '7', icon: 'paw', name: 'Bếp' },
-    { id: '6', icon: 'paw', name: 'Bình nóng lạnh' },
+    { id: '8', icon: 'paw', name: 'Bình nóng lạnh' },
 ];
 
 const { width: screenWidth } = Dimensions.get('window');

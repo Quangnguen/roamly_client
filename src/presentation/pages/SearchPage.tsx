@@ -25,6 +25,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { getUsers } from '../redux/slices/userSlice';
+import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
 
 type Tab = {
   name: string;
@@ -67,7 +68,7 @@ const posts = [
     images: [
       { id: '1', uri: 'https://vietluxtour.com/Upload/images/2023/KhamPhaNuocNgoai/%C4%90%E1%BB%8Ba%20%C4%90i%E1%BB%83m%20Du%20L%E1%BB%8Bch%20H%C3%A0n%20Qu%E1%BB%91c/dia-diem-du-lich-han-quoc-main-min.jpg' }
     ],
-    likedBy: 'craig_love',
+    commentsCount: 44686,
     likesCount: 44686,
     caption: 'The game in Japan was amazing and I want to share some photos',
   },
@@ -79,7 +80,7 @@ const posts = [
     images: [
       { id: '1', uri: 'https://images.vietnamtourism.gov.vn/vn/images/2020/Thang_9/_DSC3768.JPG' }
     ],
-    likedBy: 'craig_love',
+    commentsCount: 44686,
     likesCount: 44686,
     caption: 'The game in Japan was amazing and I want to share some photos',
   },
@@ -155,11 +156,16 @@ const SearchPage: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
   const { users, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
-
+  const { following, loading: followingLoading, error: followingError, message: followingMessage, status: followingStatus, statusCode: followingStatusCode } = useSelector((state: RootState) => state.follow);
 
   useEffect(() => {
-    dispatch(getUsers());
-  }, [dispatch]);
+    if (activeTab === 'User') {
+      dispatch(getUsers({ page: 1, limit: 5 }));
+      dispatch(getFollowing());
+      console.log('following');
+      console.log(following);
+    }
+  }, [dispatch, activeTab]);
 
   const handleClearSearch = () => {
     setSearchText('');
@@ -225,7 +231,7 @@ const SearchPage: React.FC = () => {
                   isVerified={post.isVerified}
                   location={post.location}
                   images={post.images}
-                  likedBy={post.likedBy}
+                  commentsCount={post.commentsCount}
                   likesCount={post.likesCount}
                   caption={post.caption}
                 />
@@ -273,21 +279,43 @@ const SearchPage: React.FC = () => {
 
           {activeTab === 'User' && (
             <ScrollView contentContainerStyle={styles.addressContainer}>
-              {(Array.isArray(users) ? users : []).map((user, index) => (
-                <Card
-                  key={user.id}
-                  type="user"
-                  avatar={user.profilePic || undefined}
-                  title={user.name || user.username || 'No name'}
-                  bio={user.bio || 'No bio'}
-                  description={user.bio || 'No description'}
-                  followers={Array.isArray(user.followers) ? user.followers.length : (user.followers || 0)}
-                  onPress={() => navigation.navigate('InfoAccPage', {
-                    id: user.id ?? '',
-                    // Có thể truyền thêm các trường khác nếu cần
-                  })}
-                />
-              ))}
+              {(Array.isArray(users) ? users : []).map((user, index) => {
+                const isFollowing = following?.some(followingUser => followingUser.id === user.id);
+
+                const handleFollowPress = async () => {
+                  try {
+                    if (!user.id) return;
+
+                    if (isFollowing) {
+                      await dispatch(unfollowUser(user.id));
+                    } else {
+                      await dispatch(followUser(user.id));
+                    }
+                    // Refresh lại danh sách following sau khi thay đổi
+                    dispatch(getFollowing());
+                  } catch (error) {
+                    console.error('Error following/unfollowing user:', error);
+                  }
+                };
+
+                return (
+                  <Card
+                    key={user.id}
+                    type="user"
+                    avatar={user.profilePic || undefined}
+                    title={user.name || user.username || 'No name'}
+                    userId={user.id}
+                    bio={user.bio || 'chu tich'}
+                    description={user.bio || 'No description'}
+                    totalFollowers={user.followersCount || 0}
+                    isFollowing={isFollowing}
+                    onFollowPress={handleFollowPress}
+                    onPress={() => navigation.navigate('InfoAccPage', {
+                      id: user.id ?? '',
+                    })}
+                  />
+                );
+              })}
             </ScrollView>
           )}
         </SafeAreaView>

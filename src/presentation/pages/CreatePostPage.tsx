@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,18 @@ import {
   Keyboard,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { NavigationProp } from '@/src/utils/PropsNavigate';
-import { useNavigation } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import { BACKGROUND, PRIMARY } from '@/src/const/constants';
 import * as ImagePicker from 'expo-image-picker';
+import { useDispatch, useSelector } from 'react-redux';
+import { createPost, clearMessage } from '../redux/slices/postSlice';
+import { AppDispatch, RootState } from '../redux/store';
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
@@ -30,8 +36,76 @@ const CreatePostPage = () => {
   const [topic, setTopic] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
 
-  const navigation: NavigationProp<'Home'> = useNavigation();
+  const navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> = useNavigation();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error, message, status } = useSelector((state: RootState) => state.post);
+
+  useEffect(() => {
+    if (message) {
+      Toast.show({
+        type: status === 'success' ? 'success' : 'error',
+        text1: message,
+        onHide: () => {
+          dispatch(clearMessage());
+          if (status === 'success') {
+            navigation.goBack();
+          }
+        },
+      });
+    }
+  }, [message, status]);
+
+  const handlePost = async () => {
+    if (!postText.trim() && selectedImages.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng nhập nội dung hoặc chọn ảnh',
+      });
+      return;
+    }
+
+    try {
+      setIsPosting(true);
+      const formData = new FormData();
+
+      // Thêm ảnh vào formData
+      selectedImages.forEach((image) => {
+        const localUri = image.uri;
+        const filename = localUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename || '');
+        const type = match ? `image/${match[1]}` : 'image';
+
+        formData.append('images', {
+          uri: localUri,
+          name: filename,
+          type,
+        } as any);
+      });
+
+      // Gọi action createPost với formData đã được chuẩn bị
+      await dispatch(createPost({
+        images: formData,
+        caption: postText,
+        title: topic || 'Bài viết mới'
+      })).unwrap();
+
+      // Reset form sau khi đăng thành công
+      setPostText('');
+      setSelectedImages([]);
+      setTopic('');
+
+    } catch (error) {
+      console.error('Error creating post:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Có lỗi xảy ra khi đăng bài',
+      });
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   const handleCancelPress = () => {
     navigation.goBack();
@@ -252,12 +326,26 @@ const CreatePostPage = () => {
           Bất kỳ ai cũng có thể trả lời và trích dẫn
         </Text>
         <TouchableOpacity
-          style={[styles.postButton, postText.length > 0 ? styles.postButtonActive : {}]}
-          disabled={postText.length === 0}
+          style={[
+            styles.postButton,
+            (postText.length > 0 || selectedImages.length > 0) ? styles.postButtonActive : {},
+            isPosting && styles.postButtonDisabled
+          ]}
+          disabled={postText.length === 0 && selectedImages.length === 0 || isPosting}
+          onPress={handlePost}
         >
-          <Text style={[styles.postButtonText, postText.length > 0 ? styles.postButtonTextActive : {}]}>
-            Đăng
-          </Text>
+          {isPosting ? (
+            <ActivityIndicator color="#000" size="small" />
+          ) : (
+            <Text
+              style={[
+                styles.postButtonText,
+                (postText.length > 0 || selectedImages.length > 0) ? styles.postButtonTextActive : {}
+              ]}
+            >
+              Đăng
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -486,6 +574,9 @@ const styles = StyleSheet.create({
   selectedImagesSection: {
     marginTop: 16,
     minHeight: 120,
+  },
+  postButtonDisabled: {
+    opacity: 0.7,
   },
 });
 

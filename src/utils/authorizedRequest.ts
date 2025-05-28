@@ -3,13 +3,14 @@ import { refreshAccessToken } from '../data/api/refreshToken';
 export const authorizedRequest = async (url: string, options: RequestInit = {}) => {
   try {
     const accessToken = await refreshAccessToken();
-
+    console.log('accessToken', accessToken);
     const response = await fetch(url, {
       ...options,
       headers: {
         ...options.headers,
         Authorization: `Bearer ${accessToken}`,
       },
+
     });
 
     if (!response.ok) {

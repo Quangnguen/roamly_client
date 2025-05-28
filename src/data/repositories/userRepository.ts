@@ -1,4 +1,6 @@
+import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
 import { UserApiResponse } from '@/src/types/UserResponseInterface';
+
 
 export interface UserRepository {
   getInfo(): Promise<UserApiResponse>;
@@ -12,6 +14,7 @@ export interface UserRepository {
   }): Promise<UserApiResponse>;
   updatePassword(oldPassword: string, newPassword: string): Promise<void>;
   softDelete(): Promise<void>;
-  getUsers(): Promise<any>;
+  getUsers(params?: GetUsersParams): Promise<any>;
   getUserById(userId: string): Promise<UserApiResponse>;
+  uploadProfilePicture(imageFile: FormData): Promise<UserApiResponse>;
 }
