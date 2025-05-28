@@ -160,7 +160,7 @@ const SearchPage: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'User') {
-      dispatch(getUsers());
+      dispatch(getUsers({ page: 1, limit: 5 }));
       dispatch(getFollowing());
       console.log('following');
       console.log(following);
@@ -305,9 +305,9 @@ const SearchPage: React.FC = () => {
                     avatar={user.profilePic || undefined}
                     title={user.name || user.username || 'No name'}
                     userId={user.id}
-                    bio={user.bio || 'No bio'}
+                    bio={user.bio || 'chu tich'}
                     description={user.bio || 'No description'}
-                    followers={Array.isArray(user.followers) ? user.followers.length : (user.followers || 0)}
+                    totalFollowers={user.followersCount || 0}
                     isFollowing={isFollowing}
                     onFollowPress={handleFollowPress}
                     onPress={() => navigation.navigate('InfoAccPage', {

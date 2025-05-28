@@ -1,9 +1,11 @@
 import { UserRepository } from '../../data/repositories/userRepository';
 import { User } from '../models/User';
 import { UserApiResponse } from '../../types/UserResponseInterface';
+import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
+
 
 export class UserUseCase {
-  constructor(private repo: UserRepository) {}
+  constructor(private repo: UserRepository) { }
 
   async getInfo(): Promise<UserApiResponse> {
     return await this.repo.getInfo();
@@ -26,11 +28,15 @@ export class UserUseCase {
   async softDelete(): Promise<void> {
     return await this.repo.softDelete();
   }
-  async getUsers(): Promise<any> {
-    return await this.repo.getUsers();
+  async getUsers(params?: GetUsersParams): Promise<any> {
+    return await this.repo.getUsers(params);
   }
 
   async getUserById(userId: string): Promise<UserApiResponse> {
     return await this.repo.getUserById(userId);
+  }
+
+  async uploadProfilePicture(imageFile: FormData): Promise<UserApiResponse> {
+    return await this.repo.uploadProfilePicture(imageFile);
   }
 }

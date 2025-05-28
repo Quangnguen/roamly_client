@@ -23,8 +23,8 @@ export const unfollowApi = async (followingId: string) => {
 };
 
 // Lấy danh sách người theo dõi
-export const getFollowersApi = async (userId: string) => {
-    return await authorizedRequest(`${API_BASE_URL}/follows/followers/${userId}`, {
+export const getFollowersApi = async () => {
+    return await authorizedRequest(`${API_BASE_URL}/follows/followers`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

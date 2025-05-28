@@ -52,9 +52,9 @@ export const unfollowUser = createAsyncThunk(
 // Get followers thunk
 export const getFollowers = createAsyncThunk(
     'follow/getFollowers',
-    async (userId: string, thunkAPI) => {
+    async (_, thunkAPI) => {
         try {
-            const response = await dependencies.followUsecase.getFollowers(userId);
+            const response = await dependencies.followUsecase.getFollowers();
             return response;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message || 'Không thể lấy danh sách người theo dõi');
@@ -129,10 +129,10 @@ export const followSlice = createSlice({
             })
             .addCase(getFollowers.fulfilled, (state, action) => {
                 state.loading = false;
-                state.followers = action.payload.data;
-                state.message = action.payload.message;
-                state.status = action.payload.status;
-                state.statusCode = action.payload.statusCode;
+                state.followers = action.payload as FollowingResponseInterface[];
+                // state.message = action.payload.message;
+                // state.status = action.payload.status;
+                // state.statusCode = action.payload.statusCode;
             })
             .addCase(getFollowers.rejected, (state, action) => {
                 state.loading = false;
@@ -147,10 +147,10 @@ export const followSlice = createSlice({
             })
             .addCase(getFollowing.fulfilled, (state, action) => {
                 state.loading = false;
-                state.following = action.payload;
-                state.message = action.payload.message;
-                state.status = action.payload.status;
-                state.statusCode = action.payload.statusCode;
+                state.following = action.payload as FollowingResponseInterface[];
+                // state.message = action.payload.message;
+                // state.status = action.payload.status;
+                // state.statusCode = action.payload.statusCode;
             })
             .addCase(getFollowing.rejected, (state, action) => {
                 state.loading = false;

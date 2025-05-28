@@ -1,3 +1,4 @@
+import { FollowingResponseInterface } from "@/src/types/FollowingResponseInterface";
 import { followRepository } from "../../data/repositories/followRepository";
 
 export class followUsecase {
@@ -10,11 +11,11 @@ export class followUsecase {
         return await this.followRepository.unfollowUser(followingId);
     }
 
-    async getFollowers(userId: string): Promise<any> {
-        return await this.followRepository.getFollowers(userId);
+    async getFollowers(): Promise<FollowingResponseInterface[]> {
+        return await this.followRepository.getFollowers();
     }
 
-    async getFollowing(): Promise<any> {
+    async getFollowing(): Promise<FollowingResponseInterface[]> {
         return await this.followRepository.getFollowing();
     }
 }

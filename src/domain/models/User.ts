@@ -17,5 +17,5 @@ export interface User {
   deletedAt?: string; // Thời gian tài khoản bị xóa (nếu có)
   phoneNumber?: string; // Số điện thoại của người dùng
   followersCount?: number; // Số lượng người theo dõi
-  followingCount?: number; // Số lượng người đang theo dõi
+  followingsCount?: number; // Số lượng người đang theo dõi
 }

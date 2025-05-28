@@ -1,6 +1,6 @@
 import { followRepository } from "../repositories/followRepository";
 import { followApi, unfollowApi, getFollowersApi, getFollowingApi } from "../api/followApi";
-
+import { FollowingResponseInterface } from "@/src/types/FollowingResponseInterface";
 export class followRepositoryImpl implements followRepository {
     async followUser(followingId: string): Promise<any> {
         try {
@@ -22,9 +22,9 @@ export class followRepositoryImpl implements followRepository {
         }
     }
 
-    async getFollowers(userId: string): Promise<any> {
+    async getFollowers(): Promise<FollowingResponseInterface[]> {
         try {
-            const response = await getFollowersApi(userId);
+            const response = await getFollowersApi();
             return response;
         } catch (error) {
             console.error('Failed to get followers:', error);
@@ -32,7 +32,7 @@ export class followRepositoryImpl implements followRepository {
         }
     }
 
-    async getFollowing(): Promise<any> {
+    async getFollowing(): Promise<FollowingResponseInterface[]> {
         try {
             const response = await getFollowingApi();
             return response;

@@ -58,8 +58,23 @@ export const unfollowUser = async (targetUserId: string) => {
   });
 };
 
-export const getUsers = async () => {
-  return await authorizedRequest(`${API_BASE_URL}/users/get-users`, {
+interface GetUsersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  [key: string]: any; // cho phép thêm các param khác
+}
+
+export const getUsers = async (params?: GetUsersParams) => {
+  // Tạo query string từ params
+  const queryString = params
+    ? '?' + Object.entries(params)
+      .filter(([_, value]) => value !== undefined) // lọc bỏ các giá trị undefined
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join('&')
+    : '';
+
+  return await authorizedRequest(`${API_BASE_URL}/users/get-users${queryString}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -75,3 +90,11 @@ export const getUserById = async (userId: string) => {
     },
   });
 }
+
+// Upload ảnh đại diện
+export const uploadProfilePicture = async (imageFile: FormData) => {
+  return await authorizedRequest(`${API_BASE_URL}/users/profile-pic`, {
+    method: 'PATCH',
+    body: imageFile,
+  });
+};

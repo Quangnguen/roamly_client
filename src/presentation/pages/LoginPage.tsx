@@ -73,7 +73,7 @@ export default function LoginPage({ navigation }: Props) {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <Text style={styles.title}>Welcome To Roadly 👋</Text>
+        <Text style={styles.title}>Welcome To ViVu 👋</Text>
         <Text style={styles.subtitle}>Login to continue</Text>
 
         <View style={styles.inputContainer}>

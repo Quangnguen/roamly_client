@@ -19,7 +19,6 @@ interface CardProps {
   cardHeight?: number;
   totalFollowers?: number;
   userId?: string;
-  followers?: number;
   bio?: string;
   isFollowing?: boolean;
   totalRaters?: number;
@@ -40,7 +39,6 @@ const Card: React.FC<CardProps> = ({
   totalFollowers,
   totalRaters,
   bio,
-  followers,
   isFollowing,
   onPress,
   onFollowPress,
@@ -106,7 +104,7 @@ const Card: React.FC<CardProps> = ({
               <View style={styles.infoContainer}>
                 <Text style={styles.name} numberOfLines={2}>{title}</Text>
                 <Text style={styles.achievements} numberOfLines={2}>{description}</Text>
-                <Text style={styles.description} numberOfLines={2}>{followers} Followers</Text>
+                <Text style={styles.description} numberOfLines={2}>{totalFollowers} Followers</Text>
               </View>
               <TouchableOpacity
                 style={[

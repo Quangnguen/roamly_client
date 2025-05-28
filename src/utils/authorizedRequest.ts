@@ -10,6 +10,7 @@ export const authorizedRequest = async (url: string, options: RequestInit = {}) 
         ...options.headers,
         Authorization: `Bearer ${accessToken}`,
       },
+
     });
 
     if (!response.ok) {

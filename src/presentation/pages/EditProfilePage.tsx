@@ -79,38 +79,7 @@ const EditProfilePage: React.FC = () => {
 
   }
 
-  const changeProfilePic = async () => {
-    try {
-      setIsLoading(true);
-      const result = await launchImageLibraryAsync({
-        mediaTypes: 'images',
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-        base64: true,
-      });
 
-      console.log('Image picker result canceled:', result.canceled);
-
-      if (!result.canceled) {
-        console.log('Selected image URI:', result.assets[0].uri);
-        const newProfilePic = result.assets[0].uri;
-
-        setProfileData(prevData => {
-          console.log('Updating profile pic to:', newProfilePic);
-          return {
-            ...prevData,
-            profilePic: newProfilePic
-          };
-        });
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      alert('Có lỗi khi chọn ảnh. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -138,13 +107,6 @@ const EditProfilePage: React.FC = () => {
             style={styles.profilePhoto}
             resizeMode="cover"
           />
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#007AFF" style={styles.loader} />
-          ) : (
-            <TouchableOpacity onPress={changeProfilePic}>
-              <Text style={styles.changePhotoText}>Change Profile Photo</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Form Fields */}
