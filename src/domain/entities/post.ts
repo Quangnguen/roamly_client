@@ -2,7 +2,7 @@ export interface Post {
     id: string;
     authorId: string;
     imageUrl: string[];
-    caption: string | null;
+    caption: string;
     location: string | null;
     tags: string[];
     isPublic: boolean;
@@ -11,4 +11,8 @@ export interface Post {
     sharedCount: number;
     createdAt: string;
     updatedAt: string;
+    author: {
+        username: string;
+        profilePic: string | null;
+    };
 } 

@@ -30,10 +30,10 @@ import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
 
 const CreatePostPage = () => {
-  const [postText, setPostText] = useState('');
+  const [caption, setCaption] = useState('');
   const [selectedImages, setSelectedImages] = useState<Array<{ uri: string }>>([]);
   const [isEditingTopic, setIsEditingTopic] = useState(false);
-  const [topic, setTopic] = useState('');
+  const [location, setLocation] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
@@ -41,7 +41,7 @@ const CreatePostPage = () => {
   const navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, message, status } = useSelector((state: RootState) => state.post);
-
+  const { profile } = useSelector((state: RootState) => state.user);
   useEffect(() => {
     if (message) {
       Toast.show({
@@ -58,7 +58,7 @@ const CreatePostPage = () => {
   }, [message, status]);
 
   const handlePost = async () => {
-    if (!postText.trim() && selectedImages.length === 0) {
+    if (!caption.trim() && selectedImages.length === 0) {
       Toast.show({
         type: 'error',
         text1: 'Vui lòng nhập nội dung hoặc chọn ảnh',
@@ -84,18 +84,16 @@ const CreatePostPage = () => {
         } as any);
       });
 
-      // Gọi action createPost với formData đã được chuẩn bị
       await dispatch(createPost({
         images: formData,
-        caption: postText,
-        title: topic || 'Bài viết mới'
-      })).unwrap();
+        caption: caption.trim(),
+        location: location
+      }));
 
       // Reset form sau khi đăng thành công
-      setPostText('');
+      setCaption('');
       setSelectedImages([]);
-      setTopic('');
-
+      setLocation(null);
     } catch (error) {
       console.error('Error creating post:', error);
       Toast.show({
@@ -109,10 +107,10 @@ const CreatePostPage = () => {
 
   const handleCancelPress = () => {
     navigation.goBack();
-    setPostText('');
+    setCaption('');
     setSelectedImages([]);
     setIsEditingTopic(false);
-    setTopic('');
+    setLocation(null);
   };
 
   const pickImage = async () => {
@@ -192,16 +190,16 @@ const CreatePostPage = () => {
                   style={styles.avatar}
                 />
                 <View style={styles.userInfo}>
-                  <Text style={styles.username}>_aaron_3006</Text>
+                  <Text style={styles.username}>{profile?.username || 'nam'}</Text>
 
-                  {/* Thêm chủ đề */}
+                  {/* Thêm địa điểm */}
                   {isEditingTopic ? (
                     <TextInput
                       style={styles.topicInput}
-                      value={topic}
-                      onChangeText={setTopic}
+                      value={location || ''}
+                      onChangeText={setLocation}
                       onBlur={() => setIsEditingTopic(false)}
-                      placeholder="Nhập chủ đề..."
+                      placeholder="Nhập địa điểm..."
                       placeholderTextColor="#777"
                     />
                   ) : (
@@ -212,7 +210,7 @@ const CreatePostPage = () => {
                       }}
                     >
                       <Text style={styles.addTopic}>
-                        {topic || 'Thêm chủ đề'}
+                        {location || 'Thêm địa điểm'}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -225,8 +223,8 @@ const CreatePostPage = () => {
                 placeholder="Có gì mới?"
                 placeholderTextColor="#777777"
                 multiline
-                value={postText}
-                onChangeText={setPostText}
+                value={caption}
+                onChangeText={setCaption}
                 onFocus={() => setIsEditingTopic(false)}
               />
 
@@ -300,9 +298,7 @@ const CreatePostPage = () => {
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={styles.removeImageButton}
-                            onPress={() => {
-                              setSelectedImages((prev) => prev.filter((_, i) => i !== index));
-                            }}
+                            onPress={() => removeImage(index)}
                           >
                             <Ionicons name="close" size={20} color="#fff" />
                           </TouchableOpacity>
@@ -328,10 +324,10 @@ const CreatePostPage = () => {
         <TouchableOpacity
           style={[
             styles.postButton,
-            (postText.length > 0 || selectedImages.length > 0) ? styles.postButtonActive : {},
+            (caption.length > 0 || selectedImages.length > 0) ? styles.postButtonActive : {},
             isPosting && styles.postButtonDisabled
           ]}
-          disabled={postText.length === 0 && selectedImages.length === 0 || isPosting}
+          disabled={caption.length === 0 && selectedImages.length === 0 || isPosting}
           onPress={handlePost}
         >
           {isPosting ? (
@@ -340,7 +336,7 @@ const CreatePostPage = () => {
             <Text
               style={[
                 styles.postButtonText,
-                (postText.length > 0 || selectedImages.length > 0) ? styles.postButtonTextActive : {}
+                (caption.length > 0 || selectedImages.length > 0) ? styles.postButtonTextActive : {}
               ]}
             >
               Đăng
@@ -504,31 +500,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  captionContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  captionInput: {
-    fontSize: 16,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    ...Platform.select({
-      ios: {
-        paddingTop: 0,
-      },
-    }),
-  },
-  addMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  addMoreText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: PRIMARY,
-  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -537,10 +508,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
     borderTopColor: '#333333',
     backgroundColor: BACKGROUND,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   footerText: {
     color: '#777777',
@@ -577,7 +544,7 @@ const styles = StyleSheet.create({
   },
   postButtonDisabled: {
     opacity: 0.7,
-  },
+  }
 });
 
 export default CreatePostPage;

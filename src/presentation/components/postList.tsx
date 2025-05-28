@@ -1,22 +1,32 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { View, StyleSheet, FlatList, TouchableOpacity, Text } from 'react-native';
+import Post from './post';
+import PostMini from './PostMini';
 
 type Post = {
   id: string;
-  images: string[]; // Danh sách ảnh của bài đăng
+  imageUrl: string[]; // Danh sách ảnh của bài đăng
   caption: string; // Nội dung bài đăng
-  likes: number; // Số lượt thích
-  comments: number; // Số lượt bình luận
-  shares: number; // Số lượt chia sẻ
+  likeCount: number; // Số lượt thích
+  commentCount: number; // Số lượt bình luận
+  sharedCount: number; // Số lượt chia sẻ
   createdAt: string; // Ngày đăng bài
+  location: string | null;
+  isPublic: boolean;
+  author: {
+    username: string;
+    profilePic: string | null;
+  };
 };
 
 type PostListProps = {
   posts: Post[];
+  mini?: boolean;
+  onPostPress?: (post: Post) => void;
+  expandedPostId?: string | null;
 };
 
-const PostList: React.FC<PostListProps> = ({ posts }) => {
+const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, expandedPostId }) => {
   // Sắp xếp bài đăng theo ngày đăng (mới nhất trước)
   const sortedPosts = [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -25,98 +35,61 @@ const PostList: React.FC<PostListProps> = ({ posts }) => {
       data={sortedPosts}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <View style={styles.card}>
-          {/* Bên trái: Hình ảnh */}
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: item.images[0] }} style={styles.image} />
-            {item.images.length > 1 && (
-              <View style={styles.imageCount}>
-                <Text style={styles.imageCountText}>{item.images.length}+</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Bên phải: Nội dung */}
-          <View style={styles.contentContainer}>
-            <Text style={styles.caption} numberOfLines={2}>
-              {item.caption}
-            </Text>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Ionicons name="heart-outline" size={16} color="gray" />
-                <Text style={styles.statText}>{item.likes}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Ionicons name="chatbubble-outline" size={16} color="gray" />
-                <Text style={styles.statText}>{item.comments}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Feather name="share" size={16} color="gray" />
-                <Text style={styles.statText}>{item.shares}</Text>
-              </View>
+        mini ? (
+          expandedPostId === item.id ? (
+            <View>
+              <Post
+                username={item.author.username}
+                location={item.location}
+                images={item.imageUrl.map((url, index) => ({
+                  id: index.toString(),
+                  uri: url
+                }))}
+                commentCount={item.commentCount}
+                likeCount={item.likeCount}
+                sharedCount={item.sharedCount}
+                caption={item.caption}
+                author={item.author}
+                isPublic={item.isPublic}
+                isVerified={false}
+              />
+              <TouchableOpacity style={{ alignSelf: 'center', marginVertical: 8 }} onPress={() => onPostPress && onPostPress(item)}>
+                <Text style={{ color: '#007AFF', fontWeight: 'bold', fontSize: 16 }}>Thu gọn</Text>
+              </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          ) : (
+            <PostMini
+              image={item.imageUrl[0]}
+              caption={item.caption}
+              likeCount={item.likeCount}
+              commentCount={item.commentCount}
+              sharedCount={item.sharedCount}
+              imageCount={item.imageUrl.length}
+              onPress={() => onPostPress && onPostPress(item)}
+            />
+          )
+        ) : (
+          <Post
+            username={item.author.username}
+            location={item.location}
+            images={item.imageUrl.map((url, index) => ({
+              id: index.toString(),
+              uri: url
+            }))}
+            commentCount={item.commentCount}
+            likeCount={item.likeCount}
+            sharedCount={item.sharedCount}
+            caption={item.caption}
+            author={item.author}
+            isPublic={item.isPublic}
+            isVerified={false}
+          />
+        )
       )}
     />
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  imageContainer: {
-    position: 'relative',
-    width: 100,
-    height: 100,
-    marginRight: 10,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  imageCount: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 12,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  imageCountText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  caption: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: '10'
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statText: {
-    fontSize: 12,
-    color: 'gray',
-    marginLeft: 4,
-  },
-});
+const styles = StyleSheet.create({});
 
 export default PostList;

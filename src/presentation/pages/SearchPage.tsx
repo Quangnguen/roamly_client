@@ -26,6 +26,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { getUsers } from '../redux/slices/userSlice';
 import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
+import { getPosts } from '../redux/slices/postSlice';
 
 type Tab = {
   name: string;
@@ -43,13 +44,19 @@ type ImageItem = {
 
 interface Post {
   id: string;
-  username: string;
-  isVerified: boolean;
-  location: string;
-  images: ImageItem[];
-  likedBy: string;
-  likesCount: number;
+  imageUrl: string[];
   caption: string;
+  location: string | null;
+  likeCount: number;
+  commentCount: number;
+  sharedCount: number;
+  isPublic: boolean;
+  author: {
+    username: string;
+    profilePic: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 const tabs: Tab[] = [
@@ -57,33 +64,6 @@ const tabs: Tab[] = [
   { name: 'Address', icon: 'location-outline' },
   { name: 'Home Stay', icon: 'home-outline' },
   { name: 'User', icon: 'person-outline' },
-];
-
-const posts = [
-  {
-    id: '1',
-    username: 'joshua_J',
-    isVerified: true,
-    location: 'Tokyo, Japan',
-    images: [
-      { id: '1', uri: 'https://vietluxtour.com/Upload/images/2023/KhamPhaNuocNgoai/%C4%90%E1%BB%8Ba%20%C4%90i%E1%BB%83m%20Du%20L%E1%BB%8Bch%20H%C3%A0n%20Qu%E1%BB%91c/dia-diem-du-lich-han-quoc-main-min.jpg' }
-    ],
-    commentsCount: 44686,
-    likesCount: 44686,
-    caption: 'The game in Japan was amazing and I want to share some photos',
-  },
-  {
-    id: '2',
-    username: 'joshua_J',
-    isVerified: true,
-    location: 'Tokyo, Japan',
-    images: [
-      { id: '1', uri: 'https://images.vietnamtourism.gov.vn/vn/images/2020/Thang_9/_DSC3768.JPG' }
-    ],
-    commentsCount: 44686,
-    likesCount: 44686,
-    caption: 'The game in Japan was amazing and I want to share some photos',
-  },
 ];
 
 const addressCards = [
@@ -148,8 +128,6 @@ const homeStays = [
   },
 ];
 
-
-
 const SearchPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('Post');
   const [searchText, setSearchText] = useState<string>('');
@@ -157,13 +135,15 @@ const SearchPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { users, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { following, loading: followingLoading, error: followingError, message: followingMessage, status: followingStatus, statusCode: followingStatusCode } = useSelector((state: RootState) => state.follow);
+  const { posts, loading: postLoading } = useSelector((state: RootState) => state.post);
 
   useEffect(() => {
     if (activeTab === 'User') {
       dispatch(getUsers({ page: 1, limit: 5 }));
       dispatch(getFollowing());
-      console.log('following');
-      console.log(following);
+    }
+    if (activeTab === 'Post') {
+      dispatch(getPosts());
     }
   }, [dispatch, activeTab]);
 
@@ -227,13 +207,16 @@ const SearchPage: React.FC = () => {
               {posts.map((post) => (
                 <Post
                   key={post.id}
-                  username={post.username}
-                  isVerified={post.isVerified}
+                  username={post.author.username}
                   location={post.location}
-                  images={post.images}
-                  commentsCount={post.commentsCount}
-                  likesCount={post.likesCount}
+                  images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
+                  commentCount={post.commentCount}
+                  likeCount={post.likeCount}
+                  sharedCount={post.sharedCount}
                   caption={post.caption}
+                  author={post.author}
+                  isPublic={post.isPublic}
+                  isVerified={false}
                 />
               ))}
             </ScrollView>

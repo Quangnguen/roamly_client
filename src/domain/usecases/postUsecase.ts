@@ -7,4 +7,8 @@ export class PostUseCase {
   async createPost(formData: FormData): Promise<Post> {
     return await this.repo.createPost(formData)
   }
+
+  async getPosts(): Promise<Post[]> {
+    return await this.repo.getPosts()
+  }
 }

@@ -29,6 +29,9 @@ import MemoriesGrid from '../components/memory';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { getFollowers, getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
+import { getPosts } from '../redux/slices/postSlice';
+import PostMini from '../components/PostMini';
+import Post from '../components/post';
 
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -98,6 +101,7 @@ const AccountPage: React.FC = () => {
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { followers, following, loading: followersLoading, error: followersError, message: followersMessage, status: followersStatus, statusCode: followersStatusCode } = useSelector((state: RootState) => state.follow);
   const { user: authUser } = useSelector((state: RootState) => state.auth);
+  const { posts } = useSelector((state: RootState) => state.post);
   const [isOpen, setIsOpen] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'followers' | 'followings' | null>(null);
@@ -105,6 +109,9 @@ const AccountPage: React.FC = () => {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const navigation = useNavigation<NavigationProp>();
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
 
 
   const toggleMenu = () => {
@@ -118,6 +125,7 @@ const AccountPage: React.FC = () => {
       dispatch(fetchUserProfile());
       dispatch(getFollowers());
       dispatch(getFollowing());
+      dispatch(getPosts());
     }, [dispatch])
   );
 
@@ -177,30 +185,6 @@ const AccountPage: React.FC = () => {
     { id: '2', name: 'Friends', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
     { id: '3', name: 'Sport', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
     { id: '4', name: 'Design', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
-  ];
-
-  const posts = [
-    {
-      id: '1',
-      images: [
-        'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg',
-        'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg',
-      ],
-      caption: 'A beautiful day in the park!',
-      likes: 120,
-      comments: 45,
-      shares: 10,
-      createdAt: '2023-05-01',
-    },
-    {
-      id: '2',
-      images: ['https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg'],
-      caption: 'Loving this new design!',
-      likes: 200,
-      comments: 60,
-      shares: 15,
-      createdAt: '2023-05-03',
-    },
   ];
 
   const handleOpenModal = (type: 'followers' | 'followings') => {
@@ -383,7 +367,14 @@ const AccountPage: React.FC = () => {
         }
         renderItem={null} // Không có dữ liệu chính để hiển thị
         ListFooterComponent={activeTab === 'grid' ?
-          <PostList posts={posts} /> :
+          <PostList
+            posts={posts}
+            mini={true}
+            expandedPostId={expandedPostId}
+            onPostPress={(post) => {
+              setExpandedPostId(expandedPostId === post.id ? null : post.id);
+            }}
+          /> :
           <MemoriesGrid memories={fakeMemories} userId={authUser?.user?.id ?? ''} />} // Hiển thị danh sách bài đăng
       />
       {isOpen && (
@@ -582,6 +573,48 @@ const AccountPage: React.FC = () => {
               <Text style={styles.changeAvatarButtonText}>Đổi ảnh đại diện</Text>
             )}
           </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Modal hiển thị bài viết đầy đủ */}
+      <Modal
+        visible={showPostModal}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setShowPostModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 40,
+              right: 20,
+              zIndex: 10,
+              backgroundColor: 'rgba(0,0,0,0.1)',
+              borderRadius: 20,
+              padding: 8,
+            }}
+            onPress={() => setShowPostModal(false)}
+          >
+            <Text style={{ color: '#007AFF', fontWeight: 'bold', fontSize: 18 }}>Đóng</Text>
+          </TouchableOpacity>
+          {selectedPost && (
+            <Post
+              username={selectedPost.author.username}
+              location={selectedPost.location}
+              images={selectedPost.imageUrl.map((url: string, index: number) => ({
+                id: index.toString(),
+                uri: url,
+              }))}
+              commentCount={selectedPost.commentCount}
+              likeCount={selectedPost.likeCount}
+              sharedCount={selectedPost.sharedCount}
+              caption={selectedPost.caption}
+              author={selectedPost.author}
+              isPublic={selectedPost.isPublic}
+              isVerified={false}
+            />
+          )}
         </View>
       </Modal>
     </SafeAreaView>

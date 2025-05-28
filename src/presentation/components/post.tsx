@@ -25,12 +25,18 @@ type ImageItem = {
 
 interface PostProps {
   username: string;
-  isVerified: boolean;
-  location: string;
+  isVerified?: boolean;
+  location?: string | null;
   images: ImageItem[];
-  commentsCount: number;
-  likesCount: number;
+  commentCount: number;
+  likeCount: number;
+  sharedCount: number;
   caption: string;
+  author: {
+    username: string;
+    profilePic: string | null;
+  };
+  isPublic: boolean;
 }
 
 const Post: React.FC<PostProps> = ({
@@ -43,9 +49,15 @@ const Post: React.FC<PostProps> = ({
       uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-LhKXgWZZXVwVm29H8Ay2tt6J90DBga.png'
     }
   ],
-  commentsCount = 1236,
-  likesCount = 44686,
+  commentCount = 1236,
+  likeCount = 44686,
+  sharedCount = 0,
   caption = 'The game in Japan was amazing and I want to share some photos',
+  author = {
+    username: 'joshua_J',
+    profilePic: 'https://randomuser.me/api/portraits/men/43.jpg',
+  },
+  isPublic = true,
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
@@ -69,7 +81,7 @@ const Post: React.FC<PostProps> = ({
 
   const renderImageItem = useCallback(({ item, index }: { item: ImageItem; index: number }) => (
     <View style={{ width }}>
-      <TouchableOpacity onPress={() => handleImagePress(index)}>
+      <TouchableOpacity activeOpacity={1} onPress={() => handleImagePress(index)}>
         <Image
           source={typeof item.uri === 'string' ? { uri: item.uri } : item.uri}
           style={styles.postImage}
@@ -131,13 +143,13 @@ const Post: React.FC<PostProps> = ({
         <View style={styles.userInfo}>
           <Image
             source={{
-              uri: 'https://randomuser.me/api/portraits/men/43.jpg',
+              uri: author.profilePic || 'https://randomuser.me/api/portraits/men/43.jpg',
             }}
             style={styles.profilePic}
           />
           <View style={styles.userTextContainer}>
             <View style={styles.usernameContainer}>
-              <Text style={styles.username}>{username}</Text>
+              <Text style={styles.username}>{author.username}</Text>
               {isVerified && (
                 <View style={styles.verifiedBadge}>
                   <FontAwesome name="check" size={8} color="#fff" />
@@ -200,8 +212,8 @@ const Post: React.FC<PostProps> = ({
 
       {/* Likes */}
       <View style={styles.likesContainer}>
-        <Text style={styles.bold}>{likesCount.toLocaleString()} likes</Text>
-        <Text style={styles.bold}>  {commentsCount.toLocaleString()} comments</Text>
+        <Text style={styles.bold}>{likeCount.toLocaleString()} likes</Text>
+        <Text style={styles.bold}>  {commentCount.toLocaleString()} comments</Text>
       </View>
 
       {/* Action Buttons */}

@@ -47,25 +47,37 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const posts = [
     {
       id: '1',
-      images: [
+      imageUrl: [
         'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg',
       ],
       caption: 'A beautiful day!',
-      likes: 10,
-      comments: 2,
-      shares: 1,
+      likeCount: 10,
+      commentCount: 2,
+      sharedCount: 1,
       createdAt: '2023-05-01',
+      location: 'Beautiful Place',
+      isPublic: true,
+      author: {
+        username: user?.username || 'anonymous',
+        profilePic: user?.profilePic || null
+      }
     },
     {
       id: '2',
-      images: [
+      imageUrl: [
         'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg',
       ],
       caption: 'Enjoying the view!',
-      likes: 20,
-      comments: 5,
-      shares: 3,
+      likeCount: 20,
+      commentCount: 5,
+      sharedCount: 3,
       createdAt: '2023-05-02',
+      location: 'Amazing View',
+      isPublic: true,
+      author: {
+        username: user?.username || 'anonymous',
+        profilePic: user?.profilePic || null
+      }
     },
   ];
   const storyHighlights: StoryHighlight[] = [
