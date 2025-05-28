@@ -4,8 +4,6 @@ export const authorizedRequest = async (url: string, options: RequestInit = {}) 
   try {
     const accessToken = await refreshAccessToken();
 
-    console.log('Access Token:', accessToken);
-
     const response = await fetch(url, {
       ...options,
       headers: {
