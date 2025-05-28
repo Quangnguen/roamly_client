@@ -9,3 +9,9 @@ export const createPostApi = async (formData: FormData) => {
         body: formData
     });
 };
+
+export const getPostsApi = async () => {
+    return await authorizedRequest(`${API_BASE_URL}/posts`, {
+        method: 'GET',
+    });
+};

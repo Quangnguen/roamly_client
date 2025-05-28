@@ -1,10 +1,14 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, TextInput, Dimensions, FlatList, ActivityIndicator, ImageSourcePropType, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Post from '../components/post';
 import { BACKGROUND } from '@/src/const/constants';
+import BookingCalendarModal from '../components/BookingCalendarModal';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store';
+import { getPosts } from '../redux/slices/postSlice';
 
 // Định nghĩa kiểu params cho trang chi tiết homestay
 type HomeStayDetailPageRouteProp = RouteProp<RootStackParamList, 'HomeStayDetailPage'>;
@@ -25,81 +29,19 @@ type ReviewItem = {
     date?: string;
 };
 
-const posts = [
-    {
-        id: '1',
-        username: 'joshua_J',
-        isVerified: true,
-        location: 'Tokyo, Japan',
-        images: [
-            { id: '1', uri: require('../../../assets/images/natural1.jpg') }
-        ],
-        commentsCount: 44686,
-        likesCount: 44686,
-        caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-        id: '2',
-        username: 'joshua_J',
-        isVerified: true,
-        location: 'Tokyo, Japan',
-        images: [
-            { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
-        ],
-        commentsCount: 44686,
-        likesCount: 44686,
-        caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-        id: '3',
-        username: 'joshua_J',
-        isVerified: true,
-        location: 'Tokyo, Japan',
-        images: [
-            { id: '1', uri: require('../../../assets/images/natural1.jpg') },
-            { id: '2', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
-        ],
-        commentsCount: 44686,
-        likesCount: 44686,
-        caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-        id: '4',
-        username: 'joshua_J',
-        isVerified: true,
-        location: 'Tokyo, Japan',
-        images: [
-            { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
-        ],
-        commentsCount: 44686,
-        likesCount: 44686,
-        caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-        id: '5',
-        username: 'joshua_J',
-        isVerified: true,
-        location: 'Tokyo, Japan',
-        images: [
-            { id: '1', uri: require('../../../assets/images/natural1.jpg') }
-        ],
-        commentsCount: 44686,
-        likesCount: 44686,
-        caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-        id: '6',
-        username: 'joshua_J',
-        isVerified: true,
-        location: 'Tokyo, Japan',
-        images: [
-            { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
-        ],
-        commentsCount: 44686,
-        likesCount: 44686,
-        caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-];
+// Mô hình dữ liệu cho lịch đặt phòng
+type BookingDay = {
+    date: string;
+    status: 'available' | 'limited' | 'full';
+    availableRooms?: Room[];
+};
+
+// Mô hình dữ liệu cho phòng
+type Room = {
+    id: string;
+    name: string;
+    available: boolean;
+};
 
 // Thêm mockImages để demo vuốt ảnh
 const mockImages: ImageItem[] = [
@@ -187,8 +129,15 @@ const HomeStayDetailPage: React.FC = () => {
     const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
     const [isFavorite, setIsFavorite] = useState(false);
     const [isScrolling, setIsScrolling] = useState(false);
+    const [showBookingCalendar, setShowBookingCalendar] = useState(false);
 
     const flatListRef = useRef<FlatList>(null);
+    const dispatch = useDispatch<AppDispatch>();
+    const { posts, loading } = useSelector((state: RootState) => state.post);
+
+    useEffect(() => {
+        dispatch(getPosts());
+    }, [dispatch]);
 
     const handleScrollBegin = useCallback(() => {
         setIsScrolling(true);
@@ -291,12 +240,269 @@ const HomeStayDetailPage: React.FC = () => {
     ), []);
 
     // Hiển thị tiện nghi của homestay
-    const renderAmenity = useCallback(({ item }: { item: typeof amenities[0] }) => (
-        <View style={styles.amenityItem}>
-            <FontAwesome name={item.icon as any} size={20} color="#666" />
-            <Text style={styles.amenityText}>{item.name}</Text>
+    const renderAmenities = () => (
+        <View style={styles.amenitiesSection}>
+            <Text style={styles.sectionTitle}>Tiện nghi</Text>
+            <View style={styles.amenitiesContainer}>
+                {amenities.map((item) => (
+                    <View key={item.id} style={styles.amenityItem}>
+                        <FontAwesome name={item.icon as any} size={24} color="#666" />
+                        <Text style={styles.amenityText}>{item.name}</Text>
+                    </View>
+                ))}
+            </View>
+            <TouchableOpacity
+                style={styles.bookingCalendarButton}
+                onPress={() => setShowBookingCalendar(true)}
+            >
+                <Text style={styles.bookingCalendarButtonText}>Xem lịch đặt phòng</Text>
+            </TouchableOpacity>
         </View>
-    ), []);
+    );
+
+    // Mock data cho lịch đặt phòng
+    const mockBookingData: BookingDay[] = [
+        // Tháng 4
+        { date: '1/4', status: 'available' },
+        {
+            date: '2/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true },
+                { id: '2', name: 'Phòng Superior', available: true }
+            ]
+        },
+        { date: '3/4', status: 'full' },
+        { date: '4/4', status: 'available' },
+        {
+            date: '5/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '3', name: 'Phòng Suite', available: true }
+            ]
+        },
+        { date: '6/4', status: 'full' },
+        { date: '7/4', status: 'available' },
+        {
+            date: '8/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true },
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '9/4', status: 'full' },
+        { date: '10/4', status: 'available' },
+        {
+            date: '11/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '2', name: 'Phòng Superior', available: true }
+            ]
+        },
+        { date: '12/4', status: 'full' },
+        { date: '13/4', status: 'available' },
+        {
+            date: '14/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '3', name: 'Phòng Suite', available: true },
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '15/4', status: 'full' },
+        { date: '16/4', status: 'available' },
+        {
+            date: '17/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true }
+            ]
+        },
+        { date: '18/4', status: 'full' },
+        { date: '19/4', status: 'available' },
+        {
+            date: '20/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '2', name: 'Phòng Superior', available: true },
+                { id: '3', name: 'Phòng Suite', available: true }
+            ]
+        },
+        { date: '21/4', status: 'full' },
+        { date: '22/4', status: 'available' },
+        {
+            date: '23/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '24/4', status: 'full' },
+        { date: '25/4', status: 'available' },
+        {
+            date: '26/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true },
+                { id: '2', name: 'Phòng Superior', available: true }
+            ]
+        },
+        { date: '27/4', status: 'full' },
+        { date: '28/4', status: 'available' },
+        {
+            date: '29/4',
+            status: 'limited',
+            availableRooms: [
+                { id: '3', name: 'Phòng Suite', available: true }
+            ]
+        },
+        { date: '30/4', status: 'full' },
+
+        // Tháng 5
+        { date: '1/5', status: 'available' },
+        {
+            date: '2/5',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true },
+                { id: '3', name: 'Phòng Suite', available: true }
+            ]
+        },
+        { date: '3/5', status: 'available' },
+        { date: '4/5', status: 'available' },
+        { date: '5/5', status: 'full' },
+        {
+            date: '6/5',
+            status: 'limited',
+            availableRooms: [
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '7/5', status: 'available' },
+        { date: '8/5', status: 'available' },
+        { date: '9/5', status: 'full' },
+        { date: '10/5', status: 'available' },
+        {
+            date: '11/5',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true },
+                { id: '2', name: 'Phòng Superior', available: true }
+            ]
+        },
+        { date: '12/5', status: 'available' },
+        { date: '13/5', status: 'full' },
+        { date: '14/5', status: 'available' },
+        { date: '15/5', status: 'available' },
+        {
+            date: '16/5',
+            status: 'limited',
+            availableRooms: [
+                { id: '3', name: 'Phòng Suite', available: true }
+            ]
+        },
+        { date: '17/5', status: 'full' },
+        { date: '18/5', status: 'available' },
+        { date: '19/5', status: 'available' },
+        { date: '20/5', status: 'full' },
+        {
+            date: '21/5',
+            status: 'limited',
+            availableRooms: [
+                { id: '2', name: 'Phòng Superior', available: true },
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '22/5', status: 'available' },
+        { date: '23/5', status: 'available' },
+        { date: '24/5', status: 'full' },
+        { date: '25/5', status: 'available' },
+        {
+            date: '26/5',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true }
+            ]
+        },
+        { date: '27/5', status: 'available' },
+        { date: '28/5', status: 'full' },
+        { date: '29/5', status: 'available' },
+        { date: '30/5', status: 'available' },
+        { date: '31/5', status: 'full' },
+
+        // Tháng 6
+        { date: '1/6', status: 'available' },
+        { date: '2/6', status: 'full' },
+        {
+            date: '3/6',
+            status: 'limited',
+            availableRooms: [
+                { id: '3', name: 'Phòng Suite', available: true },
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '4/6', status: 'available' },
+        { date: '5/6', status: 'available' },
+        { date: '6/6', status: 'full' },
+        {
+            date: '7/6',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true },
+                { id: '2', name: 'Phòng Superior', available: true }
+            ]
+        },
+        { date: '8/6', status: 'available' },
+        { date: '9/6', status: 'available' },
+        { date: '10/6', status: 'full' },
+        { date: '11/6', status: 'available' },
+        {
+            date: '12/6',
+            status: 'limited',
+            availableRooms: [
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '13/6', status: 'available' },
+        { date: '14/6', status: 'full' },
+        { date: '15/6', status: 'available' },
+        {
+            date: '16/6',
+            status: 'limited',
+            availableRooms: [
+                { id: '1', name: 'Phòng Deluxe', available: true },
+                { id: '3', name: 'Phòng Suite', available: true }
+            ]
+        },
+        { date: '17/6', status: 'available' },
+        { date: '18/6', status: 'available' },
+        { date: '19/6', status: 'full' },
+        { date: '20/6', status: 'available' },
+        {
+            date: '21/6',
+            status: 'limited',
+            availableRooms: [
+                { id: '2', name: 'Phòng Superior', available: true }
+            ]
+        },
+        { date: '22/6', status: 'available' },
+        { date: '23/6', status: 'full' },
+        { date: '24/6', status: 'available' },
+        { date: '25/6', status: 'available' },
+        {
+            date: '26/6',
+            status: 'limited',
+            availableRooms: [
+                { id: '3', name: 'Phòng Suite', available: true },
+                { id: '4', name: 'Phòng Family', available: true }
+            ]
+        },
+        { date: '27/6', status: 'available' },
+        { date: '28/6', status: 'full' },
+        { date: '29/6', status: 'available' },
+        { date: '30/6', status: 'available' }
+    ];
 
     return (
         <SafeAreaView style={styles.container}>
@@ -416,12 +622,7 @@ const HomeStayDetailPage: React.FC = () => {
                     </View>
 
                     {/* Tiện nghi */}
-                    <View style={styles.amenitiesContainer}>
-                        <Text style={styles.sectionTitle}>Tiện nghi</Text>
-                        <View style={styles.amenitiesList}>
-                            {amenities.map(item => renderAmenity({ item }))}
-                        </View>
-                    </View>
+                    {renderAmenities()}
 
                     {/* Đánh giá và bình luận */}
                     <View style={{ width: '100%' }}>
@@ -496,13 +697,16 @@ const HomeStayDetailPage: React.FC = () => {
                 {posts.map((post) => (
                     <Post
                         key={post.id}
-                        username={post.username}
-                        isVerified={post.isVerified}
+                        username={post.author.username}
                         location={post.location}
-                        images={post.images}
-                        commentsCount={post.commentsCount}
-                        likesCount={post.likesCount}
+                        images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
+                        commentCount={post.commentCount}
+                        likeCount={post.likeCount}
+                        sharedCount={post.sharedCount}
                         caption={post.caption}
+                        author={post.author}
+                        isPublic={post.isPublic}
+                        isVerified={false}
                     />
                 ))}
             </ScrollView>
@@ -513,6 +717,13 @@ const HomeStayDetailPage: React.FC = () => {
                     <Text style={styles.bookingButtonText}>Đặt phòng ngay</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Thêm BookingCalendarModal */}
+            <BookingCalendarModal
+                isVisible={showBookingCalendar}
+                onClose={() => setShowBookingCalendar(false)}
+                bookingData={mockBookingData}
+            />
         </SafeAreaView>
     );
 };
@@ -683,27 +894,25 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         color: '#222',
     },
-    amenitiesContainer: {
-        marginBottom: 24,
+    amenitiesSection: {
+        marginVertical: 16,
+        paddingHorizontal: 16,
     },
-    amenitiesList: {
+    amenitiesContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        marginTop: 12,
     },
     amenityItem: {
-        flexDirection: 'row',
+        width: '25%',
         alignItems: 'center',
-        width: '48%',
-        marginBottom: 12,
-        backgroundColor: '#f5f5f5',
-        padding: 10,
-        borderRadius: 8,
+        marginBottom: 16,
     },
     amenityText: {
-        marginLeft: 8,
-        fontSize: 14,
-        color: '#444',
+        marginTop: 8,
+        fontSize: 12,
+        textAlign: 'center',
+        color: '#666',
     },
     reviewsHeader: {
         flexDirection: 'row',
@@ -837,6 +1046,18 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    bookingCalendarButton: {
+        backgroundColor: '#007AFF',
+        padding: 12,
+        borderRadius: 8,
+        marginTop: 16,
+        alignItems: 'center',
+    },
+    bookingCalendarButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

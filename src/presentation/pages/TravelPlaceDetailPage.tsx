@@ -7,6 +7,9 @@ import ImageViewing from 'react-native-image-viewing';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import Post from '../components/post';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store';
+import { getPosts } from '../redux/slices/postSlice';
 
 const { width } = Dimensions.get('window');
 
@@ -38,6 +41,8 @@ const TravelPlaceDetailPage = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
+    const dispatch = useDispatch<AppDispatch>();
+    const { posts, loading } = useSelector((state: RootState) => state.post);
 
     // Mock data cho địa điểm du lịch
     const placeDetails: TravelPlaceDetails = {
@@ -66,33 +71,9 @@ const TravelPlaceDetailPage = () => {
         ],
     };
 
-    // Mock data cho bài viết
-    const posts = [
-        {
-            id: '1',
-            username: 'traveler_123',
-            isVerified: true,
-            location: 'Chùa Cầu, Hội An',
-            images: [
-                { id: '1', uri: placeDetails.images[0].uri }
-            ],
-            likesCount: 1234,
-            commentsCount: 89,
-            caption: 'Một buổi chiều tuyệt đẹp tại Chùa Cầu 🌅',
-        },
-        {
-            id: '2',
-            username: 'wanderlust',
-            isVerified: true,
-            location: 'Chùa Cầu, Hội An',
-            images: [
-                { id: '1', uri: placeDetails.images[1].uri }
-            ],
-            likesCount: 856,
-            commentsCount: 45,
-            caption: 'Kiến trúc độc đáo của cây cầu cổ nhất Hội An 🏛️',
-        },
-    ];
+    React.useEffect(() => {
+        dispatch(getPosts());
+    }, [dispatch]);
 
     const toggleFavorite = () => {
         setIsFavorite(prev => !prev);
@@ -227,13 +208,16 @@ const TravelPlaceDetailPage = () => {
                 {posts.map((post) => (
                     <Post
                         key={post.id}
-                        username={post.username}
-                        isVerified={post.isVerified}
+                        username={post.author.username}
                         location={post.location}
-                        images={post.images}
-                        likesCount={post.likesCount}
-                        commentsCount={post.commentsCount}
+                        images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
+                        commentCount={post.commentCount}
+                        likeCount={post.likeCount}
+                        sharedCount={post.sharedCount}
                         caption={post.caption}
+                        author={post.author}
+                        isPublic={post.isPublic}
+                        isVerified={false}
                     />
                 ))}
             </View>

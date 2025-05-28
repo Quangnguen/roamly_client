@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
@@ -9,10 +9,18 @@ import SquareCard from '../components/squareCardForHomeStay';
 import Post from '../components/post';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store';
+import { getPosts } from '../redux/slices/postSlice';
 
 const { width } = Dimensions.get('window');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+type ImageItem = {
+    id: string;
+    uri: string;
+};
 
 const AddressDetailPage = () => {
     const route = useRoute();
@@ -23,6 +31,12 @@ const AddressDetailPage = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
+    const dispatch = useDispatch<AppDispatch>();
+    const { posts, loading } = useSelector((state: RootState) => state.post);
+
+    useEffect(() => {
+        dispatch(getPosts());
+    }, [dispatch]);
 
     const toggleFollow = () => {
         setIsFollowing(prev => !prev);
@@ -38,83 +52,11 @@ const AddressDetailPage = () => {
         setIsFullScreenPreview(!isFullScreenPreview);
     };
 
-    const posts = [
-        {
-            id: '1',
-            username: 'joshua_J',
-            isVerified: true,
-            location: 'Tokyo, Japan',
-            images: [
-                { id: '1', uri: require('../../../assets/images/natural1.jpg') },
-                { id: '2', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-                { id: '3', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
-            ],
-            likesCount: 44686,
-            commentsCount: 1236,
-            caption: 'The game in Japan was amazing and I want to share some photos',
-        },
-        {
-            id: '2',
-            username: 'joshua_J',
-            isVerified: true,
-            location: 'Tokyo, Japan',
-            images: [
-                { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
-            ],
-            likesCount: 44686,
-            commentsCount: 1236,
-            caption: 'The game in Japan was amazing and I want to share some photos',
-        },
-        {
-            id: '3',
-            username: 'joshua_J',
-            isVerified: true,
-            location: 'Tokyo, Japan',
-            images: [
-                { id: '1', uri: require('../../../assets/images/natural1.jpg') },
-                { id: '2', uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' }
-            ],
-            likesCount: 44686,
-            commentsCount: 1236,
-            caption: 'The game in Japan was amazing and I want to share some photos',
-        },
-        {
-            id: '4',
-            username: 'joshua_J',
-            isVerified: true,
-            location: 'Tokyo, Japan',
-            images: [
-                { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
-            ],
-            commentsCount: 1236,
-            likesCount: 44686,
-            caption: 'The game in Japan was amazing and I want to share some photos',
-        },
-        {
-            id: '5',
-            username: 'joshua_J',
-            isVerified: true,
-            location: 'Tokyo, Japan',
-            images: [
-                { id: '1', uri: require('../../../assets/images/natural1.jpg') }
-            ],
-            commentsCount: 1236,
-            likesCount: 44686,
-            caption: 'The game in Japan was amazing and I want to share some photos',
-        },
-        {
-            id: '6',
-            username: 'joshua_J',
-            isVerified: true,
-            location: 'Tokyo, Japan',
-            images: [
-                { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-                { id: '2', uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' }
-            ],
-            commentsCount: 1236,
-            likesCount: 44686,
-            caption: 'The game in Japan was amazing and I want to share some photos',
-        },
+    // Thêm mockImages để demo vuốt ảnh
+    const mockImages: ImageItem[] = [
+        { id: '1', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' },
+        { id: '2', uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' },
+        { id: '3', uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' },
     ];
 
     const placeDetails: AddressDetails = {
@@ -339,13 +281,19 @@ const AddressDetailPage = () => {
                 {posts.map((post) => (
                     <Post
                         key={post.id}
-                        username={post.username}
-                        isVerified={post.isVerified}
+                        username={post.author.username}
                         location={post.location}
-                        images={post.images}
-                        likesCount={post.likesCount}
-                        commentsCount={post.commentsCount}
+                        images={post.imageUrl.map((url, index) => ({
+                            id: index.toString(),
+                            uri: url
+                        }))}
+                        commentCount={post.commentCount}
+                        likeCount={post.likeCount}
+                        sharedCount={post.sharedCount}
                         caption={post.caption}
+                        author={post.author}
+                        isPublic={post.isPublic}
+                        isVerified={false}
                     />
                 ))}
             </View>

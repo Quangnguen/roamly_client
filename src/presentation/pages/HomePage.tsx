@@ -1,128 +1,72 @@
-import { View, Text, ScrollView, StyleSheet, ImageSourcePropType } from 'react-native'
-import { Header } from '../components/header'
-import FollowList from '../components/follower'
-import Post from '../components/post'
-import { useNavigation } from '@react-navigation/native'
-import { NavigationProp } from "@/src/utils/PropsNavigate"
-import { useEffect, useRef, useState } from 'react'
-import { BACKGROUND } from '@/src/const/constants'
-
-// Định nghĩa kiểu dữ liệu cho ảnh
-type ImageItem = {
-  id: string;
-  uri: string | ImageSourcePropType;
-};
+import React, { useEffect } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  Text,
+} from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store';
+import { getPosts } from '../redux/slices/postSlice';
+import Post from '../components/post';
+import { BACKGROUND } from '@/src/const/constants';
+import { Header } from '../components/header';
+import { useNavigation } from '@react-navigation/native';
+import { NavigationProp } from "@/src/utils/PropsNavigate";
 
 const HomePage = () => {
+  const navigation: NavigationProp<'Home' | 'WeatherPage'> = useNavigation();
+  const dispatch = useDispatch<AppDispatch>();
+  const { posts, loading } = useSelector((state: RootState) => state.post);
 
-  const navigation: NavigationProp<'Home' | 'WeatherPage'> = useNavigation()
+  useEffect(() => {
+    dispatch(getPosts());
+  }, [dispatch]);
 
-  const posts = [
-    {
-      id: '1',
-      username: 'joshua_J',
-      isVerified: true,
-      location: 'Tokyo, Japan',
-      images: [
-        { id: '1', uri: require('../../../assets/images/natural1.jpg') },
-        { id: '2', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-        { id: '3', uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' }
-      ],
-      commentsCount: 44686,
-      likesCount: 44686,
-      caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-      id: '2',
-      username: 'joshua_J',
-      isVerified: true,
-      location: 'Tokyo, Japan',
-      images: [
-        { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
-      ],
-      commentsCount: 44686,
-      likesCount: 44686,
-      caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-      id: '3',
-      username: 'joshua_J',
-      isVerified: true,
-      location: 'Tokyo, Japan',
-      images: [
-        { id: '1', uri: require('../../../assets/images/natural1.jpg') },
-        { id: '2', uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' }
-      ],
-      commentsCount: 44686,
-      likesCount: 44686,
-      caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-      id: '4',
-      username: 'joshua_J',
-      isVerified: true,
-      location: 'Tokyo, Japan',
-      images: [
-        { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' }
-      ],
-      commentsCount: 44686,
-      likesCount: 44686,
-      caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-      id: '5',
-      username: 'joshua_J',
-      isVerified: true,
-      location: 'Tokyo, Japan',
-      images: [
-        { id: '1', uri: require('../../../assets/images/natural1.jpg') }
-      ],
-      commentsCount: 44686,
-      likesCount: 44686,
-      caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-    {
-      id: '6',
-      username: 'joshua_J',
-      isVerified: true,
-      location: 'Tokyo, Japan',
-      images: [
-        { id: '1', uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-        { id: '2', uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' }
-      ],
-      commentsCount: 44686,
-      likesCount: 44686,
-      caption: 'The game in Japan was amazing and I want to share some photos',
-    },
-  ];
+  const handleRefresh = () => {
+    dispatch(getPosts());
+  };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <Header
         unreadMessages={1}
         onCameraPress={() => console.log("Camera pressed")}
         onMessagesPress={() => console.log("Messages pressed")}
         onDirectPress={() => console.log("Direct pressed")}
-        onWeatherPress={() => navigation.navigate('WeatherPage')} />
-      {/* <FollowList /> */}
-      <ScrollView>
+        onWeatherPress={() => navigation.navigate('WeatherPage')}
+      />
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={handleRefresh}
+          />
+        }
+      >
         {posts.map((post) => (
           <Post
             key={post.id}
-            username={post.username}
-            isVerified={post.isVerified}
+            username={post.author.username}
             location={post.location}
-            images={post.images}
-            commentsCount={post.commentsCount}
-            likesCount={post.likesCount}
+            images={post.imageUrl.map((url, index) => ({
+              id: index.toString(),
+              uri: url
+            }))}
+            commentCount={post.commentCount}
+            likeCount={post.likeCount}
+            sharedCount={post.sharedCount}
             caption={post.caption}
+            author={post.author}
+            isPublic={post.isPublic}
+            isVerified={false}
           />
         ))}
       </ScrollView>
-      <Text style={{ textAlign: 'center', marginVertical: 20 }}>HomePage</Text>
-    </ScrollView>
-  )
-}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -139,6 +83,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-})
+});
 
-export default HomePage
+export default HomePage;

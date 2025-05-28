@@ -8,7 +8,7 @@ const postUseCase = new PostUseCase(new PostRepositoryImpl());
 
 export const createPost = createAsyncThunk(
     'post/createPost',
-    async (data: { images: FormData, caption: string, title: string }, { rejectWithValue }) => {
+    async (data: { images: FormData, caption: string, location?: string | null }, { rejectWithValue }) => {
         try {
             const formData = new FormData();
 
@@ -18,13 +18,28 @@ export const createPost = createAsyncThunk(
                 formData.append('images', image);
             });
 
-            formData.append('title', data.title);
             formData.append('caption', data.caption);
+            if (data.location) {
+                formData.append('location', data.location);
+            }
+            formData.append('isPublic', 'true');
 
             const response = await postUseCase.createPost(formData);
             return response;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Có lỗi xảy ra');
+        }
+    }
+);
+
+export const getPosts = createAsyncThunk(
+    'post/getPosts',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await postUseCase.getPosts();
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi tải bài viết');
         }
     }
 );
@@ -46,6 +61,7 @@ const postSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Create Post
             .addCase(createPost.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -57,6 +73,22 @@ const postSlice = createSlice({
                 state.status = 'success';
             })
             .addCase(createPost.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                state.message = action.payload as string;
+                state.status = 'error';
+            })
+            // Get Posts
+            .addCase(getPosts.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getPosts.fulfilled, (state, action) => {
+                state.loading = false;
+                state.posts = action.payload;
+                state.error = null;
+            })
+            .addCase(getPosts.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
                 state.message = action.payload as string;
