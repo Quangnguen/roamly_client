@@ -14,11 +14,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { BACKGROUND } from '@/src/const/constants';
 import PostList from '../components/postList';
-import MemoriesGrid from '../components/memory'; // Thêm dòng này
+import MemoriesGrid from '../components/memory';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearUser, fetchUserProfile, getUserById } from '../redux/slices/userSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
+import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
+import { getPosts, getPostsByUserId } from '../redux/slices/postSlice';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'InfoAccPage'>;
 type InfoAccPageRouteProp = RouteProp<RootStackParamList, 'InfoAccPage'>;
@@ -34,52 +36,27 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
   const dispatch = useDispatch<AppDispatch>();
   const { user, message, status } = useSelector((state: RootState) => state.user);
+  const { following } = useSelector((state: RootState) => state.follow);
+  const { user: authUser } = useSelector((state: RootState) => state.auth);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<InfoAccPageRouteProp>();
   const { id } = route.params;
+  const { posts, loading } = useSelector((state: RootState) => state.post);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(getUserById(id));
+    dispatch(getPostsByUserId(id));
+    console.log('posts', posts);
+    console.log('id', id);
   }, [dispatch, id]);
+
+  useEffect(() => {
+    dispatch(getFollowing());
+  }, [dispatch]);
+
   console.log('user', user);
 
-  // Fake data nếu user chưa có
-  const posts = [
-    {
-      id: '1',
-      imageUrl: [
-        'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg',
-      ],
-      caption: 'A beautiful day!',
-      likeCount: 10,
-      commentCount: 2,
-      sharedCount: 1,
-      createdAt: '2023-05-01',
-      location: 'Beautiful Place',
-      isPublic: true,
-      author: {
-        username: user?.username || 'anonymous',
-        profilePic: user?.profilePic || null
-      }
-    },
-    {
-      id: '2',
-      imageUrl: [
-        'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg',
-      ],
-      caption: 'Enjoying the view!',
-      likeCount: 20,
-      commentCount: 5,
-      sharedCount: 3,
-      createdAt: '2023-05-02',
-      location: 'Amazing View',
-      isPublic: true,
-      author: {
-        username: user?.username || 'anonymous',
-        profilePic: user?.profilePic || null
-      }
-    },
-  ];
   const storyHighlights: StoryHighlight[] = [
     { id: '1', name: 'New', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
     { id: '2', name: 'Friends', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
@@ -118,8 +95,6 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
     },
   ];
 
-
-
   useEffect(() => {
     if (message) {
       Toast.show({
@@ -134,11 +109,32 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const followersCount = user?.followersCount ?? 0;
   const followingCount = user?.followingsCount ?? 0;
 
+  const isMyProfile = authUser?.user?.id === user?.id;
+  const isFollowing = following?.some(f => f.id === user?.id);
+
+  const handleFollowPress = async () => {
+    if (!user?.id) return;
+    if (isFollowing) {
+      await dispatch(unfollowUser(user.id));
+    } else {
+      await dispatch(followUser(user.id));
+    }
+    dispatch(getFollowing());
+  };
+
+  const handleMessagePress = () => {
+    if (!user?.id) return;
+    navigation.navigate('ChatDetailPage', {
+      chatId: user.id,
+      name: user.name || user.username || '',
+      avatar: user.profilePic || '',
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={[]} // Add an empty array as data
-        // Không có data chính, chỉ dùng ListHeaderComponent
+        data={[]}
         keyExtractor={(_: any, index: number) => index.toString()}
         ListHeaderComponent={
           <>
@@ -156,35 +152,64 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
             {/* Profile Info */}
             <View style={styles.profileSection}>
               <View style={styles.profileInfo}>
-                <Image
-                  source={{ uri: user?.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
-                  style={styles.profileImage}
-                />
-                <View style={styles.statsContainer}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{postCount}</Text>
-                    <Text style={styles.statLabel}>Posts</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{followersCount}</Text>
-                    <Text style={styles.statLabel}>Followers</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{followingCount}</Text>
-                    <Text style={styles.statLabel}>Followings</Text>
-                  </View>
+                <View style={styles.profileInfoCenter}>
+                  <Image
+                    source={{ uri: user?.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+                    style={styles.profileImage}
+                  />
+                  <Text style={styles.name}>{user?.name ?? 'Tên người dùng'}</Text>
+                  <Text style={styles.bioText}>
+                    {user?.bio || 'This is a sample bio. Update it in your profile settings.'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{postCount}</Text>
+                  <Text style={styles.statLabel}>Posts</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{followersCount}</Text>
+                  <Text style={styles.statLabel}>Followers</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{followingCount}</Text>
+                  <Text style={styles.statLabel}>Followings</Text>
                 </View>
               </View>
 
-              {/* Bio */}
-              <View style={styles.bioContainer}>
-                <Text style={styles.name}>{user?.name ?? 'Tên người dùng'}</Text>
-                <Text style={styles.bioText}>
-                  {user?.bio || 'This is a sample bio. Update it in your profile settings.'}
-                </Text>
-              </View>
-
-
+              {/* Nút follow và nhắn tin */}
+              {!isMyProfile && (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.followCard,
+                      isFollowing && styles.followingCard,
+                      { marginRight: 12 },
+                    ]}
+                    onPress={handleFollowPress}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={isFollowing ? styles.followingText : styles.followText}>
+                        {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                      </Text>
+                      {!isFollowing && (
+                        <Feather name="plus" size={16} color="#fff" style={{ marginLeft: 2 }} />
+                      )}
+                      {isFollowing && (
+                        <Feather name="check" size={16} color="#000" style={{ marginLeft: 2 }} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.messageButton}
+                    onPress={handleMessagePress}
+                  >
+                    <Feather name="message-circle" size={18} color="#0095F6" />
+                    <Text style={styles.messageText}>Nhắn tin</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             {/* Tab Selector */}
@@ -207,7 +232,12 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
         renderItem={null}
         ListFooterComponent={
           activeTab === 'grid'
-            ? <PostList posts={posts} />
+            ? <PostList
+              posts={posts}
+              mini={true}
+              expandedPostId={expandedPostId}
+              onPostPress={(post) => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+            />
             : <MemoriesGrid memories={fakeMemories} userId={user?.id ?? ''} />
         }
       />
@@ -243,9 +273,13 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   profileInfo: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 15,
+  },
+  profileInfoCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   profileImage: {
     width: 80,
@@ -269,8 +303,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#262626',
   },
-  bioContainer: {
-    marginBottom: 15,
+  bioCenterContainer: {
+    flex: 1,
+    marginLeft: 15,
+    justifyContent: 'center',
+    // alignItems: 'center',
   },
   name: {
     fontSize: 14,
@@ -338,6 +375,57 @@ const styles = StyleSheet.create({
   activeTab: {
     borderBottomWidth: 1,
     borderBottomColor: 'black',
+  },
+  followCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    backgroundColor: '#0095F6',
+    borderColor: '#0095F6',
+    minWidth: 90,
+  },
+  followingCard: {
+    backgroundColor: '#EFEFEF',
+    borderColor: '#DBDBDB',
+  },
+  followText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+    marginRight: 4,
+  },
+  followingText: {
+    color: '#262626',
+    fontWeight: '600',
+    fontSize: 14,
+    marginRight: 4,
+  },
+  messageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#0095F6',
+    borderRadius: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+  },
+  messageText: {
+    color: '#0095F6',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
   },
 });
 

@@ -15,3 +15,15 @@ export const getPostsApi = async () => {
         method: 'GET',
     });
 };
+
+export const getPostsByUserIdApi = async (userId: string) => {
+    return await authorizedRequest(`${API_BASE_URL}/posts/${userId}`, {
+        method: 'GET',
+    });
+};
+
+export const getMyPostsApi = async () => {
+    return await authorizedRequest(`${API_BASE_URL}/posts/my-posts`, {
+        method: 'GET',
+    });
+};

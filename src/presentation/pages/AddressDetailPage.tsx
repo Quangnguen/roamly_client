@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { BACKGROUND, PRIMARY } from '@/src/const/constants';
 import ImageViewing from 'react-native-image-viewing';
@@ -31,18 +31,36 @@ const AddressDetailPage = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
+    const [shouldLoadPosts, setShouldLoadPosts] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
     const { posts, loading } = useSelector((state: RootState) => state.post);
 
-    useEffect(() => {
-        dispatch(getPosts());
-    }, [dispatch]);
+    // Auto-load posts khi scroll đến gần cuối trang
+    const handleScroll = (event: any) => {
+        const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+        const scrollPosition = contentOffset.y + layoutMeasurement.height;
+        const contentHeight = contentSize.height;
+
+        // Khi scroll đến 80% chiều cao trang thì load posts
+        if (scrollPosition > contentHeight * 0.8 && !shouldLoadPosts) {
+            setShouldLoadPosts(true);
+            dispatch(getPosts());
+        }
+    };
+
+    // Sử dụng useFocusEffect thay vì useEffect để tối ưu
+    useFocusEffect(
+        React.useCallback(() => {
+            // Reset state khi vào trang
+            setShouldLoadPosts(false);
+        }, [])
+    );
 
     const toggleFollow = () => {
         setIsFollowing(prev => !prev);
     };
 
-    const handleScroll = (event: any) => {
+    const handleImageScroll = (event: any) => {
         const contentOffset = event.nativeEvent.contentOffset;
         const imageIndex = Math.round(contentOffset.x / width);
         setCurrentIndex(imageIndex);
@@ -60,7 +78,7 @@ const AddressDetailPage = () => {
     ];
 
     const placeDetails: AddressDetails = {
-        id: id, // ID của địa điểm, có thể lấy từ route params
+        id: id,
         name: "Phố Cổ Hội An",
         numberFollowers: 1000,
         address: "Hội An, Quảng Nam, Việt Nam",
@@ -75,9 +93,9 @@ const AddressDetailPage = () => {
             { uri: 'https://picsum.photos/id/1013/200/300' },
             { uri: 'https://picsum.photos/id/1014/200/300' },
         ],
-        isFollowing: isFollowing, // Trạng thái theo dõi
-        rating: 4.8, // Ví dụ về đánh giá
-        reviewsCount: 2345,// Số lượng đánh giá
+        isFollowing: isFollowing,
+        rating: 4.8,
+        reviewsCount: 2345,
         homestayes: [
             {
                 id: '1',
@@ -147,7 +165,17 @@ const AddressDetailPage = () => {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView
+            style={styles.container}
+            onScroll={handleScroll}
+            scrollEventThrottle={400}
+        >
+            {loading && !shouldLoadPosts && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#888" />
+                    <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+                </View>
+            )}
             {/* Ảnh địa điểm với nút quay lại */}
             <View style={styles.imageContainer}>
                 <Image
@@ -275,30 +303,37 @@ const AddressDetailPage = () => {
                     </ScrollView>
                 </View>
                 <Text style={styles.sectionTitle}>Bài viết</Text>
-
             </View>
-            <View>
-                {posts.map((post) => (
-                    <Post
-                        key={post.id}
-                        username={post.author.username}
-                        location={post.location}
-                        images={post.imageUrl.map((url, index) => ({
-                            id: index.toString(),
-                            uri: url
-                        }))}
-                        commentCount={post.commentCount}
-                        likeCount={post.likeCount}
-                        sharedCount={post.sharedCount}
-                        caption={post.caption}
-                        author={post.author}
-                        isPublic={post.isPublic}
-                        isVerified={false}
-                    />
-                ))}
-            </View>
+            {shouldLoadPosts && (
+                <View>
+                    {loading ? (
+                        <View style={styles.postsLoadingContainer}>
+                            <ActivityIndicator size="large" color="#888" />
+                            <Text style={styles.loadingText}>Đang tải bài viết...</Text>
+                        </View>
+                    ) : (
+                        posts.map((post) => (
+                            <Post
+                                key={post.id}
+                                username={post.author.username}
+                                location={post.location}
+                                images={post.imageUrl.map((url, index) => ({
+                                    id: index.toString(),
+                                    uri: url
+                                }))}
+                                commentCount={post.commentCount}
+                                likeCount={post.likeCount}
+                                sharedCount={post.sharedCount}
+                                caption={post.caption}
+                                author={post.author}
+                                isPublic={post.isPublic}
+                                isVerified={false}
+                            />
+                        ))
+                    )}
+                </View>
+            )}
         </ScrollView>
-
     );
 };
 
@@ -496,6 +531,25 @@ const styles = StyleSheet.create({
         height: 150,
         borderRadius: 8,
         marginRight: 8,
+    },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginTop: 16,
+    },
+    postsLoadingContainer: {
+        padding: 20,
+        alignItems: 'center',
     },
 });
 

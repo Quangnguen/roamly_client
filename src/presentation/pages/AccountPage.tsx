@@ -29,7 +29,7 @@ import MemoriesGrid from '../components/memory';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { getFollowers, getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
-import { getPosts } from '../redux/slices/postSlice';
+import { getMyPosts, getPosts } from '../redux/slices/postSlice';
 import Post from '../components/post';
 
 
@@ -100,7 +100,7 @@ const AccountPage: React.FC = () => {
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { followers, following, loading: followersLoading, error: followersError, message: followersMessage, status: followersStatus, statusCode: followersStatusCode } = useSelector((state: RootState) => state.follow);
   const { user: authUser } = useSelector((state: RootState) => state.auth);
-  const { posts } = useSelector((state: RootState) => state.post);
+  const { myPosts, loading: postLoading } = useSelector((state: RootState) => state.post);
   const [isOpen, setIsOpen] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'followers' | 'followings' | null>(null);
@@ -123,7 +123,8 @@ const AccountPage: React.FC = () => {
       dispatch(fetchUserProfile());
       dispatch(getFollowers());
       dispatch(getFollowing());
-      dispatch(getPosts());
+      dispatch(getMyPosts());
+      setActiveTab('grid');
     }, [dispatch])
   );
 
@@ -365,15 +366,19 @@ const AccountPage: React.FC = () => {
         }
         renderItem={null} // Không có dữ liệu chính để hiển thị
         ListFooterComponent={activeTab === 'grid' ?
-          <PostList
-            posts={posts}
-            mini={true}
-            expandedPostId={expandedPostId}
-            onPostPress={(post) => {
-              setExpandedPostId(expandedPostId === post.id ? null : post.id);
-            }}
-          /> :
-          <MemoriesGrid memories={fakeMemories} userId={authUser?.user?.id ?? ''} />} // Hiển thị danh sách bài đăng
+          postLoading
+            ? <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+              <ActivityIndicator size="large" color="#888" />
+            </View>
+            : <PostList
+              posts={myPosts}
+              mini={true}
+              expandedPostId={expandedPostId}
+              onPostPress={(post) => {
+                setExpandedPostId(expandedPostId === post.id ? null : post.id);
+              }}
+            />
+          : <MemoriesGrid memories={fakeMemories} userId={authUser?.user?.id ?? ''} />} // Hiển thị danh sách bài đăng
       />
       {isOpen && (
         <>

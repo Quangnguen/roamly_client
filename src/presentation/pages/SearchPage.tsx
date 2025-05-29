@@ -13,9 +13,10 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   ImageSourcePropType,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ScrollView, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Post from '../components/post';
 import { BACKGROUND } from '@/src/const/constants';
@@ -147,6 +148,8 @@ const SearchPage: React.FC = () => {
     }
   }, [dispatch, activeTab]);
 
+
+
   const handleClearSearch = () => {
     setSearchText('');
   };
@@ -203,23 +206,29 @@ const SearchPage: React.FC = () => {
 
           {/* Nội dung theo tab */}
           {activeTab === 'Post' && (
-            <ScrollView>
-              {posts.map((post) => (
-                <Post
-                  key={post.id}
-                  username={post.author.username}
-                  location={post.location}
-                  images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
-                  commentCount={post.commentCount}
-                  likeCount={post.likeCount}
-                  sharedCount={post.sharedCount}
-                  caption={post.caption}
-                  author={post.author}
-                  isPublic={post.isPublic}
-                  isVerified={false}
-                />
-              ))}
-            </ScrollView>
+            postLoading ? (
+              <View style={styles.emptyContainer}>
+                <ActivityIndicator size="large" color="#888" />
+              </View>
+            ) : (
+              <ScrollView>
+                {posts.map((post) => (
+                  <Post
+                    key={post.id}
+                    username={post.author.username}
+                    location={post.location}
+                    images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
+                    commentCount={post.commentCount}
+                    likeCount={post.likeCount}
+                    sharedCount={post.sharedCount}
+                    caption={post.caption}
+                    author={post.author}
+                    isPublic={post.isPublic}
+                    isVerified={false}
+                  />
+                ))}
+              </ScrollView>
+            )
           )}
 
           {activeTab === 'Address' && (
@@ -261,45 +270,51 @@ const SearchPage: React.FC = () => {
           )}
 
           {activeTab === 'User' && (
-            <ScrollView contentContainerStyle={styles.addressContainer}>
-              {(Array.isArray(users) ? users : []).map((user, index) => {
-                const isFollowing = following?.some(followingUser => followingUser.id === user.id);
+            loading ? (
+              <View style={styles.emptyContainer}>
+                <ActivityIndicator size="large" color="#888" />
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={styles.addressContainer}>
+                {(Array.isArray(users) ? users : []).map((user, index) => {
+                  const isFollowing = following?.some(followingUser => followingUser.id === user.id);
 
-                const handleFollowPress = async () => {
-                  try {
-                    if (!user.id) return;
+                  const handleFollowPress = async () => {
+                    try {
+                      if (!user.id) return;
 
-                    if (isFollowing) {
-                      await dispatch(unfollowUser(user.id));
-                    } else {
-                      await dispatch(followUser(user.id));
+                      if (isFollowing) {
+                        await dispatch(unfollowUser(user.id));
+                      } else {
+                        await dispatch(followUser(user.id));
+                      }
+                      // Refresh lại danh sách following sau khi thay đổi
+                      dispatch(getFollowing());
+                    } catch (error) {
+                      console.error('Error following/unfollowing user:', error);
                     }
-                    // Refresh lại danh sách following sau khi thay đổi
-                    dispatch(getFollowing());
-                  } catch (error) {
-                    console.error('Error following/unfollowing user:', error);
-                  }
-                };
+                  };
 
-                return (
-                  <Card
-                    key={user.id}
-                    type="user"
-                    avatar={user.profilePic || undefined}
-                    title={user.name || user.username || 'No name'}
-                    userId={user.id}
-                    bio={user.bio || 'chu tich'}
-                    description={user.bio || 'No description'}
-                    totalFollowers={user.followersCount || 0}
-                    isFollowing={isFollowing}
-                    onFollowPress={handleFollowPress}
-                    onPress={() => navigation.navigate('InfoAccPage', {
-                      id: user.id ?? '',
-                    })}
-                  />
-                );
-              })}
-            </ScrollView>
+                  return (
+                    <Card
+                      key={user.id}
+                      type="user"
+                      avatar={user.profilePic || undefined}
+                      title={user.name || user.username || 'No name'}
+                      userId={user.id}
+                      bio={user.bio || 'chu tich'}
+                      description={user.bio || 'No description'}
+                      totalFollowers={user.followersCount || 0}
+                      isFollowing={isFollowing}
+                      onFollowPress={handleFollowPress}
+                      onPress={() => navigation.navigate('InfoAccPage', {
+                        id: user.id ?? '',
+                      })}
+                    />
+                  );
+                })}
+              </ScrollView>
+            )
           )}
         </SafeAreaView>
       </TouchableWithoutFeedback>

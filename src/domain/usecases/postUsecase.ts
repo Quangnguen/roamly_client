@@ -11,4 +11,12 @@ export class PostUseCase {
   async getPosts(): Promise<Post[]> {
     return await this.repo.getPosts()
   }
+
+  async getPostsByUserId(userId: string): Promise<Post[]> {
+    return await this.repo.getPostsByUserId(userId)
+  }
+
+  async getMyPosts(): Promise<Post[]> {
+    return await this.repo.getMyPosts()
+  }
 }
