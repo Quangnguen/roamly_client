@@ -27,9 +27,18 @@ const PostMini: React.FC<PostMiniProps> = ({ image, caption, likeCount, commentC
             <View style={styles.content}>
                 <Text style={styles.caption} numberOfLines={1}>{caption}</Text>
                 <View style={styles.statsRow}>
-                    <View style={styles.stat}><FontAwesome name="heart-o" size={16} color="#666" /><Text style={styles.statText}> {likeCount}</Text></View>
-                    <View style={styles.stat}><FontAwesome name="comment-o" size={16} color="#666" /><Text style={styles.statText}> {commentCount}</Text></View>
-                    <View style={styles.stat}><FontAwesome name="share" size={16} color="#666" /><Text style={styles.statText}> {sharedCount}</Text></View>
+                    <View style={styles.stat}>
+                        <FontAwesome name="heart-o" size={16} color="#666" />
+                        <Text style={styles.statText}> {likeCount}</Text>
+                    </View>
+                    <View style={styles.stat}>
+                        <FontAwesome name="comment-o" size={16} color="#666" />
+                        <Text style={styles.statText}> {commentCount}</Text>
+                    </View>
+                    <View style={styles.stat}>
+                        <FontAwesome name="share" size={16} color="#666" />
+                        <Text style={styles.statText}> {sharedCount}</Text>
+                    </View>
                 </View>
             </View>
         </TouchableOpacity>
@@ -72,6 +81,8 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         marginLeft: 12,
+        justifyContent: 'space-between',
+        minHeight: 70,
     },
     caption: {
         fontSize: 15,
@@ -94,4 +105,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default PostMini; 
+export default PostMini;

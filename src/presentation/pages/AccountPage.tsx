@@ -30,7 +30,6 @@ import ChangePasswordModal from '../components/ChangePasswordModal';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { getFollowers, getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
 import { getPosts } from '../redux/slices/postSlice';
-import PostMini from '../components/PostMini';
 import Post from '../components/post';
 
 
@@ -117,7 +116,6 @@ const AccountPage: React.FC = () => {
   const toggleMenu = () => {
     setIsOpen(!isOpen)
   }
-  console.log('message: ', message);
 
   // Add useFocusEffect to refresh data when screen is focused
   useFocusEffect(
