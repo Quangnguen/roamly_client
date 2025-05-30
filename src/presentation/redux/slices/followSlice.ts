@@ -129,7 +129,7 @@ export const followSlice = createSlice({
             })
             .addCase(getFollowers.fulfilled, (state, action) => {
                 state.loading = false;
-                state.followers = action.payload as FollowingResponseInterface[];
+                state.followers = action.payload.data as FollowingResponseInterface[];
                 // state.message = action.payload.message;
                 // state.status = action.payload.status;
                 // state.statusCode = action.payload.statusCode;
@@ -147,7 +147,7 @@ export const followSlice = createSlice({
             })
             .addCase(getFollowing.fulfilled, (state, action) => {
                 state.loading = false;
-                state.following = action.payload as FollowingResponseInterface[];
+                state.following = action.payload.data as FollowingResponseInterface[];
                 // state.message = action.payload.message;
                 // state.status = action.payload.status;
                 // state.statusCode = action.payload.statusCode;

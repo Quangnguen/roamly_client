@@ -25,6 +25,7 @@ export const createPost = createAsyncThunk(
             formData.append('isPublic', 'true');
 
             const response = await postUseCase.createPost(formData);
+            console.log('Response POST :', response);
             return response;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Có lỗi xảy ra');
@@ -93,7 +94,7 @@ const postSlice = createSlice({
             })
             .addCase(createPost.fulfilled, (state, action) => {
                 state.loading = false;
-                state.posts = [action.payload, ...state.posts];
+                // state.posts = [action.payload.data, ...state.posts];
                 state.message = 'Đăng bài viết thành công';
                 state.status = 'success';
             })
@@ -110,7 +111,7 @@ const postSlice = createSlice({
             })
             .addCase(getPosts.fulfilled, (state, action) => {
                 state.loading = false;
-                state.posts = action.payload;
+                state.posts = action.payload.data;
                 state.error = null;
             })
             .addCase(getPosts.rejected, (state, action) => {
@@ -126,7 +127,7 @@ const postSlice = createSlice({
             })
             .addCase(getPostsByUserId.fulfilled, (state, action) => {
                 state.loading = false;
-                state.posts = action.payload;
+                state.posts = action.payload.data;
                 state.error = null;
             })
             .addCase(getPostsByUserId.rejected, (state, action) => {
@@ -142,7 +143,7 @@ const postSlice = createSlice({
             })
             .addCase(getMyPosts.fulfilled, (state, action) => {
                 state.loading = false;
-                state.myPosts = action.payload;
+                state.myPosts = action.payload.data;
                 state.error = null;
             })
             .addCase(getMyPosts.rejected, (state, action) => {

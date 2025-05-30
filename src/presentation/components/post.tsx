@@ -10,6 +10,7 @@ import {
   ImageSourcePropType,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { BACKGROUND } from '@/src/const/constants';
@@ -37,6 +38,9 @@ interface PostProps {
     profilePic: string | null;
   };
   isPublic: boolean;
+  isOwner?: boolean;
+  onEditPost?: () => void;
+  onDeletePost?: () => void;
 }
 
 const Post: React.FC<PostProps> = ({
@@ -58,9 +62,13 @@ const Post: React.FC<PostProps> = ({
     profilePic: 'https://randomuser.me/api/portraits/men/43.jpg',
   },
   isPublic = true,
+  isOwner = false,
+  onEditPost,
+  onDeletePost,
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
+  const [isOptionsMenuVisible, setIsOptionsMenuVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const [isScrolling, setIsScrolling] = useState(false);
 
@@ -78,6 +86,38 @@ const Post: React.FC<PostProps> = ({
     setActiveImageIndex(index);
     setIsImageViewVisible(true);
   }, []);
+
+  const handleOptionsPress = useCallback(() => {
+    setIsOptionsMenuVisible(true);
+  }, []);
+
+  const handleCloseOptionsMenu = useCallback(() => {
+    setIsOptionsMenuVisible(false);
+  }, []);
+
+  const handleEditPost = useCallback(() => {
+    setIsOptionsMenuVisible(false);
+    onEditPost?.();
+  }, [onEditPost]);
+
+  const handleDeletePost = useCallback(() => {
+    setIsOptionsMenuVisible(false);
+    Alert.alert(
+      'Xóa bài viết',
+      'Bạn có chắc chắn muốn xóa bài viết này không?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: onDeletePost,
+        },
+      ]
+    );
+  }, [onDeletePost]);
 
   const renderImageItem = useCallback(({ item, index }: { item: ImageItem; index: number }) => (
     <View style={{ width }}>
@@ -138,6 +178,15 @@ const Post: React.FC<PostProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Overlay để đóng menu khi click bên ngoài */}
+      {isOptionsMenuVisible && (
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={handleCloseOptionsMenu}
+        />
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
@@ -159,10 +208,52 @@ const Post: React.FC<PostProps> = ({
             <Text style={styles.location}>{location}</Text>
           </View>
         </View>
-        <TouchableOpacity>
-          <Feather name="more-horizontal" size={24} color="#262626" />
-        </TouchableOpacity>
+        <View style={styles.optionsContainer}>
+          <TouchableOpacity onPress={handleOptionsPress}>
+            <Feather name="more-horizontal" size={24} color="#262626" />
+          </TouchableOpacity>
+
+          {/* Dropdown Menu */}
+          {isOptionsMenuVisible && (
+            <View style={styles.dropdownMenu}>
+              {isOwner && (
+                <>
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={handleEditPost}
+                  >
+                    <Feather name="edit" size={18} color="#262626" />
+                    <Text style={styles.dropdownText}>Chỉnh sửa bài viết</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.dropdownItem, styles.deleteItem]}
+                    onPress={handleDeletePost}
+                  >
+                    <Feather name="trash-2" size={18} color="#e74c3c" />
+                    <Text style={[styles.dropdownText, styles.deleteText]}>Xóa bài viết</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {!isOwner && (
+                <>
+                  <TouchableOpacity style={styles.dropdownItem}>
+                    <Feather name="flag" size={18} color="#262626" />
+                    <Text style={styles.dropdownText}>Báo cáo bài viết</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.dropdownItem}>
+                    <Feather name="user-x" size={18} color="#262626" />
+                    <Text style={styles.dropdownText}>Chặn người dùng</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
+        </View>
       </View>
+
       {/* Caption */}
       <View style={styles.captionContainer}>
         <Text style={styles.caption}>
@@ -362,6 +453,57 @@ const styles = StyleSheet.create({
   caption: {
     fontSize: 14,
     lineHeight: 18,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  optionsContainer: {
+    position: 'relative',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 30,
+    right: 0,
+    backgroundColor: BACKGROUND,
+    borderRadius: 8,
+    paddingVertical: 4,
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 8,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  dropdownText: {
+    fontSize: 14,
+    marginLeft: 8,
+    color: '#262626',
+  },
+  deleteItem: {
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    marginTop: 4,
+    paddingTop: 8,
+  },
+  deleteText: {
+    color: '#e74c3c',
   },
 });
 
