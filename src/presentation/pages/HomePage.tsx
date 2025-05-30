@@ -19,6 +19,10 @@ const HomePage = () => {
   const navigation: NavigationProp<'Home' | 'WeatherPage'> = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { posts, loading } = useSelector((state: RootState) => state.post);
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  // Kiểm tra xem có post nào đang trong trạng thái optimistic loading không
+  const hasOptimisticLoading = posts.some(post => post.isLoading);
 
   useEffect(() => {
     dispatch(getPosts());
@@ -40,7 +44,7 @@ const HomePage = () => {
       <ScrollView
         refreshControl={
           <RefreshControl
-            refreshing={loading}
+            refreshing={loading && !hasOptimisticLoading} // Không hiển thị nếu có optimistic loading
             onRefresh={handleRefresh}
           />
         }
@@ -48,6 +52,7 @@ const HomePage = () => {
         {posts.map((post) => (
           <Post
             key={post.id}
+            postId={post.id}
             username={post.author.username}
             location={post.location}
             images={post.imageUrl.map((url, index) => ({
@@ -60,7 +65,9 @@ const HomePage = () => {
             caption={post.caption}
             author={post.author}
             isPublic={post.isPublic}
+            isOwner={post.authorId === user?.user.id}
             isVerified={false}
+            isLoading={post.isLoading || false}
           />
         ))}
       </ScrollView>

@@ -268,7 +268,13 @@ const userSlice = createSlice({
       })
       .addCase(uploadProfilePicture.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload.data ?? null;
+        // Merge profilePic mới với profile hiện tại thay vì thay thế hoàn toàn
+        if (state.profile && action.payload.data) {
+          state.profile = {
+            ...state.profile,
+            profilePic: action.payload.data.profilePic,
+          };
+        }
         state.message = action.payload.message;
         state.status = action.payload.status;
         state.statusCode = action.payload.statusCode;

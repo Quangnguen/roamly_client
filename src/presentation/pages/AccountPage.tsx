@@ -218,26 +218,66 @@ const AccountPage: React.FC = () => {
         // Thêm file vào FormData
         const fileUri = result.assets[0].uri;
         const fileName = fileUri.split('/').pop() || 'photo.jpg';
-        const fileType = 'file';
+
+        // Xác định MIME type từ extension
+        const fileExtension = fileName.split('.').pop()?.toLowerCase();
+        let mimeType = 'image/jpeg'; // default
+
+        switch (fileExtension) {
+          case 'png':
+            mimeType = 'image/png';
+            break;
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'image/jpeg';
+            break;
+          case 'gif':
+            mimeType = 'image/gif';
+            break;
+          case 'webp':
+            mimeType = 'image/webp';
+            break;
+          default:
+            mimeType = 'image/jpeg';
+        }
 
         formData.append('file', {
           uri: fileUri,
           name: fileName,
-          type: fileType,
+          type: mimeType,
         } as any);
 
-        // Dispatch action để upload ảnh đại diện
-        await dispatch(uploadProfilePicture(formData));
+        console.log('FormData for upload:', {
+          uri: fileUri,
+          name: fileName,
+          type: mimeType,
+        });
 
-        // Sau khi upload thành công, fetch lại thông tin user
-        await dispatch(fetchUserProfile());
-        setShowAvatarModal(false);
+        // Dispatch action để upload ảnh đại diện
+        const uploadResult = await dispatch(uploadProfilePicture(formData));
+
+        if (uploadResult.meta.requestStatus === 'fulfilled') {
+          // Đóng modal ngay khi upload thành công
+          setShowAvatarModal(false);
+          Toast.show({
+            type: 'success',
+            text1: 'Cập nhật ảnh đại diện thành công',
+          });
+        } else {
+          // Hiển thị lỗi nếu upload thất bại
+          Toast.show({
+            type: 'error',
+            text1: 'Không thể cập nhật ảnh đại diện',
+            text2: 'Vui lòng thử lại sau',
+          });
+        }
       }
     } catch (error) {
       console.error('Error picking image:', error);
       Toast.show({
         type: 'error',
         text1: 'Có lỗi khi cập nhật ảnh đại diện',
+        text2: 'Vui lòng kiểm tra kết nối mạng',
       });
     } finally {
       setIsLoading(false);
@@ -374,6 +414,7 @@ const AccountPage: React.FC = () => {
               posts={myPosts}
               mini={true}
               expandedPostId={expandedPostId}
+              currentUserId={authUser?.user?.id}
               onPostPress={(post) => {
                 setExpandedPostId(expandedPostId === post.id ? null : post.id);
               }}

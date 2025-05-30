@@ -27,3 +27,10 @@ export const getMyPostsApi = async () => {
         method: 'GET',
     });
 };
+
+export const deletePostApi = async (postId: string) => {
+    return await authorizedRequest(`${API_BASE_URL}/posts/${postId}`, {
+        method: 'DELETE',
+    });
+};
+

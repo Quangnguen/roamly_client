@@ -15,4 +15,6 @@ export interface Post {
         username: string;
         profilePic: string | null;
     };
+    isOptimistic?: boolean;
+    isLoading?: boolean;
 }
