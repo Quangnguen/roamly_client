@@ -4,7 +4,6 @@ import { saveTokens } from '../../utils/tokenStorage'
 
 
 export const loginApi = async (email: string, password: string) => {
-  console.log('login api:', email, password)
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -84,7 +83,6 @@ export const logoutApi = async () => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.log('errorData', errorData);
       throw new Error('Đăng xuất thất bại..', errorData.message);
     }
 

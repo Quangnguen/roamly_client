@@ -34,7 +34,6 @@ export const fetchUserProfile = createAsyncThunk(
   async (_: void, thunkAPI) => {
     try {
       const response = await dependencies.userUsecase.getInfo();
-      console.log('fetchUserProfile response:', response);
       return response as UserApiResponse; // Chuyển đổi kiểu dữ liệu
 
     } catch (error: any) {
@@ -72,7 +71,6 @@ export const updateUserProfile = createAsyncThunk(
   ) => {
     try {
       const response = await dependencies.userUsecase.updateInfo(userData);
-      console.log('updateUserProfile response userslice:', response);
       return response as UserApiResponse; // Chuyển đổi kiểu dữ liệu
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to update user profile');
@@ -113,7 +111,6 @@ export const getUsers = createAsyncThunk<any, GetUsersParams | undefined>(
   async (params, thunkAPI) => {
     try {
       const response = await dependencies.userUsecase.getUsers(params);
-      console.log('getUsers response:', response);
       return response;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to get users');

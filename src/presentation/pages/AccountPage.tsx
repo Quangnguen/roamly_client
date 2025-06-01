@@ -25,7 +25,7 @@ import { fetchUserProfile, clearMessage, uploadProfilePicture } from '../redux/s
 import { logout } from '../redux/slices/authSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
-import MemoriesGrid from '../components/memory';
+import MemoriesGrid from '../components/memories/memory';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { getFollowers, getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';

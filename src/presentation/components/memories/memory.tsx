@@ -1,11 +1,11 @@
-import React, { use, useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, TextInput, Button, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, TextInput, Button, Platform, Switch } from 'react-native';
 // Nếu dùng expo-image-picker:
 import * as ImagePicker from 'expo-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchUserProfile, clearMessage } from '../redux/slices/userSlice';
-import { RootState, AppDispatch } from '../redux/store';
-import { getUserProfile } from '@/src/data/api/userApi';
+import { fetchUserProfile, clearMessage } from '../../redux/slices/userSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import CreateMemory from './CreateMemory';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = width / 4 - 16; // Sửa lại từ 3 thành 4
@@ -15,7 +15,6 @@ type Memory = {
   images: string[];
   date: string;
   location: string;
-  diary: string;
 };
 
 type MemoriesGridProps = {
@@ -28,19 +27,14 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
   const [selected, setSelected] = useState<Memory | null>(null);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newImages, setNewImages] = useState<string[]>([]);
-  const [newDate, setNewDate] = useState('');
-  const [newLocation, setNewLocation] = useState('');
-  const [newDiary, setNewDiary] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editImages, setEditImages] = useState<string[]>([]);
   const [editDate, setEditDate] = useState('');
   const [editLocation, setEditLocation] = useState('');
-  const [editDiary, setEditDiary] = useState('');
   const dispatch = useDispatch<AppDispatch>();
   const [memoriesState, setMemoriesState] = useState<Memory[]>(memories);
 
-  const addMemoryItem = { id: 'add', images: [''], date: '', location: '', diary: '' };
+  const addMemoryItem = { id: 'add', images: [''], date: '', location: '' };
   // Chỉ thêm nút "+" nếu userId === profile?.id
   const dataWithAdd = userId === profile?.id ? [addMemoryItem, ...memoriesState] : memoriesState;
 
@@ -82,39 +76,19 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
     setCurrentImageIdx(idx);
   };
 
-  const handleAddMemory = () => {
-    // Xử lý thêm kỷ niệm mới
-    alert('Thêm kỷ niệm mới với thông tin:\n' + JSON.stringify({ newImages, newDate, newLocation, newDiary }));
-    // Đóng modal sau khi thêm
-    setShowAddModal(false);
-  };
-
-  const pickImages = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 1,
-      selectionLimit: 10, // số ảnh tối đa
-    });
-    if (!result.canceled) {
-      setNewImages(result.assets.map(asset => asset.uri));
-    }
-  };
-
   const startEdit = () => {
     if (selected) {
       setEditMode(true);
       setEditImages(selected.images);
       setEditDate(selected.date);
       setEditLocation(selected.location);
-      setEditDiary(selected.diary);
     }
   };
 
   const saveEdit = () => {
     if (selected) {
       // Xử lý lưu thay đổi
-      alert('Lưu thay đổi với thông tin:\n' + JSON.stringify({ editImages, editDate, editLocation, editDiary }));
+      alert('Lưu thay đổi với thông tin:\n' + JSON.stringify({ editImages, editDate, editLocation }));
       // Đóng modal sau khi lưu
       setSelected(null);
       setEditMode(false);
@@ -141,6 +115,11 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
     }
   };
 
+  const handleMemorySave = (memoryData: any) => {
+    setMemoriesState(prev => [memoryData, ...prev]);
+    setShowAddModal(false);
+  };
+
   return (
     <>
       <FlatList
@@ -150,6 +129,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
         numColumns={4}
         contentContainerStyle={styles.grid}
       />
+      
       <Modal
         visible={!!selected}
         animationType="slide"
@@ -184,7 +164,6 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
             </View>
             <Text style={styles.detailDate}>{selected.date}</Text>
             <Text style={styles.detailLocation}>{selected.location}</Text>
-            <Text style={styles.detailDiary}>{selected.diary}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
               {userId === profile?.id ? (
                 <>
@@ -209,6 +188,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
             </View>
           </ScrollView>
         )}
+        
         {selected && editMode && (
           <ScrollView style={styles.addModalContainer} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
             <Text style={styles.modalTitle}>Sửa kỷ niệm</Text>
@@ -242,17 +222,6 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
                 placeholderTextColor="#b3c6e0"
               />
             </View>
-            <View style={{ marginBottom: 20 }}>
-              <Text style={styles.inputLabel}>Ghi chú</Text>
-              <TextInput
-                placeholder="Đoạn text gợi nhớ"
-                value={editDiary}
-                onChangeText={setEditDiary}
-                multiline
-                style={[styles.input, { minHeight: 60 }]}
-                placeholderTextColor="#b3c6e0"
-              />
-            </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
               {userId === profile?.id ? (
                 <>
@@ -279,81 +248,22 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ memories, userId }) => {
         )}
       </Modal>
 
-      {/* Modal thêm kỷ niệm mới */}
-      { userId === profile?.id ? (<Modal
-        visible={showAddModal}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => setShowAddModal(false)}
-      >
-        <ScrollView
-          style={styles.addModalContainer}
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.modalTitle}>Thêm kỷ niệm mới</Text>
-
-          <TouchableOpacity style={styles.pickImageBtn} onPress={pickImages}>
-            <Text style={styles.pickImageText}>+ Chọn ảnh (nhiều)</Text>
-          </TouchableOpacity>
-
-          {newImages.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-              {newImages.map((uri, idx) => (
-                <Image key={idx} source={{ uri }} style={styles.previewImage} />
-              ))}
-            </ScrollView>
-          )}
-
-          <View style={{ marginBottom: 12 }}>
-            <Text style={styles.inputLabel}>Ngày</Text>
-            <TextInput
-              placeholder="VD: 2024-05-01"
-              value={newDate}
-              onChangeText={setNewDate}
-              style={styles.input}
-              placeholderTextColor="#b3c6e0"
-            />
-          </View>
-          <View style={{ marginBottom: 12 }}>
-            <Text style={styles.inputLabel}>Tên địa điểm</Text>
-            <TextInput
-              placeholder="Nhập tên địa điểm"
-              value={newLocation}
-              onChangeText={setNewLocation}
-              style={styles.input}
-              placeholderTextColor="#b3c6e0"
-            />
-          </View>
-          <View style={{ marginBottom: 20 }}>
-            <Text style={styles.inputLabel}>Ghi chú</Text>
-            <TextInput
-              placeholder="Đoạn text gợi nhớ"
-              value={newDiary}
-              onChangeText={setNewDiary}
-              multiline
-              style={[styles.input, { minHeight: 60 }]}
-              placeholderTextColor="#b3c6e0"
-            />
-          </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-            <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleAddMemory}>
-              <Text style={styles.saveBtnText}>Lưu</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowAddModal(false)}>
-              <Text style={styles.cancelBtnText}>Đóng</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </Modal>) : ''}
+      {/* Sử dụng CreateMemory component */}
+      {userId === profile?.id && (
+        <CreateMemory
+          visible={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSave={handleMemorySave}
+        />
+      )}
     </>
   );
 };
 
 const styles = StyleSheet.create({
   grid: {
-    padding: 8,
+    padding: 12,
+    backgroundColor: '#f8fafb',
   },
   gridItem: {
     flex: 1,
@@ -365,66 +275,64 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     borderRadius: ITEM_SIZE / 2,
-    marginBottom: 8,
+    marginBottom: 10,
     backgroundColor: '#f8f8f8',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
+    borderColor: '#e8f2ff',
+    shadowColor: '#228be6',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     elevation: 2,
   },
   addBox: {
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#e8f2ff',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#b3c6e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: '#90caf9',
+    borderStyle: 'dashed',
   },
   date: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: 13,
+    color: '#6b7280',
     marginBottom: 2,
     marginTop: 2,
     fontWeight: '500',
   },
   location: {
-    fontSize: 13,
-    color: '#222',
+    fontSize: 14,
+    color: '#1f2937',
     textAlign: 'center',
     maxWidth: ITEM_SIZE,
     fontWeight: '600',
   },
   detailContainer: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: 20,
+    backgroundColor: '#f8fafb',
   },
   detailImage: {
-    width: width - 32,
-    height: width - 32,
-    borderRadius: 20,
+    width: width - 40,
+    height: width - 40,
+    borderRadius: 24,
     marginRight: 8,
-    marginBottom: 8,
+    marginBottom: 12,
     backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ccc',
+    backgroundColor: '#d1d5db',
     marginHorizontal: 4,
   },
   activeDot: {
@@ -435,92 +343,90 @@ const styles = StyleSheet.create({
   },
   detailDate: {
     fontSize: 16,
-    color: '#888',
+    color: '#6b7280',
     marginTop: 8,
     textAlign: 'center',
     fontWeight: '500',
   },
   detailLocation: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginTop: 4,
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: 'center',
     color: '#228be6',
-  },
-  detailDiary: {
-    fontSize: 15,
-    color: '#333',
-    marginBottom: 24,
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
   closeBtn: {
     alignSelf: 'center',
-    backgroundColor: '#228be6',
+    backgroundColor: '#fff',
     paddingHorizontal: 32,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 20,
     marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#228be6',
+    shadowColor: '#228be6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
+  // Styles cho modal sửa
   addModalContainer: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8fafb',
+    padding: 20,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 18,
     textAlign: 'center',
     color: '#228be6',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#b3c6e0',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#f8fafd',
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#228be6',
-    marginBottom: 4,
-    marginLeft: 2,
+    marginBottom: 20,
   },
   pickImageBtn: {
-    backgroundColor: '#e3f0ff',
+    backgroundColor: '#e8f2ff',
     padding: 16,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#b3c6e0',
+    borderColor: '#90caf9',
   },
   pickImageText: {
     color: '#228be6',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 16,
   },
   previewImage: {
     width: 60,
     height: 60,
-    borderRadius: 10,
+    borderRadius: 8,
     marginRight: 8,
-    marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#b3c6e0',
+    borderColor: '#e5e7eb',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
   },
   saveBtn: {
     backgroundColor: '#228be6',
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
-    marginBottom: 10,
   },
   saveBtnText: {
     color: '#fff',
@@ -528,13 +434,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   cancelBtn: {
-    backgroundColor: '#eee',
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   cancelBtnText: {
-    color: '#888',
+    color: '#6b7280',
     fontWeight: 'bold',
     fontSize: 16,
   },

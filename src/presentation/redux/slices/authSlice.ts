@@ -58,7 +58,6 @@ export const register = createAsyncThunk(
     thunkAPI
   ) => {
     try {
-      console.log("register thunk", email, password, name, username, phoneNumber);
       const response = await dependencies.registerUseCase.execute(email, password, name, username, phoneNumber);
       return response as unknown as AuthResponse;
     } catch (err: any) {

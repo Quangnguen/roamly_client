@@ -68,7 +68,6 @@ export const getFollowing = createAsyncThunk(
     async (_: void, thunkAPI) => {
         try {
             const response = await dependencies.followUsecase.getFollowing();
-            console.log('response', response);
             return response;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message || 'Không thể lấy danh sách đang theo dõi');
