@@ -15,7 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BACKGROUND } from '@/src/const/constants';
@@ -94,12 +94,13 @@ const fakeMemories = [
 
 // Fake followers và following cho profile
 
+
 const AccountPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
   const dispatch = useDispatch<AppDispatch>();
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { followers, following, loading: followersLoading, error: followersError, message: followersMessage, status: followersStatus, statusCode: followersStatusCode } = useSelector((state: RootState) => state.follow);
-  const { user: authUser } = useSelector((state: RootState) => state.auth);
+  const user = useSelector((state: RootState) => state.auth.profile);
   const { myPosts, loading: postLoading } = useSelector((state: RootState) => state.post);
   const [isOpen, setIsOpen] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -111,22 +112,18 @@ const AccountPage: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [showPostModal, setShowPostModal] = useState(false);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
-
+  const [followingCount, setFollowingCount] = useState(user?.followingCount ?? 0);
+  const [profilePic, setProfilePic] = useState(user?.profilePic ?? 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg');
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
   }
 
-  // Add useFocusEffect to refresh data when screen is focused
-  useFocusEffect(
-    React.useCallback(() => {
-      dispatch(fetchUserProfile());
-      dispatch(getFollowers());
-      dispatch(getFollowing());
-      dispatch(getMyPosts());
-      setActiveTab('grid');
-    }, [dispatch])
-  );
+
+  useEffect(() => {
+    dispatch(getMyPosts());
+    setActiveTab('grid');
+  }, [dispatch]);
 
   // Thêm useEffect để lắng nghe thay đổi của followers và following
   useEffect(() => {
@@ -152,13 +149,6 @@ const AccountPage: React.FC = () => {
     }
   }, [message, status]);
 
-
-  // Mock data
-  const userStats = {
-    posts: 54,
-    followers: 834,
-    following: 162,
-  };
 
   const menuItems = [
     { icon: <Feather name="archive" size={20} color="black" />, label: "Archive" },
@@ -258,12 +248,14 @@ const AccountPage: React.FC = () => {
 
         if (uploadResult.meta.requestStatus === 'fulfilled') {
           // Đóng modal ngay khi upload thành công
+          setProfilePic(result.assets[0].uri);
           setShowAvatarModal(false);
           Toast.show({
             type: 'success',
             text1: 'Cập nhật ảnh đại diện thành công',
           });
         } else {
+          setShowAvatarModal(false);
           // Hiển thị lỗi nếu upload thất bại
           Toast.show({
             type: 'error',
@@ -290,7 +282,7 @@ const AccountPage: React.FC = () => {
       // Refresh lại toàn bộ dữ liệu
       dispatch(getFollowers());
       dispatch(getFollowing());
-      dispatch(fetchUserProfile());
+      setFollowingCount(followingCount + 1);
     } catch (error) {
       console.error('Error following user:', error);
     }
@@ -302,7 +294,7 @@ const AccountPage: React.FC = () => {
       // Refresh lại toàn bộ dữ liệu
       dispatch(getFollowers());
       dispatch(getFollowing());
-      dispatch(fetchUserProfile());
+      setFollowingCount(followingCount - 1);
     } catch (error) {
       console.error('Error unfollowing user:', error);
     }
@@ -338,7 +330,7 @@ const AccountPage: React.FC = () => {
             <View style={styles.header}>
               <View></View>
               <View style={styles.usernameContainer}>
-                <Text style={styles.username}>{profile?.username}</Text>
+                <Text style={styles.username}>{user?.username}</Text>
               </View>
               <TouchableOpacity onPress={toggleMenu}>
                 <Feather name="menu" size={24} color="black" />
@@ -350,21 +342,21 @@ const AccountPage: React.FC = () => {
               <View style={styles.profileInfo}>
                 <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
                   <Image
-                    source={{ uri: profile?.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+                    source={{ uri: profilePic }}
                     style={styles.profileImage}
                   />
                 </TouchableOpacity>
                 <View style={styles.statsContainer}>
                   <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{userStats.posts}</Text>
+                    <Text style={styles.statNumber}>{user?.postCount ?? 0}</Text>
                     <Text style={styles.statLabel}>Posts</Text>
                   </View>
                   <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followers')}>
-                    <Text style={styles.statNumber}>{profile?.followersCount ?? 0}</Text>
+                    <Text style={styles.statNumber}>{user?.followersCount ?? 0}</Text>
                     <Text style={styles.statLabel}>Followers</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followings')}>
-                    <Text style={styles.statNumber}>{profile?.followingsCount ?? 0}</Text>
+                    <Text style={styles.statNumber}>{followingCount}</Text>
                     <Text style={styles.statLabel}>Followings</Text>
                   </TouchableOpacity>
                 </View>
@@ -372,9 +364,9 @@ const AccountPage: React.FC = () => {
 
               {/* Bio */}
               <View style={styles.bioContainer}>
-                <Text style={styles.name}>{profile?.name}</Text>
+                <Text style={styles.name}>{user?.name}</Text>
                 <Text style={styles.bioText}>
-                  {profile?.bio || 'This is a sample bio. Update it in your profile settings.'}
+                  {user?.bio}
                 </Text>
               </View>
 
@@ -414,12 +406,12 @@ const AccountPage: React.FC = () => {
               posts={myPosts}
               mini={true}
               expandedPostId={expandedPostId}
-              currentUserId={authUser?.user?.id}
+              currentUserId={user?.id}
               onPostPress={(post) => {
                 setExpandedPostId(expandedPostId === post.id ? null : post.id);
               }}
             />
-          : <MemoriesGrid memories={fakeMemories} userId={authUser?.user?.id ?? ''} />} // Hiển thị danh sách bài đăng
+          : <MemoriesGrid memories={fakeMemories} userId={user?.id ?? ''} />} // Hiển thị danh sách bài đăng
       />
       {isOpen && (
         <>
@@ -451,7 +443,7 @@ const AccountPage: React.FC = () => {
             }}
           >
             <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
-              <Text style={{ paddingHorizontal: 16, paddingVertical: 8, fontWeight: 'bold' }}>{profile?.username}</Text>
+              <Text style={{ paddingHorizontal: 16, paddingVertical: 8, fontWeight: 'bold' }}>{user?.username}</Text>
             </View>
             <View>
               {menuItems.map((item, index) => (
@@ -602,7 +594,7 @@ const AccountPage: React.FC = () => {
             <Feather name="x" size={24} color="white" />
           </TouchableOpacity>
           <Image
-            source={{ uri: profile?.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
+            source={{ uri: profilePic }}
             style={styles.avatarModalImage}
             resizeMode="contain"
           />

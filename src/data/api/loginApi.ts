@@ -34,6 +34,14 @@ export const loginApi = async (email: string, password: string) => {
         email: data.user.email,
         username: data.user.username,
         name: data.user.name,
+        profilePic: data.user.profilePic,
+        followersCount: data.user.followersCount,
+        followingCount: data.user.followingCount,
+        postCount: data.user.postCount,
+        private: data.user.private,
+        verified: data.user.verified,
+        role: data.user.role,
+        bio: data.user.bio,
       },
     };
   } catch (error) {

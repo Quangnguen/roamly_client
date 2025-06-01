@@ -62,7 +62,8 @@ const CreatePostPage = () => {
   const navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, message, status } = useSelector((state: RootState) => state.post);
-  const { profile } = useSelector((state: RootState) => state.user);
+  const { profile } = useSelector((state: RootState) => state.auth);
+  console.log(profile);
 
   useEffect(() => {
     if (message && status === 'success') {
@@ -163,7 +164,7 @@ const CreatePostPage = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 1,
       aspect: [4, 3],
@@ -229,7 +230,7 @@ const CreatePostPage = () => {
             <View style={styles.content}>
               <View style={styles.userSection}>
                 <Image
-                  source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                  source={{ uri: profile?.profilePic || 'https://randomuser.me/api/portraits/men/32.jpg' }}
                   style={styles.avatar}
                 />
                 <View style={styles.userInfo}>

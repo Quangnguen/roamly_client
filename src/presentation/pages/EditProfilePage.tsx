@@ -12,18 +12,19 @@ import {
   Switch,
   ActivityIndicator
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserProfile, updateUserProfile } from '../redux/slices/userSlice';
+import { updateAuthProfile } from '../redux/slices/authSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } from 'expo-image-picker';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
 const EditProfilePage: React.FC = () => {
-
   const dispatch = useDispatch<AppDispatch>();
   const { profile, loading, error } = useSelector((state: RootState) => state.user);
-  const { user: authUser } = useSelector((state: RootState) => state.auth);
-  const [isAccountLocked, setIsAccountLocked] = useState<boolean>(!!profile?.private);
+  const user = useSelector((state: RootState) => state.auth.profile);
+  const [isAccountLocked, setIsAccountLocked] = useState<boolean>(!!user?.private);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -36,14 +37,13 @@ const EditProfilePage: React.FC = () => {
   }, []);
 
   const [profileData, setProfileData] = useState({
-
-    name: profile?.name || '',
-    username: profile?.username || '',
-    bio: profile?.bio || '',
-    email: profile?.email || '',
-    private: profile?.private || false,
-    phoneNumber: profile?.phoneNumber || '',
-    profilePic: profile?.profilePic || 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-hiZZ98WEvmBOkk3oAqffc3ReiwtEIO.png',
+    name: user?.name || '',
+    username: user?.username || '',
+    bio: user?.bio || '',
+    email: user?.email || '',
+    private: user?.private || false,
+    phoneNumber: user?.phoneNumber || '',
+    profilePic: user?.profilePic || 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-hiZZ98WEvmBOkk3oAqffc3ReiwtEIO.png',
   })
 
   const handleDone = () => {
@@ -55,6 +55,17 @@ const EditProfilePage: React.FC = () => {
       private: isAccountLocked,
       profilePic: profileData.profilePic,
     }));
+
+    // Cập nhật auth profile ngay lập tức để AccountPage hiển thị thông tin mới
+    dispatch(updateAuthProfile({
+      name: profileData.name,
+      username: profileData.username,
+      bio: profileData.bio,
+      private: isAccountLocked,
+      profilePic: profileData.profilePic,
+      email: profileData.email,
+    }));
+
     navigation.goBack();
   };
 
@@ -63,8 +74,8 @@ const EditProfilePage: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    setIsAccountLocked(!!profile?.private);
-  }, [profile?.private]);
+    setIsAccountLocked(!!user?.private);
+  }, [user?.private]);
 
   const navigation = useNavigation();
   const handleChange = (field: any, value: any) => {

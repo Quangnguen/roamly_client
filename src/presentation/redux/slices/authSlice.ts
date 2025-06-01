@@ -9,28 +9,35 @@ interface User {
   username: string;
   name: string;
   phoneNumber: string;
-
+  profilePic: string;
+  followersCount: number;
+  followingCount: number;
+  postCount: number;
+  private: boolean;
+  verified: boolean;
+  role: string;
+  bio: string;
 }
 
-// Define the shape of the auth response
-interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  user: User;
-}
 
 // Define the state shape
 interface AuthState {
-  user: AuthResponse | null;
+  profile: User | null;
   loading: boolean;
   error: string | null;
   access_token: string | null; // Thêm access_token
   refreshToken: string | null; // Thêm refreshToken
 }
 
+interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  user: User;
+}
+
 // Initial state
 const initialState: AuthState = {
-  user: null,
+  profile: null,
   loading: false,
   error: null,
   access_token: null, // Khởi tạo access_token
@@ -43,6 +50,7 @@ export const login = createAsyncThunk(
   async ({ email, password }: { email: string; password: string }, thunkAPI) => {
     try {
       const response = await dependencies.loginUseCase.execute(email, password);
+      console.log('login thunk:', response);
       return response as unknown as AuthResponse;
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.message || "Đăng nhập thất bại");
@@ -84,7 +92,11 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-
+    updateAuthProfile: (state, action) => {
+      if (state.profile) {
+        state.profile = { ...state.profile, ...action.payload };
+      }
+    },
   },
   extraReducers: (builder) => {
     // Login cases
@@ -95,7 +107,7 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.profile = action.payload.user;
         state.access_token = action.payload.access_token;
         state.refreshToken = action.payload.refresh_token;
       })
@@ -112,7 +124,7 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.profile = action.payload.user;
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
@@ -127,7 +139,7 @@ const authSlice = createSlice({
       })
       .addCase(logout.fulfilled, (state) => {
         state.loading = false;
-        state.user = null;
+        state.profile = null;
         state.access_token = null; // Xóa access_token khi đăng xuất
         state.refreshToken = null; // Xóa refreshToken khi đăng xuất
       })
@@ -139,6 +151,7 @@ const authSlice = createSlice({
 });
 
 // Export actions
+export const { updateAuthProfile } = authSlice.actions;
 
 // Export reducer
 export default authSlice.reducer;

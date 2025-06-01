@@ -18,4 +18,6 @@ export interface User {
   phoneNumber?: string; // Số điện thoại của người dùng
   followersCount?: number; // Số lượng người theo dõi
   followingsCount?: number; // Số lượng người đang theo dõi
+  postsCount?: number; // Số lượng bài viết của người dùng
+  verified?: boolean; // Tài khoản có được xác thực không
 }

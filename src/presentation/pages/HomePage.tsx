@@ -19,7 +19,7 @@ const HomePage = () => {
   const navigation: NavigationProp<'Home' | 'WeatherPage'> = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { posts, loading } = useSelector((state: RootState) => state.post);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const user = useSelector((state: RootState) => state.auth.profile);
 
   // Kiểm tra xem có post nào đang trong trạng thái optimistic loading không
   const hasOptimisticLoading = posts.some(post => post.isLoading);
@@ -65,7 +65,7 @@ const HomePage = () => {
             caption={post.caption}
             author={post.author}
             isPublic={post.isPublic}
-            isOwner={post.authorId === user?.user.id}
+            isOwner={post.authorId === user?.id}
             isVerified={false}
             isLoading={post.isLoading || false}
           />
