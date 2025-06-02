@@ -271,20 +271,42 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                   <View style={styles.detailRow}>
                     <Text style={styles.detailIcon}>💰</Text>
                     <Text style={styles.detailLabel}>Chi phí:</Text>
-                    <Text style={styles.detailValue}>
-                      {!selected.cost ||
-                      (typeof selected.cost === 'object' && Object.keys(selected.cost).length === 0)
-                        ? 'Không được chia sẻ'
-                        : typeof selected.cost === 'string'
-                        ? selected.cost
-                        : typeof selected.cost === 'object'
-                        ? Object.entries(selected.cost)
-                            .map(([key, value]) => `${key}: ${value}`)
-                            .join(', ')
-                        : selected.cost
-                      }
-                    </Text>
+                    {
+                      !selected.cost ||
+                      (typeof selected.cost === 'object' && Object.keys(selected.cost).length === 0) ? (
+                        <Text style={styles.detailValue}>Không được chia sẻ</Text>
+                      ) : typeof selected.cost === 'string' ? (
+                        <Text style={styles.detailValue}>{selected.cost}</Text>
+                      ) : null
+                    }
                   </View>
+                  {typeof selected.cost === 'object' && selected.cost && Object.keys(selected.cost).length > 0 && (
+                    <View style={styles.costCardContainer}>
+                      {Object.entries(selected.cost).map(([key, value], idx) => {
+                        // Định dạng tiền tệ VND
+                        let formattedValue = '';
+                        if (!isNaN(Number(value))) {
+                          formattedValue = Number(value).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+                        } else {
+                          formattedValue = value;
+                        }
+                        if (key === 'total' || key === 'Tổng chi phí') {
+                          return (
+                            <View key={idx} style={styles.totalCostContainer}>
+                              <Text style={styles.totalCostLabel}>Tổng chi phí</Text>
+                              <Text style={styles.totalCostAmount}>{formattedValue}</Text>
+                            </View>
+                          );
+                        }
+                        return (
+                          <View key={idx} style={styles.costRow}>
+                            <Text style={styles.costCategory}>{key}</Text>
+                            <Text style={styles.costAmount}>{formattedValue}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
                   <View style={styles.detailRow}>
                     <Text style={styles.detailIcon}>{selected.privacy === 'private' ? '🔒' : '🌐'}</Text>
                     <Text style={styles.detailLabel}>Quyền riêng tư:</Text>
@@ -610,8 +632,7 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
-    // alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'center',
     height: 40,
   },
   detailIcon: {
@@ -808,7 +829,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    height: 30,
   },
   costCategory: {
     fontSize: 15,
@@ -843,10 +864,9 @@ const styles = StyleSheet.create({
   costCardContainer: {
     backgroundColor: '#f9fafb',
     borderRadius: 12,
-    padding: 16,
+    padding:16,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    marginTop: 8,
   },
   costItem: {
     flexDirection: 'row',
@@ -875,9 +895,13 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   totalCostContainer: {
+    borderTopWidth: 1,
+    borderColor: '#e5e7eb',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    height: 20,
+    alignItems: 'center',
+    paddingTop: 12,
+    height: 30,
   },
   totalCostLabel: {
     fontSize: 16,
