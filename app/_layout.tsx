@@ -6,6 +6,7 @@ import AppNavigator from '@/src/presentation/navigation/AppNavigator'
 import Toast from 'react-native-toast-message'
 import toastConfig from '../src/config/toast.config';
 
+
 export default function RootLayout() {
   return (
     <Provider store={store}>

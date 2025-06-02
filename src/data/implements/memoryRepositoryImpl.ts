@@ -8,18 +8,16 @@ export class MemoryRepositoryImpl implements MemoryRepository {
         try {
             const response = await createMemoryApi(memoryData);
             
-            return {
-                success: true,
-                data: response.data || response,
-                message: 'Memory created successfully'
-            };
+            return response;
         } catch (error) {
             console.error('Error creating memory:', error);
             
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                message: 'Failed to create memory'
+                message: 'Failed to create memory',
+                status: 'error',
+                statusCode: 500,
             };
         }
     }
@@ -28,11 +26,7 @@ export class MemoryRepositoryImpl implements MemoryRepository {
         try {
             const response = await getMemoriesApi(userId);
             
-            return {
-                success: true,
-                data: response.data || response,
-                message: 'Memories fetched successfully'
-            };
+            return response;
         } catch (error) {
             console.error('Error fetching memories:', error);
             
@@ -40,7 +34,9 @@ export class MemoryRepositoryImpl implements MemoryRepository {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
                 message: 'Failed to fetch memories',
-                data: []
+                data: [],
+                status: 'error',
+                statusCode: 500,
             };
         }
     }
@@ -53,18 +49,16 @@ export class MemoryRepositoryImpl implements MemoryRepository {
 
             const response = await updateMemoryApi(memoryId, memoryData);
             
-            return {
-                success: true,
-                data: response.data || response,
-                message: 'Memory updated successfully'
-            };
+            return response;
         } catch (error) {
             console.error('Error updating memory:', error);
             
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                message: 'Failed to update memory'
+                message: 'Failed to update memory',
+                status: 'error',
+                statusCode: 500,
             };
         }
     }
@@ -77,41 +71,19 @@ export class MemoryRepositoryImpl implements MemoryRepository {
 
             const response = await deleteMemoryApi(memoryId);
             
-            return {
-                success: true,
-                data: response.data || response,
-                message: 'Memory deleted successfully'
-            };
+            return response;
         } catch (error) {
             console.error('Error deleting memory:', error);
             
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                message: 'Failed to delete memory'
+                message: 'Failed to delete memory',
+                status: 'error',
+                statusCode: 500,
             };
         }
     }
 
-    async syncLocalData(): Promise<void> {
-        // No implementation needed since we're not using cache
-        console.log('Sync not needed - using direct API calls');
-        return Promise.resolve();
-    }
-
-    getCachedMemories(userId?: string): CreateMemoryInterface[] {
-        // No cache implementation - return empty array
-        console.log('No cache available - use getMemories() instead');
-        return [];
-    }
-
-    hasUnsyncedData(): boolean {
-        // No local data to sync
-        return false;
-    }
-
-    clearCache(): void {
-        // No cache to clear
-        console.log('No cache to clear');
-    }
+   
 }

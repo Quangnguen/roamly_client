@@ -5,6 +5,7 @@ import PostMini from './PostMini';
 
 type Post = {
   id: string;
+  authorId: string;
   imageUrl: string[]; // Danh sách ảnh của bài đăng
   caption: string; // Nội dung bài đăng
   likeCount: number; // Số lượt thích
@@ -24,9 +25,10 @@ type PostListProps = {
   mini?: boolean;
   onPostPress?: (post: Post) => void;
   expandedPostId?: string | null;
+  currentUserId?: string;
 };
 
-const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, expandedPostId }) => {
+const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, expandedPostId, currentUserId }) => {
   // Sắp xếp bài đăng theo ngày đăng (mới nhất trước)
   const sortedPosts = [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -39,6 +41,7 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
           expandedPostId === item.id ? (
             <View>
               <Post
+                postId={item.id}
                 username={item.author.username}
                 location={item.location}
                 images={item.imageUrl.map((url, index) => ({
@@ -52,6 +55,7 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
                 author={item.author}
                 isPublic={item.isPublic}
                 isVerified={false}
+                isOwner={item.authorId === currentUserId}
               />
               <TouchableOpacity style={{ alignSelf: 'center', marginVertical: 8 }} onPress={() => onPostPress && onPostPress(item)}>
                 <Text style={{ color: '#007AFF', fontWeight: 'bold', fontSize: 16 }}>Thu gọn</Text>
@@ -70,6 +74,7 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
           )
         ) : (
           <Post
+            postId={item.id}
             username={item.author.username}
             location={item.location}
             images={item.imageUrl.map((url, index) => ({
@@ -83,6 +88,7 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
             author={item.author}
             isPublic={item.isPublic}
             isVerified={false}
+            isOwner={item.authorId === currentUserId}
           />
         )
       )}

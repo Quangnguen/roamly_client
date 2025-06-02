@@ -11,10 +11,15 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { BACKGROUND } from '@/src/const/constants';
 import ImageView from 'react-native-image-viewing';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../redux/store';
+import { deletePost } from '../redux/slices/postSlice';
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
@@ -41,6 +46,8 @@ interface PostProps {
   isOwner?: boolean;
   onEditPost?: () => void;
   onDeletePost?: () => void;
+  isLoading?: boolean;
+  postId?: string;
 }
 
 const Post: React.FC<PostProps> = ({
@@ -65,12 +72,15 @@ const Post: React.FC<PostProps> = ({
   isOwner = false,
   onEditPost,
   onDeletePost,
+  isLoading = false,
+  postId,
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
   const [isOptionsMenuVisible, setIsOptionsMenuVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
 
   const goToImage = useCallback((index: number) => {
     if (index >= 0 && index < images.length) {
@@ -100,8 +110,18 @@ const Post: React.FC<PostProps> = ({
     onEditPost?.();
   }, [onEditPost]);
 
-  const handleDeletePost = useCallback(() => {
+  const handleDeletePost = useCallback(async () => {
     setIsOptionsMenuVisible(false);
+
+    if (!postId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Không thể xóa bài viết',
+        text2: 'ID bài viết không hợp lệ',
+      });
+      return;
+    }
+
     Alert.alert(
       'Xóa bài viết',
       'Bạn có chắc chắn muốn xóa bài viết này không?',
@@ -113,11 +133,32 @@ const Post: React.FC<PostProps> = ({
         {
           text: 'Xóa',
           style: 'destructive',
-          onPress: onDeletePost,
+          onPress: async () => {
+            try {
+              const result = await dispatch(deletePost(postId));
+              if (result.meta.requestStatus === 'fulfilled') {
+                Toast.show({
+                  type: 'success',
+                  text1: 'Đã xóa bài viết thành công',
+                });
+              } else {
+                Toast.show({
+                  type: 'error',
+                  text1: 'Không thể xóa bài viết',
+                  text2: 'Vui lòng thử lại sau',
+                });
+              }
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Có lỗi xảy ra khi xóa bài viết',
+              });
+            }
+          },
         },
       ]
     );
-  }, [onDeletePost]);
+  }, [dispatch, postId]);
 
   const renderImageItem = useCallback(({ item, index }: { item: ImageItem; index: number }) => (
     <View style={{ width }}>
@@ -178,6 +219,14 @@ const Post: React.FC<PostProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>Đang đăng bài...</Text>
+        </View>
+      )}
+
       {/* Overlay để đóng menu khi click bên ngoài */}
       {isOptionsMenuVisible && (
         <TouchableOpacity
@@ -504,6 +553,23 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: '#e74c3c',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 10,
   },
 });
 

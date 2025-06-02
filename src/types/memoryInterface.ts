@@ -1,4 +1,6 @@
 export interface CreateMemoryInterface {
+    userId?: string;
+    id?: string; // Unique identifier for the memory
     title: string;
     description: string;
     tags?: string[];

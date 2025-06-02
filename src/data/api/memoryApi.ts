@@ -73,24 +73,18 @@ export const createMemoryApi = async (memoryData: CreateMemoryInterface) => {
     }
 
     try {
-        // Gọi API với FormData
         const response = await authorizedRequest(`${API_BASE_URL}/memory/create`, {
             method: 'POST',
             body: formData,
         });
 
-        // Kiểm tra nếu `response` không hợp lệ
-        if (!response || response.statusCode !== 201) {
-            throw new Error('Invalid response from server');
+        // Check for status === 'success' and statusCode in 2xx range
+        if (!response || response.status !== 'success' || (response.statusCode && response.statusCode >= 400)) {
+            throw new Error(response?.message || 'Failed to create memory');
         }
 
-        // Nếu response đã là object, không cần gọi response.json()
-        if (response.ok === false) {
-            throw new Error(response.message || 'Failed to create memory');
-        }
-
-        return response;
-    } catch (error) {
+        return response; // or return response if you want the whole object
+    } catch (error: any) {
         console.error('Create memory API error:', error);
         throw error;
     }
@@ -99,20 +93,18 @@ export const createMemoryApi = async (memoryData: CreateMemoryInterface) => {
 export const getMemoriesApi = async (userId?: string) => {
   try {
     const url = userId 
-      ? `${API_BASE_URL}/memories?userId=${userId}`
-      : `${API_BASE_URL}/memories`;
+      ? `${API_BASE_URL}/memory/user/${userId}`
+      : `${API_BASE_URL}/memory/my-memories`;
     
     const response = await authorizedRequest(url, {
       method: 'GET',
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch memories');
-    }
+      if (!response || response.status !== 'success' || (response.statusCode && response.statusCode >= 400)) {
+            throw new Error(response?.message || 'Failed to create memory');
+        }
 
-    const result = await response.json();
-    return result;
+    return response;
   } catch (error) {
     console.error('Get memories API error:', error);
     throw error;
@@ -158,17 +150,15 @@ export const updateMemoryApi = async (memoryId: string, memoryData: Partial<Crea
 
 export const deleteMemoryApi = async (memoryId: string) => {
   try {
-    const response = await authorizedRequest(`${API_BASE_URL}/memories/${memoryId}`, {
+    const response = await authorizedRequest(`${API_BASE_URL}/memory/delete/${memoryId}`, {
       method: 'DELETE',
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to delete memory');
-    }
+    if (!response || response.status !== 'success' || (response.statusCode && response.statusCode >= 400)) {
+            throw new Error(response?.message || 'Failed to delete memory');
+        }
 
-    const result = await response.json();
-    return result;
+    return response; // Hoặc trả về response nếu bạn muốn toàn bộ đối tượng
   } catch (error) {
     console.error('Delete memory API error:', error);
     throw error;

@@ -14,19 +14,17 @@ export class MemoryUseCase {
             this.validateMemoryData(memoryData);
             
             // Gọi repository để tạo memory
-            const result = await this.memoryRepository.createMemory(memoryData);
+            return await this.memoryRepository.createMemory(memoryData);
             
-            return {
-                success: true,
-                data: result.data || result,
-                message: 'Memory created successfully'
-            };
+            
         } catch (error) {
             console.error('Create memory use case error:', error);
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                message: 'Failed to create memory'
+                message: 'Failed to create memory',
+                status: 'error',
+                statusCode: 500,
             };
         }
     }
@@ -36,19 +34,18 @@ export class MemoryUseCase {
      */
     async getMemories(userId?: string): Promise<any> {
         try {
-            const result = await this.memoryRepository.getMemories(userId);
+            return await this.memoryRepository.getMemories(userId);
             
-            return {
-                success: true,
-                data: result.data || result,
-                message: 'Memories fetched successfully'
-            };
+           
         } catch (error) {
             console.error('Get memories use case error:', error);
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                message: 'Failed to fetch memories'
+                message: 'Failed to fetch memories',
+                data: [],
+                status: 'error',
+                statusCode: 500,
             };
         }
     }
@@ -65,19 +62,17 @@ export class MemoryUseCase {
             // Validate dữ liệu cập nhật
             this.validatePartialMemoryData(memoryData);
             
-            const result = await this.memoryRepository.updateMemory(memoryId, memoryData);
+            return await this.memoryRepository.updateMemory(memoryId, memoryData);
             
-            return {
-                success: true,
-                data: result.data || result,
-                message: 'Memory updated successfully'
-            };
+           
         } catch (error) {
             console.error('Update memory use case error:', error);
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                message: 'Failed to update memory'
+                message: 'Failed to update memory',
+                status: 'error',
+                statusCode: 500,
             };
         }
     }
@@ -91,19 +86,17 @@ export class MemoryUseCase {
                 throw new Error('Memory ID is required');
             }
             
-            const result = await this.memoryRepository.deleteMemory(memoryId);
+            return await this.memoryRepository.deleteMemory(memoryId);
             
-            return {
-                success: true,
-                data: result,
-                message: 'Memory deleted successfully'
-            };
         } catch (error) {
             console.error('Delete memory use case error:', error);
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
-                message: 'Failed to delete memory'
+                message: 'Failed to delete memory',
+                status: 'error',
+                statusCode: 500,
+                data: null,
             };
         }
     }

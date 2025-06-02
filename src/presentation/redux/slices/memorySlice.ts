@@ -2,14 +2,19 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { CreateMemoryInterface } from '@/src/types/memoryInterface';
 import { createMemoryApi, getMemoriesApi, updateMemoryApi, deleteMemoryApi } from '@/src/data/api/memoryApi';
 import { dependencies } from '@/src/dependencies/dependencies';
+import { clearMessage } from './userSlice';
 
 // Define the state interface
 interface MemoryState {
     memories: CreateMemoryInterface[];
+    myMemories?: CreateMemoryInterface[];
     loading: boolean;
     error: string | null;
     deletingIds: string[];
     updating: boolean;
+    message?: string;
+    status?: string;
+    statusCode?: number;
 }
 
 // Initial state
@@ -19,28 +24,44 @@ const initialState: MemoryState = {
     error: null,
     deletingIds: [],
     updating: false,
+    message: undefined,
+    status: undefined,
+    statusCode: undefined,
 };
 
 // Async thunks
-export const fetchMemories = createAsyncThunk(
-    'memory/fetchMemories',
-    async (memoryData: CreateMemoryInterface, { rejectWithValue }) => {
+export const fetchMyMemories = createAsyncThunk(
+    'memory/fetchMyMemories',
+    async (_: void, { rejectWithValue }) => {
         try {
-            const response = await dependencies.MemoryUseCase.createMemory(memoryData);
-            return response.data || response;
+            const response = await dependencies.MemoryUseCase.getMemories();
+            return response;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to fetch memories');
         }
     }
 );
 
+export const fetchMemories = createAsyncThunk(
+    'memory/fetchMemories',
+    async (userId: string, { rejectWithValue }) => {
+        try {
+            const response = await dependencies.MemoryUseCase.getMemories(userId);
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to fetch memories');
+        }
+    }
+);
+
+
 export const createMemory = createAsyncThunk(
     'memory/createMemory',
     async (memoryData: CreateMemoryInterface, { rejectWithValue }) => {
         try {
-            console.log('Creating memory with data:', memoryData);
             const response = await dependencies.MemoryUseCase.createMemory(memoryData);
-            return response || response;
+            console.log('Create memory response:', response);
+            return response;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to create memory');
         }
@@ -63,8 +84,7 @@ export const deleteMemory = createAsyncThunk(
     'memory/deleteMemory',
     async (memoryId: string, { rejectWithValue }) => {
         try {
-            await deleteMemoryApi(memoryId);
-            return memoryId;
+            return await dependencies.MemoryUseCase.deleteMemory(memoryId);
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to delete memory');
         }
@@ -92,19 +112,27 @@ const memorySlice = createSlice({
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.loading = action.payload;
         },
+        clearMemoryMessage: (state) => {
+            state.message = undefined;
+            state.status = undefined;
+            state.statusCode = undefined;
+        }
     },
     extraReducers: (builder) => {
         // Fetch memories
         builder
-            .addCase(fetchMemories.pending, (state) => {
+            .addCase(fetchMyMemories.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchMemories.fulfilled, (state, action) => {
+            .addCase(fetchMyMemories.fulfilled, (state, action) => {
                 state.loading = false;
-                state.memories = action.payload;
+                state.error = null;
+                state.status = action.payload.status;
+                state.statusCode = action.payload.statusCode;
+                state.myMemories = action.payload.data;
             })
-            .addCase(fetchMemories.rejected, (state, action) => {
+            .addCase(fetchMyMemories.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             });
@@ -114,10 +142,15 @@ const memorySlice = createSlice({
             .addCase(createMemory.pending, (state) => {
                 state.loading = true;
                 state.error = null;
+
             })
             .addCase(createMemory.fulfilled, (state, action) => {
                 state.loading = false;
-                state.memories =  [...state.memories, action.payload.data];
+                state.error = null;
+                state.message = action.payload.message;
+                state.status = action.payload.status;
+                state.statusCode = action.payload.statusCode;
+                state.myMemories =  [...(state.myMemories ?? []), action.payload.data];
             })
             .addCase(createMemory.rejected, (state, action) => {
                 state.loading = false;
@@ -154,10 +187,30 @@ const memorySlice = createSlice({
                 const memoryId = action.payload;
                 state.memories = state.memories.filter(memory => memory.id !== memoryId);
                 state.deletingIds = state.deletingIds.filter(id => id !== memoryId);
+                state.message = action.payload.message;
+                state.status = action.payload.status;
+                state.statusCode = action.payload.statusCode;
             })
             .addCase(deleteMemory.rejected, (state, action) => {
                 const memoryId = action.meta.arg;
                 state.deletingIds = state.deletingIds.filter(id => id !== memoryId);
+                state.error = action.payload as string;
+            });
+
+        builder
+            .addCase(fetchMemories.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchMemories.fulfilled, (state, action) => {
+                state.loading = false;
+                state.error = null;
+                state.status = action.payload.status;
+                state.statusCode = action.payload.statusCode;
+                state.memories = action.payload.data;
+            })
+            .addCase(fetchMemories.rejected, (state, action) => {
+                state.loading = false;
                 state.error = action.payload as string;
             });
     },
@@ -168,7 +221,8 @@ export const {
     clearError,
     clearMemories,
     updateMemoryLocal,
-    setLoading,   
+    setLoading, 
+    clearMemoryMessage,  
 } = memorySlice.actions;
 
 export default memorySlice.reducer;

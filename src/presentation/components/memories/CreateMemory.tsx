@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, TextInput, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { createMemory } from '../../redux/slices/memorySlice';
-import { createMemoryApi } from '@/src/data/api/memoryApi';
+import { clearMemoryMessage, createMemory } from '../../redux/slices/memorySlice';
+import { AppDispatch, RootState } from '../../redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from 'expo-router';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/AppNavigator';
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
@@ -15,9 +20,14 @@ type CreateMemoryProps = {
   onSave: (memoryData: any) => void;
 };
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AccountPage'>;
+
+
 const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave }) => {
-  
-  
+  const dispatch = useDispatch<AppDispatch>();
+  const { statusCode, message, status } = useSelector((state: RootState) => state.memory);
+  const navigation = useNavigation<NavigationProp>();
+
   const [newImages, setNewImages] = useState<string[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -89,11 +99,32 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
   const handleCostItemChange = (idx: number, field: 'key' | 'value', val: string) => {
     const newItems = [...costItems];
     newItems[idx][field] = val;
+    
     if (field === 'value' && newItems[idx].key !== 'total') {
-      const total = calculateTotalCost(newItems);
-      const totalIdx = newItems.findIndex(i => i.key === 'total');
-      if (totalIdx !== -1) newItems[totalIdx].value = total.toString();
+      // Đếm số phần tử có key và value hợp lệ
+      const validItems = newItems.filter(item => 
+        item.key && item.key !== 'total' && item.value && !isNaN(Number(item.value))
+      );
+      
+      // Chỉ tính và hiển thị tổng khi có nhiều hơn 1 phần tử hợp lệ
+      if (validItems.length > 1) {
+        const total = calculateTotalCost(newItems);
+        const totalIdx = newItems.findIndex(i => i.key === 'total');
+        if (totalIdx !== -1) {
+          newItems[totalIdx].value = total.toString();
+        } else {
+          // Nếu chưa có total, thêm mới khi đủ điều kiện
+          newItems.push({ key: 'total', value: total.toString() });
+        }
+      } else {
+        // Nếu chỉ có 1 phần tử, xóa total nếu có
+        const totalIdx = newItems.findIndex(i => i.key === 'total');
+        if (totalIdx !== -1) {
+          newItems.splice(totalIdx, 1);
+        }
+      }
     }
+    
     setCostItems(newItems);
   };
 
@@ -230,10 +261,11 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
       }
     });
 
-    // Tính tổng chi phí
-    const totalCost = Object.values(costObj).reduce((sum, value) => sum + value, 0);
-    if (totalCost > 0) {
-        costObj['total'] = totalCost;
+    // Tính tổng chi phí và chỉ thêm key 'total' khi có nhiều hơn 1 phần tử
+    const validCostKeys = Object.keys(costObj).filter(key => key !== 'total');
+    if (validCostKeys.length > 1) {
+      const totalCost = Object.values(costObj).reduce((sum, value) => sum + value, 0);
+      costObj['total'] = totalCost;
     }
 
     // Chuyển đổi ngày sang định dạng ISO 8601
@@ -255,38 +287,26 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
         images: newImages,
     };
 
-    createMemoryApi(memoryData);
     
-    console.log('Memory Data for local state:', memoryData);
-    
-    // try {
-    //   // Gọi API với FormData
-    //   const apiResponse = await fetch('/api/trips', {
-    //     method: 'POST',
-    //     body: formData,
-    //     // Không cần set Content-Type header cho FormData
-    //     // Browser sẽ tự động set với boundary
-    //   });
-      
-    //   if (apiResponse.ok) {
-    //     const result = await apiResponse.json();
-    //     console.log('API Response:', result);
-        
-    //     // Cập nhật state local với data từ API nếu có
-    //     onSave(result.data || memoryData);
-    //   } else {
-    //     console.error('API Error:', apiResponse.status);
-    //     // Fallback: vẫn lưu local nếu API lỗi
-    //     onSave(memoryData);
-    //   }
-    // } catch (error) {
-    //   console.error('Network Error:', error);
-    //   // Fallback: vẫn lưu local nếu network lỗi
-    //   onSave(memoryData);
-    // }
-    
-    resetForm();
+    dispatch(createMemory(memoryData));
+    onClose();
   };
+
+
+  useEffect(() => {
+  if (status === 'success' && statusCode === 201) {
+    resetForm();
+  }
+  if (message) {
+    Toast.show({
+      type: status === 'success' ? 'success' : 'error',
+      text1: message,
+      onHide: () => {
+        dispatch(clearMemoryMessage());
+      },
+    });
+  }
+}, [status, statusCode, message]);
 
   const resetForm = () => {
     setNewTitle('');
@@ -457,7 +477,7 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
                   </TouchableOpacity>
                 </View>
               ))}
-              <View style={{ flex: 1, minWidth: 100, position: 'relative' }}>
+              <View style={{ flex: 1, minWidth: 100, position: 'relative', zIndex: 20 }}>
                 <TextInput
                   value={placesInput}
                   onChangeText={handlePlacesInput}
@@ -498,7 +518,7 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
                   </TouchableOpacity>
                 </View>
               ))}
-              <View style={{ flex: 1, minWidth: 100, position: 'relative' }}>
+              <View style={{ flex: 1, minWidth: 100, position: 'relative', zIndex: 20  }}>
                 <TextInput
                   value={tagsInput}
                   onChangeText={handleTagsInput}
@@ -667,8 +687,8 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     backgroundColor: '#fff',
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
     paddingHorizontal: 24,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
@@ -701,6 +721,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
+    zIndex: 1,
   },
   sectionTitle: {
     fontSize: 18,
@@ -841,6 +862,7 @@ const styles = StyleSheet.create({
   },
   suggestionContainer: {
     position: 'absolute',
+    zIndex: 9999,
     top: '100%',
     left: 0,
     right: 0,
@@ -848,7 +870,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 12,
-    zIndex: 1000,
     elevation: 10,
     maxHeight: 200,
     shadowColor: '#000',

@@ -96,5 +96,8 @@ export const uploadProfilePicture = async (imageFile: FormData) => {
   return await authorizedRequest(`${API_BASE_URL}/users/profile-pic`, {
     method: 'PATCH',
     body: imageFile,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
 };

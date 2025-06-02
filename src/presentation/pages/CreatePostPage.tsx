@@ -23,35 +23,63 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { BACKGROUND, PRIMARY } from '@/src/const/constants';
 import * as ImagePicker from 'expo-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import { createPost, clearMessage } from '../redux/slices/postSlice';
+import { createPost, clearMessage, addOptimisticPost } from '../redux/slices/postSlice';
 import { AppDispatch, RootState } from '../redux/store';
 import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
+
 const CreatePostPage = () => {
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
   const [caption, setCaption] = useState('');
   const [selectedImages, setSelectedImages] = useState<Array<{ uri: string }>>([]);
   const [isEditingTopic, setIsEditingTopic] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
-  const [isPosting, setIsPosting] = useState(false);
 
   const navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, message, status } = useSelector((state: RootState) => state.post);
-  const { profile } = useSelector((state: RootState) => state.user);
+  const { profile } = useSelector((state: RootState) => state.auth);
+  console.log(profile);
+
   useEffect(() => {
-    if (message) {
+    if (message && status === 'success') {
       Toast.show({
-        type: status === 'success' ? 'success' : 'error',
+        type: 'success',
+        text1: 'Đã tạo thành công bài viết mới',
+        onHide: () => {
+          dispatch(clearMessage());
+        },
+      });
+    } else if (message && status === 'error') {
+      Toast.show({
+        type: 'error',
         text1: message,
         onHide: () => {
           dispatch(clearMessage());
-          if (status === 'success') {
-            navigation.goBack();
-          }
         },
       });
     }
@@ -67,7 +95,26 @@ const CreatePostPage = () => {
     }
 
     try {
-      setIsPosting(true);
+      // Thêm post tạm thời vào Redux store ngay lập tức
+      dispatch(addOptimisticPost({
+        authorId: profile?.id || '',
+        imageUrls: selectedImages.map(img => img.uri),
+        caption: caption.trim(),
+        location: location,
+        author: {
+          username: profile?.username || 'nam',
+          profilePic: profile?.profilePic || null,
+        },
+      }));
+
+      // Quay về home ngay lập tức
+      navigation.goBack();
+
+      // Reset form ngay
+      setCaption('');
+      setSelectedImages([]);
+      setLocation(null);
+
       const formData = new FormData();
 
       // Thêm ảnh vào formData
@@ -84,24 +131,19 @@ const CreatePostPage = () => {
         } as any);
       });
 
-      await dispatch(createPost({
+      // Dispatch action trong background - không await để không block UI
+      dispatch(createPost({
         images: formData,
         caption: caption.trim(),
         location: location
       }));
 
-      // Reset form sau khi đăng thành công
-      setCaption('');
-      setSelectedImages([]);
-      setLocation(null);
     } catch (error) {
       console.error('Error creating post:', error);
       Toast.show({
         type: 'error',
         text1: 'Có lỗi xảy ra khi đăng bài',
       });
-    } finally {
-      setIsPosting(false);
     }
   };
 
@@ -122,7 +164,7 @@ const CreatePostPage = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 1,
       aspect: [4, 3],
@@ -171,22 +213,24 @@ const CreatePostPage = () => {
         </View>
       </View>
 
-      {/* Scrollable Content */}
+      {/* Main Content with KeyboardAvoidingView */}
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        {/* Scrollable Content */}
         <ScrollView
           style={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContentContainer}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.content}>
               <View style={styles.userSection}>
                 <Image
-                  source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                  source={{ uri: profile?.profilePic || 'https://randomuser.me/api/portraits/men/32.jpg' }}
                   style={styles.avatar}
                 />
                 <View style={styles.userInfo}>
@@ -308,42 +352,40 @@ const CreatePostPage = () => {
                   )}
                 </View>
               )}
-
-              {/* Add some padding at the bottom for better scrolling */}
-              <View style={{ height: 100 }} />
             </View>
           </TouchableWithoutFeedback>
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      {/* Footer - Outside of KeyboardAvoidingView */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Bất kỳ ai cũng có thể trả lời và trích dẫn
-        </Text>
-        <TouchableOpacity
-          style={[
-            styles.postButton,
-            (caption.length > 0 || selectedImages.length > 0) ? styles.postButtonActive : {},
-            isPosting && styles.postButtonDisabled
-          ]}
-          disabled={caption.length === 0 && selectedImages.length === 0 || isPosting}
-          onPress={handlePost}
-        >
-          {isPosting ? (
-            <ActivityIndicator color="#000" size="small" />
-          ) : (
-            <Text
-              style={[
-                styles.postButtonText,
-                (caption.length > 0 || selectedImages.length > 0) ? styles.postButtonTextActive : {}
-              ]}
-            >
-              Đăng
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Footer - Inside KeyboardAvoidingView để được đẩy lên */}
+        <View style={isKeyboardVisible
+          ? [styles.footer, { marginBottom: 20 }] : styles.footer}>
+          <Text style={styles.footerText}>
+            Bất kỳ ai cũng có thể trả lời và trích dẫn
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.postButton,
+              (caption.length > 0 || selectedImages.length > 0) ? styles.postButtonActive : {},
+              loading && styles.postButtonDisabled
+            ]}
+            disabled={caption.length === 0 && selectedImages.length === 0 || loading}
+            onPress={handlePost}
+          >
+            {loading ? (
+              <ActivityIndicator color="#000" size="small" />
+            ) : (
+              <Text
+                style={[
+                  styles.postButtonText,
+                  (caption.length > 0 || selectedImages.length > 0) ? styles.postButtonTextActive : {}
+                ]}
+              >
+                Đăng
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -358,6 +400,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -508,6 +554,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
     borderTopColor: '#333333',
     backgroundColor: BACKGROUND,
+    minHeight: 70,
   },
   footerText: {
     color: '#777777',
@@ -519,6 +566,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     backgroundColor: '#333333',
+    minWidth: 60,
   },
   postButtonActive: {
     backgroundColor: '#FFFFFF',
@@ -526,6 +574,7 @@ const styles = StyleSheet.create({
   postButtonText: {
     color: '#fff',
     fontWeight: '600',
+    textAlign: 'center',
   },
   postButtonTextActive: {
     color: '#000000',
