@@ -307,7 +307,7 @@ const AccountPage: React.FC = () => {
                     <Text style={styles.statLabel}>Followers</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followings')}>
-                    <Text style={styles.statNumber}>{user?.followersCount ?? 0}</Text>
+                    <Text style={styles.statNumber}>{user?.followingCount ?? 0}</Text>
                     <Text style={styles.statLabel}>Followings</Text>
                   </TouchableOpacity>
                 </View>

@@ -181,7 +181,6 @@ export const updateMemoryApi = async (memoryId: string, memoryData: Partial<Crea
       }
     }
 
-    console.log('Updating memory with ID api:', formData);
 
     const response = await authorizedRequest(`${API_BASE_URL}/memory/update/${memoryId}`, {
       method: 'PUT',
@@ -192,7 +191,7 @@ export const updateMemoryApi = async (memoryId: string, memoryData: Partial<Crea
     if (!response || response.status !== 'success' || (response.statusCode && response.statusCode >= 400)) {
       throw new Error(response?.message || 'Failed to update memory');
     }
-
+    console.log('Update memory response:', response);
     return response;
   } catch (error) {
     console.error('Update memory API error:', error);

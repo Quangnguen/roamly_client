@@ -17,7 +17,7 @@ export const getPostsApi = async () => {
 };
 
 export const getPostsByUserIdApi = async (userId: string) => {
-    return await authorizedRequest(`${API_BASE_URL}/posts/${userId}`, {
+    return await authorizedRequest(`${API_BASE_URL}/posts/get-posts/${userId}`, {
         method: 'GET',
     });
 };

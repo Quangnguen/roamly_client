@@ -25,7 +25,7 @@ export type RootStackParamList = {
   Home: undefined;
   Register: undefined;
   Auth: undefined;
-  InApp: undefined;
+  InApp: { screen?: keyof TabParamList } | undefined;
   EditProfilePage: undefined;
   CreatePostPage: undefined;
   SearchPage: undefined;

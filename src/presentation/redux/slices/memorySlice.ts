@@ -27,6 +27,7 @@ const initialState: MemoryState = {
     message: undefined,
     status: undefined,
     statusCode: undefined,
+    myMemories: [],
 };
 
 // Async thunks
@@ -73,7 +74,7 @@ export const updateMemory = createAsyncThunk(
     async ({ id, data }: { id: string; data: Partial<CreateMemoryInterface> }, { rejectWithValue }) => {
         try {
             const response = await dependencies.MemoryUseCase.updateMemory(id, data);
-            return { id, data: response.data || response };
+            return response;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to update memory');
         }
@@ -84,7 +85,11 @@ export const deleteMemory = createAsyncThunk(
     'memory/deleteMemory',
     async (memoryId: string, { rejectWithValue }) => {
         try {
-            return await dependencies.MemoryUseCase.deleteMemory(memoryId);
+            const response = await dependencies.MemoryUseCase.deleteMemory(memoryId);
+            return {
+                ...response,
+                id: memoryId // Đảm bảo id được trả về để reducers có thể sử dụng
+            };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to delete memory');
         }
@@ -165,11 +170,16 @@ const memorySlice = createSlice({
             })
             .addCase(updateMemory.fulfilled, (state, action) => {
                 state.updating = false;
-                const { id, data } = action.payload;
-                const index = state.memories.findIndex(memory => memory.id === id);
-                if (index !== -1) {
-                    state.memories[index] = { ...state.memories[index], ...data };
+                const data = action.payload.data;
+                if (state.myMemories) {
+                    const index = state.myMemories.findIndex(memory => memory.id === data.id);
+                    if (index !== -1) {
+                        state.myMemories[index] = { ...state.myMemories[index], ...data };
+                    }
                 }
+                state.message = action.payload.message;
+                state.status = action.payload.status;
+                state.statusCode = action.payload.statusCode;
             })
             .addCase(updateMemory.rejected, (state, action) => {
                 state.updating = false;
@@ -184,8 +194,10 @@ const memorySlice = createSlice({
                 state.error = null;
             })
             .addCase(deleteMemory.fulfilled, (state, action) => {
-                const memoryId = action.payload;
-                state.memories = state.memories.filter(memory => memory.id !== memoryId);
+                const memoryId = action.payload.id;
+                if (state.myMemories) {
+                    state.myMemories = state.myMemories.filter(memory => memory.id !== memoryId);
+                }
                 state.deletingIds = state.deletingIds.filter(id => id !== memoryId);
                 state.message = action.payload.message;
                 state.status = action.payload.status;

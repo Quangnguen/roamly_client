@@ -68,6 +68,7 @@ const HomePage = () => {
             isOwner={post.authorId === user?.id}
             isVerified={false}
             isLoading={post.isLoading || false}
+            authorId={post.authorId}
           />
         ))}
       </ScrollView>

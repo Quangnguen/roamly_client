@@ -165,6 +165,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
   const handleCloseEdit = () => {
     setEditMemory(null);
     setShowAddModal(false);
+    setSelected(null); // Thêm dòng này để bỏ chọn memory khi đóng modal edit
   };
 
   return (
@@ -440,7 +441,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
       {userId === profile?.id && (
         <CreateMemory
           visible={showAddModal}
-          onClose={() => setShowAddModal(false)}
+          onClose={handleCloseEdit}
           onSave={handleMemorySave}
           memory={editMemory}
         />
