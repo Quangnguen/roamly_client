@@ -21,6 +21,8 @@ import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
 import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
 import { getPosts, getPostsByUserId } from '../redux/slices/postSlice';
+import { dependencies } from '@/src/dependencies/dependencies';
+import { Post } from '@/src/domain/entities/post';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'InfoAccPage'>;
 type InfoAccPageRouteProp = RouteProp<RootStackParamList, 'InfoAccPage'>;
@@ -37,16 +39,26 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user, message, status } = useSelector((state: RootState) => state.user);
   const { following } = useSelector((state: RootState) => state.follow);
-  const { user: authUser } = useSelector((state: RootState) => state.auth);
+  const { profile: authUser } = useSelector((state: RootState) => state.auth);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<InfoAccPageRouteProp>();
   const { id } = route.params;
   const { posts, loading } = useSelector((state: RootState) => state.post);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+  // const [posts, setPosts] = useState<Post[]>([]);s
+
+  // useEffect(() => {
+  //   const getPosts = async () => {
+  //     const posts = await dependencies.postUsecase.getPostsByUserId(id)
+  //     // setPosts(posts)
+  //   }
+  //   getPosts()
+  // }, [id])
 
   useEffect(() => {
     dispatch(getUserById(id));
     dispatch(getPostsByUserId(id));
+    // dispatch(getPosts())
     console.log('posts', posts);
     console.log('id', id);
   }, [dispatch, id]);
@@ -55,7 +67,6 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
     dispatch(getFollowing());
   }, [dispatch]);
 
-  console.log('user', user);
 
   const storyHighlights: StoryHighlight[] = [
     { id: '1', name: 'New', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
@@ -109,7 +120,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const followersCount = user?.followersCount ?? 0;
   const followingCount = user?.followingsCount ?? 0;
 
-  const isMyProfile = authUser?.user?.id === user?.id;
+  const isMyProfile = authUser?.id === user?.id;
   const isFollowing = following?.some(f => f.id === user?.id);
 
   const handleFollowPress = async () => {
@@ -238,7 +249,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
               expandedPostId={expandedPostId}
               onPostPress={(post) => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
             />
-            : <MemoriesGrid memories={fakeMemories} userId={user?.id ?? ''} />
+            : <MemoriesGrid userId={user?.id ?? ''} />
         }
       />
     </SafeAreaView>

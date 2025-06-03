@@ -16,12 +16,18 @@ import {
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { BACKGROUND } from '@/src/const/constants';
 import ImageView from 'react-native-image-viewing';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store';
 import { deletePost } from '../redux/slices/postSlice';
 import Toast from 'react-native-toast-message';
+import { navigate } from 'expo-router/build/global-state/routing';
+import { useNavigation } from 'expo-router';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const { width } = Dimensions.get('window');
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 // Định nghĩa kiểu dữ liệu cho ảnh
 type ImageItem = {
@@ -48,6 +54,7 @@ interface PostProps {
   onDeletePost?: () => void;
   isLoading?: boolean;
   postId?: string;
+  authorId?: string;
 }
 
 const Post: React.FC<PostProps> = ({
@@ -74,6 +81,7 @@ const Post: React.FC<PostProps> = ({
   onDeletePost,
   isLoading = false,
   postId,
+  authorId,
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
@@ -81,7 +89,8 @@ const Post: React.FC<PostProps> = ({
   const flatListRef = useRef<FlatList>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
-
+  const navigation = useNavigation<NavigationProp>();
+  const user = useSelector((state: RootState) => state.auth);
   const goToImage = useCallback((index: number) => {
     if (index >= 0 && index < images.length) {
       flatListRef.current?.scrollToOffset({
@@ -238,7 +247,15 @@ const Post: React.FC<PostProps> = ({
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.userInfo}>
+        <TouchableOpacity style={styles.userInfo} onPress={() => {
+          if (user.profile?.id === authorId) {
+            navigation.navigate('InApp', { screen: 'Account' });
+          } else {
+            navigation.navigate('InfoAccPage', {
+              id: authorId || ''
+            });
+          }
+        }}>
           <Image
             source={{
               uri: author.profilePic || 'https://randomuser.me/api/portraits/men/43.jpg',
@@ -256,7 +273,7 @@ const Post: React.FC<PostProps> = ({
             </View>
             <Text style={styles.location}>{location}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={styles.optionsContainer}>
           <TouchableOpacity onPress={handleOptionsPress}>
             <Feather name="more-horizontal" size={24} color="#262626" />

@@ -3,6 +3,7 @@ import { dependencies } from '../../../dependencies/dependencies';
 import { User } from '../../../domain/models/User';
 import { UserApiResponse } from '@/src/types/UserResponseInterface';
 import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
+import { updateAuthProfile } from './authSlice'; // Import action từ authSlice
 
 // Define the shape of the user state
 interface UserState {
@@ -124,6 +125,12 @@ export const uploadProfilePicture = createAsyncThunk(
   async (imageFile: FormData, thunkAPI) => {
     try {
       const response = await dependencies.userUsecase.uploadProfilePicture(imageFile);
+
+      // Dispatch updateAuthProfile để cập nhật profilePic trong authSlice
+      if (response.data && response.data.profilePic) {
+        thunkAPI.dispatch(updateAuthProfile({ profilePic: response.data.profilePic }));
+      }
+
       return response as UserApiResponse;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to upload profile picture');

@@ -22,6 +22,13 @@ type CreateMemoryProps = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AccountPage'>;
 
+// Thêm hàm removeAccents ở đầu file, trước component
+const removeAccents = (str: string): string => {
+  return str.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+};
 
 const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -40,14 +47,14 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
     'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hội An', 'Nha Trang', 'Đà Lạt', 'Phú Quốc', 'Sapa', 'Hạ Long', 'Huế'
   ]);
   const [filteredPlaces, setFilteredPlaces] = useState<string[]>([]);
-  
+
   const [newHomestay, setNewHomestay] = useState('');
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  
+
   // State cho chi phí
   const [costItems, setCostItems] = useState<{ key: string, value: string }[]>([]);
-  
+
   // State cho thành viên tham gia
   const [participantsTags, setParticipantsTags] = useState<string[]>([]);
   const [participantsInput, setParticipantsInput] = useState('');
@@ -55,16 +62,16 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
     'Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C', 'Phạm Thị D', 'Ngô Văn E'
   ]);
   const [filteredParticipants, setFilteredParticipants] = useState<string[]>([]);
-  
+
   // State cho homestay
   const [homestaySuggestions, setHomestaySuggestions] = useState<string[]>([
     'Homestay ABC', 'Homestay XYZ', 'Sunshine Homestay', 'Blue House', 'Green Villa'
   ]);
   const [filteredHomestays, setFilteredHomestays] = useState<string[]>([]);
-  
+
   // State cho quyền riêng tư
   const [shareOption, setShareOption] = useState<'private' | 'tagged' | 'followers' | 'public'>('private');
-  
+
   // State cho tags
   const [tagsList, setTagsList] = useState<string[]>([]);
   const [tagsInput, setTagsInput] = useState('');
@@ -99,13 +106,13 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
   const handleCostItemChange = (idx: number, field: 'key' | 'value', val: string) => {
     const newItems = [...costItems];
     newItems[idx][field] = val;
-    
+
     if (field === 'value' && newItems[idx].key !== 'total') {
       // Đếm số phần tử có key và value hợp lệ
-      const validItems = newItems.filter(item => 
+      const validItems = newItems.filter(item =>
         item.key && item.key !== 'total' && item.value && !isNaN(Number(item.value))
       );
-      
+
       // Chỉ tính và hiển thị tổng khi có nhiều hơn 1 phần tử hợp lệ
       if (validItems.length > 1) {
         const total = calculateTotalCost(newItems);
@@ -124,7 +131,7 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
         }
       }
     }
-    
+
     setCostItems(newItems);
   };
 
@@ -140,13 +147,78 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
     setCostItems(newItems);
   };
 
+  const handlePlacesInput = (text: string) => {
+    setPlacesInput(text);
+    if (text.length > 0) {
+      const searchText = removeAccents(text.toLowerCase());
+      setFilteredPlaces(
+        placeSuggestions.filter(
+          (place) =>
+            removeAccents(place.toLowerCase()).includes(searchText) &&
+            !placesVisitedList.includes(place)
+        )
+      );
+    } else {
+      setFilteredPlaces([]);
+    }
+    if (text.endsWith(',') || text.endsWith('\n')) {
+      const place = text.replace(/,|\n/g, '').trim();
+      if (place && !placesVisitedList.includes(place)) setPlacesVisitedList([...placesVisitedList, place]);
+      setPlacesInput('');
+      setFilteredPlaces([]);
+    }
+  };
+
+  const removePlace = (idx: number) => {
+    setPlacesVisitedList(placesVisitedList.filter((_, i) => i !== idx));
+  };
+
+  const selectPlaceSuggestion = (place: string) => {
+    if (!placesVisitedList.includes(place)) setPlacesVisitedList([...placesVisitedList, place]);
+    setPlacesInput('');
+    setFilteredPlaces([]);
+  };
+
+  const handleTagsInput = (text: string) => {
+    setTagsInput(text);
+    if (text.length > 0) {
+      const searchText = removeAccents(text.toLowerCase());
+      setFilteredTags(
+        tagSuggestions.filter(
+          (tag) =>
+            removeAccents(tag.toLowerCase()).includes(searchText) &&
+            !tagsList.includes(tag)
+        )
+      );
+    } else {
+      setFilteredTags([]);
+    }
+    if (text.endsWith(',') || text.endsWith('\n')) {
+      const tag = text.replace(/,|\n/g, '').trim();
+      if (tag && !tagsList.includes(tag)) setTagsList([...tagsList, tag]);
+      setTagsInput('');
+      setFilteredTags([]);
+    }
+  };
+
+  const removeTag = (idx: number) => {
+    setTagsList(tagsList.filter((_, i) => i !== idx));
+  };
+
+  const selectTagSuggestion = (tag: string) => {
+    if (!tagsList.includes(tag)) setTagsList([...tagsList, tag]);
+    setTagsInput('');
+    setFilteredTags([]);
+  };
+
   const handleParticipantsInput = (text: string) => {
     setParticipantsInput(text);
     if (text.length > 0) {
+      const searchText = removeAccents(text.toLowerCase());
       setFilteredParticipants(
         participantSuggestions.filter(
           (name) =>
-            name.toLowerCase().includes(text.toLowerCase()) &&
+            removeAccents(name.toLowerCase()).includes(searchText) &&
             !participantsTags.includes(name)
         )
       );
@@ -174,9 +246,10 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
   const handleHomestayChange = (text: string) => {
     setNewHomestay(text);
     if (text.length > 0) {
+      const searchText = removeAccents(text.toLowerCase());
       setFilteredHomestays(
         homestaySuggestions.filter(h =>
-          h.toLowerCase().includes(text.toLowerCase())
+          removeAccents(h.toLowerCase()).includes(searchText)
         )
       );
     } else {
@@ -187,69 +260,6 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
   const selectHomestaySuggestion = (name: string) => {
     setNewHomestay(name);
     setFilteredHomestays([]);
-  };
-
-  const handleTagsInput = (text: string) => {
-    setTagsInput(text);
-    if (text.length > 0) {
-      setFilteredTags(
-        tagSuggestions.filter(
-          (tag) =>
-            tag.toLowerCase().includes(text.toLowerCase()) &&
-            !tagsList.includes(tag)
-        )
-      );
-    } else {
-      setFilteredTags([]);
-    }
-    if (text.endsWith(',') || text.endsWith('\n')) {
-      const tag = text.replace(/,|\n/g, '').trim();
-      if (tag && !tagsList.includes(tag)) setTagsList([...tagsList, tag]);
-      setTagsInput('');
-      setFilteredTags([]);
-    }
-  };
-
-  const removeTag = (idx: number) => {
-    setTagsList(tagsList.filter((_, i) => i !== idx));
-  };
-
-  const selectTagSuggestion = (tag: string) => {
-    if (!tagsList.includes(tag)) setTagsList([...tagsList, tag]);
-    setTagsInput('');
-    setFilteredTags([]);
-  };
-
-  // Hàm xử lý địa điểm
-  const handlePlacesInput = (text: string) => {
-    setPlacesInput(text);
-    if (text.length > 0) {
-      setFilteredPlaces(
-        placeSuggestions.filter(
-          (place) =>
-            place.toLowerCase().includes(text.toLowerCase()) &&
-            !placesVisitedList.includes(place)
-        )
-      );
-    } else {
-      setFilteredPlaces([]);
-    }
-    if (text.endsWith(',') || text.endsWith('\n')) {
-      const place = text.replace(/,|\n/g, '').trim();
-      if (place && !placesVisitedList.includes(place)) setPlacesVisitedList([...placesVisitedList, place]);
-      setPlacesInput('');
-      setFilteredPlaces([]);
-    }
-  };
-
-  const removePlace = (idx: number) => {
-    setPlacesVisitedList(placesVisitedList.filter((_, i) => i !== idx));
-  };
-
-  const selectPlaceSuggestion = (place: string) => {
-    if (!placesVisitedList.includes(place)) setPlacesVisitedList([...placesVisitedList, place]);
-    setPlacesInput('');
-    setFilteredPlaces([]);
   };
 
   const handleSave = async () => {
@@ -274,39 +284,39 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
 
     // Tạo object để hiển thị local (không gửi lên API)
     const memoryData = {
-        title: newTitle,
-        description: newDescription,
-        startDate: isoStartDate,
-        endDate: isoEndDate,
-        cost: costObj,
-        placesVisited: placesVisitedList,
-        tags: tagsList,
-        homestay: newHomestay,
-        participants: participantsTags,
-        privacy: shareOption,
-        images: newImages,
+      title: newTitle,
+      description: newDescription,
+      startDate: isoStartDate,
+      endDate: isoEndDate,
+      cost: costObj,
+      placesVisited: placesVisitedList,
+      tags: tagsList,
+      homestay: newHomestay,
+      participants: participantsTags,
+      privacy: shareOption,
+      images: newImages,
     };
 
-    
+
     dispatch(createMemory(memoryData));
     onClose();
   };
 
 
   useEffect(() => {
-  if (status === 'success' && statusCode === 201) {
-    resetForm();
-  }
-  if (message) {
-    Toast.show({
-      type: status === 'success' ? 'success' : 'error',
-      text1: message,
-      onHide: () => {
-        dispatch(clearMemoryMessage());
-      },
-    });
-  }
-}, [status, statusCode, message]);
+    if (status === 'success' && statusCode === 201) {
+      resetForm();
+    }
+    if (message) {
+      Toast.show({
+        type: status === 'success' ? 'success' : 'error',
+        text1: message,
+        onHide: () => {
+          dispatch(clearMemoryMessage());
+        },
+      });
+    }
+  }, [status, statusCode, message]);
 
   const resetForm = () => {
     setNewTitle('');
@@ -351,9 +361,10 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
           style={styles.modalContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
         >
-          {/* Ảnh */}
-          <View style={styles.section}>
+          {/* Các section không có suggestion: z-index thấp */}
+          <View style={[styles.section, { zIndex: 1 }]}>
             <Text style={styles.sectionTitle}>📸 Hình ảnh</Text>
             <TouchableOpacity style={styles.pickImageBtn} onPress={pickImages}>
               <Text style={styles.pickImageText}>+ Chọn ảnh (tối đa 10)</Text>
@@ -367,10 +378,9 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
             )}
           </View>
 
-          {/* Thông tin cơ bản */}
-          <View style={styles.section}>
+          <View style={[styles.section, { zIndex: 1 }]}>
             <Text style={styles.sectionTitle}>📝 Thông tin cơ bản</Text>
-            
+
             <Text style={styles.inputLabel}>Tiêu đề</Text>
             <TextInput
               placeholder="Nhập tiêu đề chuyến đi"
@@ -391,10 +401,9 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
             />
           </View>
 
-          {/* Thời gian */}
-          <View style={styles.section}>
+          <View style={[styles.section, { zIndex: 1 }]}>
             <Text style={styles.sectionTitle}>📅 Thời gian</Text>
-            
+
             <Text style={styles.inputLabel}>Ngày bắt đầu</Text>
             <View style={styles.datePickerContainer}>
               <TextInput
@@ -404,8 +413,8 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
                 placeholderTextColor="#9ca3af"
                 editable={false}
               />
-              <TouchableOpacity 
-                style={styles.dateIconBtn} 
+              <TouchableOpacity
+                style={styles.dateIconBtn}
                 onPress={() => setShowStartDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={24} color="#228be6" />
@@ -421,8 +430,8 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
                 placeholderTextColor="#9ca3af"
                 editable={false}
               />
-              <TouchableOpacity 
-                style={styles.dateIconBtn} 
+              <TouchableOpacity
+                style={styles.dateIconBtn}
                 onPress={() => setShowEndDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={24} color="#228be6" />
@@ -430,8 +439,7 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
             </View>
           </View>
 
-          {/* Chi phí */}
-          <View style={styles.section}>
+          <View style={[styles.section, { zIndex: 1 }]}>
             <Text style={styles.sectionTitle}>💰 Chi phí</Text>
             {costItems.map((item, idx) => (
               <View key={idx} style={styles.costItemContainer}>
@@ -460,95 +468,109 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
             </TouchableOpacity>
           </View>
 
-          {/* Địa điểm & Tags */}
-          <View style={styles.section}>
+          {/* Section có suggestion: z-index cao hơn, từ cao xuống thấp */}
+          <View style={[styles.section, { zIndex: 5 }]}>
             <Text style={styles.sectionTitle}>🌍 Địa điểm & Tags</Text>
-            
-            <Text style={styles.inputLabel}>Địa điểm đã đến</Text>
-            <View style={styles.tagContainer}>
-              {placesVisitedList.map((place, idx) => (
-                <View key={idx} style={styles.tag}>
-                  <Text style={styles.tagText}>{place}</Text>
-                  <TouchableOpacity 
-                    style={styles.tagRemoveBtn}
-                    onPress={() => removePlace(idx)}
-                  >
-                    <Ionicons name="close-circle" size={16} color="#228be6" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              <View style={{ flex: 1, minWidth: 100, position: 'relative', zIndex: 20 }}>
-                <TextInput
-                  value={placesInput}
-                  onChangeText={handlePlacesInput}
-                  placeholder="Nhập địa điểm..."
-                  style={styles.tagInput}
-                  placeholderTextColor="#9ca3af"
-                  onSubmitEditing={() => handlePlacesInput(placesInput + '\n')}
-                />
-                {filteredPlaces.length > 0 && (
-                  <View style={styles.suggestionContainer}>
-                    {filteredPlaces.map((place, idx) => (
-                      <TouchableOpacity
-                        key={idx}
-                        onPress={() => selectPlaceSuggestion(place)}
-                        style={[
-                          styles.suggestionItem,
-                          { borderBottomWidth: idx === filteredPlaces.length - 1 ? 0 : 1 }
-                        ]}
-                      >
-                        <Text style={styles.suggestionText}>📍 {place}</Text>
-                      </TouchableOpacity>
-                    ))}
+            <View style={[styles.inputWrapper, { zIndex: 2 }]}>
+              <Text style={styles.inputLabel}>Địa điểm đã đến</Text>
+              <View style={styles.tagContainer}>
+                {placesVisitedList.map((place, idx) => (
+                  <View key={idx} style={styles.tag}>
+                    <Text style={styles.tagText}>{place}</Text>
+                    <TouchableOpacity
+                      style={styles.tagRemoveBtn}
+                      onPress={() => removePlace(idx)}
+                    >
+                      <Ionicons name="close-circle" size={16} color="#228be6" />
+                    </TouchableOpacity>
                   </View>
-                )}
+                ))}
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    value={placesInput}
+                    onChangeText={handlePlacesInput}
+                    placeholder="Nhập địa điểm..."
+                    style={styles.tagInput}
+                    placeholderTextColor="#9ca3af"
+                    onSubmitEditing={() => handlePlacesInput(placesInput + '\n')}
+                  />
+                  {filteredPlaces.length > 0 && (
+                    <View style={styles.suggestionContainer}>
+                      <ScrollView
+                        nestedScrollEnabled={true}
+                        keyboardShouldPersistTaps="handled"
+                        style={styles.suggestionScrollContainer}
+                      >
+                        {filteredPlaces.map((place, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            onPress={() => selectPlaceSuggestion(place)}
+                            style={[
+                              styles.suggestionItem,
+                              { borderBottomWidth: idx === filteredPlaces.length - 1 ? 0 : 1 }
+                            ]}
+                          >
+                            <Text style={styles.suggestionText}>📍 {place}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
 
-            <Text style={styles.inputLabel}>Tags</Text>
-            <View style={styles.tagContainer}>
-              {tagsList.map((tag, idx) => (
-                <View key={idx} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                  <TouchableOpacity 
-                    style={styles.tagRemoveBtn}
-                    onPress={() => removeTag(idx)}
-                  >
-                    <Ionicons name="close-circle" size={16} color="#228be6" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              <View style={{ flex: 1, minWidth: 100, position: 'relative', zIndex: 20  }}>
-                <TextInput
-                  value={tagsInput}
-                  onChangeText={handleTagsInput}
-                  placeholder="Nhập tags..."
-                  style={styles.tagInput}
-                  placeholderTextColor="#9ca3af"
-                  onSubmitEditing={() => handleTagsInput(tagsInput + '\n')}
-                />
-                {filteredTags.length > 0 && (
-                  <View style={styles.suggestionContainer}>
-                    {filteredTags.map((tag, idx) => (
-                      <TouchableOpacity
-                        key={idx}
-                        onPress={() => selectTagSuggestion(tag)}
-                        style={[
-                          styles.suggestionItem,
-                          { borderBottomWidth: idx === filteredTags.length - 1 ? 0 : 1 }
-                        ]}
-                      >
-                        <Text style={styles.suggestionText}>#{tag}</Text>
-                      </TouchableOpacity>
-                    ))}
+            <View style={[styles.inputWrapper, { zIndex: 1 }]}>
+              <Text style={styles.inputLabel}>Tags</Text>
+              <View style={styles.tagContainer}>
+                {tagsList.map((tag, idx) => (
+                  <View key={idx} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                    <TouchableOpacity
+                      style={styles.tagRemoveBtn}
+                      onPress={() => removeTag(idx)}
+                    >
+                      <Ionicons name="close-circle" size={16} color="#228be6" />
+                    </TouchableOpacity>
                   </View>
-                )}
+                ))}
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    value={tagsInput}
+                    onChangeText={handleTagsInput}
+                    placeholder="Nhập tags..."
+                    style={styles.tagInput}
+                    placeholderTextColor="#9ca3af"
+                    onSubmitEditing={() => handleTagsInput(tagsInput + '\n')}
+                  />
+                  {filteredTags.length > 0 && (
+                    <View style={styles.suggestionContainer}>
+                      <ScrollView
+                        nestedScrollEnabled={true}
+                        keyboardShouldPersistTaps="handled"
+                        style={{ maxHeight: 200 }}
+                      >
+                        {filteredTags.map((tag, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            onPress={() => selectTagSuggestion(tag)}
+                            style={[
+                              styles.suggestionItem,
+                              { borderBottomWidth: idx === filteredTags.length - 1 ? 0 : 1 }
+                            ]}
+                          >
+                            <Text style={styles.suggestionText}>#{tag}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
           </View>
 
-          {/* Homestay */}
-          <View style={styles.section}>
+          <View style={[styles.section, { zIndex: 4 }]}>
             <Text style={styles.sectionTitle}>🏠 Nơi lưu trú</Text>
             <Text style={styles.inputLabel}>Homestay</Text>
             <View style={{ position: 'relative' }}>
@@ -578,14 +600,13 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
             </View>
           </View>
 
-          {/* Thành viên tham gia */}
-          <View style={styles.section}>
+          <View style={[styles.section, { zIndex: 3 }]}>
             <Text style={styles.sectionTitle}>👥 Thành viên tham gia</Text>
             <View style={styles.tagContainer}>
               {participantsTags.map((tag, idx) => (
                 <View key={idx} style={styles.tag}>
                   <Text style={styles.tagText}>{tag}</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.tagRemoveBtn}
                     onPress={() => removeParticipantsTag(idx)}
                   >
@@ -593,7 +614,7 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
                   </TouchableOpacity>
                 </View>
               ))}
-              <View style={{ flex: 1, minWidth: 100, position: 'relative' }}>
+              <View style={styles.inputContainer}>
                 <TextInput
                   value={participantsInput}
                   onChangeText={handleParticipantsInput}
@@ -604,33 +625,39 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
                 />
                 {filteredParticipants.length > 0 && (
                   <View style={styles.suggestionContainer}>
-                    {filteredParticipants.map((name, idx) => (
-                      <TouchableOpacity
-                        key={idx}
-                        onPress={() => selectParticipantSuggestion(name)}
-                        style={[
-                          styles.suggestionItem,
-                          { borderBottomWidth: idx === filteredParticipants.length - 1 ? 0 : 1 }
-                        ]}
-                      >
-                        <Text style={styles.suggestionText}>{name}</Text>
-                      </TouchableOpacity>
-                    ))}
+                    <ScrollView
+                      nestedScrollEnabled={true}
+                      keyboardShouldPersistTaps="handled"
+                      style={styles.suggestionScrollContainer}
+                    >
+                      {filteredParticipants.map((name, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          onPress={() => selectParticipantSuggestion(name)}
+                          style={[
+                            styles.suggestionItem,
+                            { borderBottomWidth: idx === filteredParticipants.length - 1 ? 0 : 1 }
+                          ]}
+                        >
+                          <Text style={styles.suggestionText}>{name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
                   </View>
                 )}
               </View>
             </View>
           </View>
 
-          {/* Chia sẻ */}
-          <View style={styles.section}>
+          {/* Section không có suggestion: z-index thấp nhất */}
+          <View style={[styles.section, { zIndex: 1 }]}>
             <Text style={styles.sectionTitle}>🔒 Quyền riêng tư</Text>
             <Text style={styles.inputLabel}>Chia sẻ với</Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={shareOption}
                 onValueChange={setShareOption}
-                style={{ height: 50 }}
+                style={{ height: 60 }}
                 dropdownIconColor="#228be6"
               >
                 <Picker.Item label="🔒 Chỉ mình tôi" value="private" />
@@ -698,6 +725,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     marginBottom: 20,
+    zIndex: 1,
   },
   modalTitle: {
     fontSize: 28,
@@ -709,6 +737,8 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     paddingHorizontal: 24,
+  },
+  scrollContent: {
     paddingBottom: 30,
   },
   section: {
@@ -721,7 +751,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
-    zIndex: 1,
+    position: 'relative',
   },
   sectionTitle: {
     fontSize: 18,
@@ -829,17 +859,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     backgroundColor: '#f9fafb',
     borderRadius: 12,
-    padding: 12,
-    minHeight: 60,
+    padding: 8,
+    minHeight: 50,
     alignItems: 'center',
+    position: 'relative',
+    gap: 8,
   },
   tag: {
     backgroundColor: '#e8f2ff',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    marginRight: 8,
-    marginBottom: 6,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -853,34 +883,45 @@ const styles = StyleSheet.create({
   tagRemoveBtn: {
     marginLeft: 6,
   },
-  tagInput: {
+  inputContainer: {
     flex: 1,
-    minWidth: 100,
-    marginBottom: 0,
+    minWidth: 150,
+    position: 'relative',
+  },
+  tagInput: {
+    minWidth: '100%',
     borderWidth: 0,
     backgroundColor: 'transparent',
+    padding: 8,
+    height: 36,
+    fontSize: 15,
+    color: '#1f2937',
   },
   suggestionContainer: {
     position: 'absolute',
-    zIndex: 9999,
-    top: '100%',
+    top: 36,
     left: 0,
     right: 0,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 12,
-    elevation: 10,
     maxHeight: 200,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  suggestionScrollContainer: {
+    maxHeight: 200,
   },
   suggestionItem: {
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+    backgroundColor: '#fff',
   },
   suggestionText: {
     color: '#228be6',
@@ -901,6 +942,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingBottom: 24,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
   },
   saveBtn: {
     backgroundColor: '#228be6',
@@ -933,6 +977,11 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  inputWrapper: {
+    position: 'relative',
+    marginBottom: 16,
+    zIndex: 1,
   },
 });
 

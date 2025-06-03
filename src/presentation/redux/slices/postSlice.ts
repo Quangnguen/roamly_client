@@ -163,6 +163,8 @@ const postSlice = createSlice({
                         isLoading: false,
                     };
                     state.posts[tempIndex] = updatedPost;
+                    // Thêm post vào myPosts nữa
+                    state.myPosts = [updatedPost, ...state.myPosts];
                 }
                 state.message = 'Đăng bài viết thành công';
                 state.status = 'success';
