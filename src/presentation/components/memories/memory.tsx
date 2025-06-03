@@ -63,6 +63,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
   const [editDate, setEditDate] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [memoriesState, setMemoriesState] = useState<Memory[]>(mappedMemories);
+  const [editMemory, setEditMemory] = useState(null);
 
   const addMemoryItem = { id: 'add', images: [''], title: '', startDate: '', placesVisited: [] };
   const dataWithAdd = userId === profile?.id ? [addMemoryItem, ...memoriesState] : memoriesState;
@@ -119,10 +120,8 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
 
   const startEdit = () => {
     if (selected) {
-      setEditMode(true);
-      setEditImages(selected.images);
-      setEditDate(selected.startDate || '');
-      setEditLocation((selected.placesVisited && selected.placesVisited[0]) || '');
+      setEditMemory(selected);
+      setShowAddModal(true);
     }
   };
 
@@ -159,6 +158,12 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
   // Khi thêm memory mới thành công từ CreateMemory
   const handleMemorySave = (memoryData: any) => {
     setMemoriesState(prev => [memoryData, ...prev]);
+    setShowAddModal(false);
+  };
+
+  // Khi đóng modal sửa
+  const handleCloseEdit = () => {
+    setEditMemory(null);
     setShowAddModal(false);
   };
 
@@ -437,6 +442,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
           visible={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSave={handleMemorySave}
+          memory={editMemory}
         />
       )}
     </>

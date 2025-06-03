@@ -72,7 +72,7 @@ export const updateMemory = createAsyncThunk(
     'memory/updateMemory',
     async ({ id, data }: { id: string; data: Partial<CreateMemoryInterface> }, { rejectWithValue }) => {
         try {
-            const response = await updateMemoryApi(id, data);
+            const response = await dependencies.MemoryUseCase.updateMemory(id, data);
             return { id, data: response.data || response };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to update memory');

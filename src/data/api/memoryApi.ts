@@ -114,34 +114,86 @@ export const getMemoriesApi = async (userId?: string) => {
 export const updateMemoryApi = async (memoryId: string, memoryData: Partial<CreateMemoryInterface>) => {
   try {
     const formData = new FormData();
-    
-    // Chỉ append các field có giá trị
-    Object.entries(memoryData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (key === 'cost') {
-          formData.append(key, JSON.stringify(value));
-        } else if (Array.isArray(value)) {
-          value.forEach(item => {
-            formData.append(key, item);
-          });
-        } else {
-          formData.append(key, value.toString());
+
+    // Thông tin cơ bản
+    if (memoryData.title !== undefined) {
+      formData.append('title', memoryData.title);
+    }
+    if (memoryData.description !== undefined) {
+      formData.append('description', memoryData.description || '');
+    }
+    if (memoryData.startDate) {
+      formData.append('startDate', memoryData.startDate);
+    }
+    if (memoryData.endDate) {
+      formData.append('endDate', memoryData.endDate);
+    }
+
+    // Chi phí - gửi dạng JSON string
+    if (memoryData.cost) {
+      formData.append('cost', JSON.stringify(memoryData.cost));
+    }
+
+    // Tags - gửi từng tag với cùng key 'tags'
+    if (memoryData.tags && memoryData.tags.length > 0) {
+      memoryData.tags.forEach(tag => {
+        formData.append('tags', tag || '');
+      });
+    }
+
+    // Thành viên tham gia
+    if (memoryData.participants && memoryData.participants.length > 0) {
+      memoryData.participants.forEach(participant => {
+        formData.append('participants', participant || '');
+      });
+    }
+
+    // Địa điểm
+    if (memoryData.placesVisited && memoryData.placesVisited.length > 0) {
+      memoryData.placesVisited.forEach(place => {
+        formData.append('placesVisited', place || '');
+      });
+    }
+
+    // Thông tin khác
+    if (memoryData.homestay) {
+      formData.append('homestay', memoryData.homestay ?? '');
+    }
+    if (memoryData.privacy !== undefined) {
+      formData.append('privacy', memoryData.privacy);
+    }
+
+    // Xử lý hình ảnh
+    if (memoryData.images && memoryData.images.length > 0) {
+      for (let i = 0; i < memoryData.images.length; i++) {
+        const imageUri = memoryData.images[i];
+        try {
+          const fileName = imageUri.split('/').pop() || `image_${i}.jpg`;
+          const fileType = 'image/jpeg';
+          formData.append('images', {
+            uri: imageUri,
+            name: fileName,
+            type: fileType,
+          } as any);
+        } catch (error) {
+          console.error(`Error processing image ${i}:`, error);
         }
       }
-    });
+    }
 
-    const response = await authorizedRequest(`${API_BASE_URL}/memories/${memoryId}`, {
+    console.log('Updating memory with ID api:', formData);
+
+    const response = await authorizedRequest(`${API_BASE_URL}/memory/update/${memoryId}`, {
       method: 'PUT',
       body: formData,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to update memory');
+    // Nếu API trả về kiểu response giống createMemoryApi
+    if (!response || response.status !== 'success' || (response.statusCode && response.statusCode >= 400)) {
+      throw new Error(response?.message || 'Failed to update memory');
     }
 
-    const result = await response.json();
-    return result;
+    return response;
   } catch (error) {
     console.error('Update memory API error:', error);
     throw error;

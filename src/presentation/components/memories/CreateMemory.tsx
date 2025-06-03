@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { clearMemoryMessage, createMemory } from '../../redux/slices/memorySlice';
+import { clearMemoryMessage, createMemory, updateMemory } from '../../redux/slices/memorySlice';
 import { AppDispatch, RootState } from '../../redux/store';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from 'expo-router';
@@ -18,12 +18,13 @@ type CreateMemoryProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (memoryData: any) => void;
+  memory?: any;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AccountPage'>;
 
 
-const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave }) => {
+const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave, memory }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { statusCode, message, status } = useSelector((state: RootState) => state.memory);
   const navigation = useNavigation<NavigationProp>();
@@ -274,21 +275,29 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
 
     // Tạo object để hiển thị local (không gửi lên API)
     const memoryData = {
-        title: newTitle,
-        description: newDescription,
-        startDate: isoStartDate,
-        endDate: isoEndDate,
-        cost: costObj,
-        placesVisited: placesVisitedList,
-        tags: tagsList,
-        homestay: newHomestay,
-        participants: participantsTags,
-        privacy: shareOption,
-        images: newImages,
+      title: newTitle,
+      description: newDescription,
+      startDate: isoStartDate,
+      endDate: isoEndDate,
+      cost: costObj,
+      placesVisited: placesVisitedList,
+      tags: tagsList,
+      homestay: newHomestay,
+      participants: participantsTags,
+      privacy: shareOption,
+      images: newImages,
     };
+    console.log('Memory data to save:', memoryData);
 
-    
-    dispatch(createMemory(memoryData));
+    if (memory && memory.id) {
+      // Gọi action update
+      console.log('Updating memory with ID:', memory.id);
+      dispatch(updateMemory({ id: memory.id, data: memoryData }));
+    } else {
+      // Gọi action create
+      console.log('Creating new memory');
+      dispatch(createMemory(memoryData));
+    }
     onClose();
   };
 
@@ -333,6 +342,30 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave })
     resetForm();
     onClose();
   };
+
+  useEffect(() => {
+    if (memory) {
+      setNewTitle(memory.title || '');
+      setNewDescription(memory.description || '');
+      setNewStartDate(memory.startDate ? memory.startDate.slice(0, 10) : '');
+      setNewEndDate(memory.endDate ? memory.endDate.slice(0, 10) : '');
+      setPlacesVisitedList(memory.placesVisited || []);
+      setNewHomestay(memory.homestay || '');
+      setNewImages(memory.images || []);
+      setCostItems(
+        memory.cost && typeof memory.cost === 'object'
+          ? Object.entries(memory.cost)
+              .filter(([k]) => k !== 'total')
+              .map(([key, value]) => ({ key, value: value.toString() }))
+          : []
+      );
+      setParticipantsTags(memory.participants || []);
+      setShareOption(memory.privacy || 'private');
+      setTagsList(memory.tags || []);
+    } else {
+      resetForm();
+    }
+  }, [memory, visible]);
 
   return (
     <Modal
