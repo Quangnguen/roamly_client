@@ -113,6 +113,17 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
     );
   };
 
+  const getPrivacyIcon = (privacy: string) => {
+  switch(privacy) {
+    case 'private': return '🔒';
+    case 'tagged': return '🏷️';
+    case 'followers': return '👥';
+    case 'public': return '🌐';
+    default: return '🌐';
+  }
+};
+
+
   const handleScroll = (e: any) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 32));
     setCurrentImageIdx(idx);
@@ -314,13 +325,19 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                     </View>
                   )}
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailIcon}>{selected.privacy === 'private' ? '🔒' : '🌐'}</Text>
+                    <Text style={styles.detailIcon}><Text style={styles.detailIcon}>{getPrivacyIcon(selected.privacy ?? 'public')}</Text></Text>
                     <Text style={styles.detailLabel}>Quyền riêng tư:</Text>
                     <Text style={[
                       styles.detailValue, 
                       {color: selected.privacy === 'private' ? '#ff6b6b' : '#51cf66'}
                     ]}>
-                      {selected.privacy === 'private' ? 'Chỉ mình tôi' : 'Công khai'}
+                      {selected.privacy === 'private' 
+                      ? 'Chỉ mình tôi' 
+                      : selected.privacy === 'tagged' 
+                        ? 'Bạn bè được gắn thẻ' 
+                        : selected.privacy === 'followers' 
+                          ? 'Bạn bè follow' 
+                          : 'Công khai'}
                     </Text>
                   </View>
                 </View>
