@@ -27,4 +27,9 @@ export class PostRepositoryImpl implements PostRepository {
         const response = await postApi.deletePostApi(postId);
         return response;
     }
+
+    async getPostById(postId: string): Promise<Post> {
+        const response = await postApi.getPostByIdApi(postId);
+        return response;
+    }
 }

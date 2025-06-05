@@ -2,6 +2,8 @@ import React from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Text } from 'react-native';
 import Post from './post';
 import PostMini from './PostMini';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 type Post = {
   id: string;
@@ -31,7 +33,12 @@ type PostListProps = {
 const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, expandedPostId, currentUserId }) => {
   // Sắp xếp bài đăng theo ngày đăng (mới nhất trước)
   const sortedPosts = [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
+  const user = useSelector((state: RootState) => state.auth.profile);
+  const author = {
+    username: user?.username ?? '',
+    profilePic: user?.profilePic ?? ''
+  }
+  console.log(user);
   return (
     <FlatList
       data={sortedPosts}
@@ -52,7 +59,7 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
                 likeCount={item.likeCount}
                 sharedCount={item.sharedCount}
                 caption={item.caption}
-                author={item.author}
+                author={author}
                 isPublic={item.isPublic}
                 isVerified={false}
                 isOwner={item.authorId === currentUserId}

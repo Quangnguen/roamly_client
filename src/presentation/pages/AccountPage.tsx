@@ -127,6 +127,11 @@ const AccountPage: React.FC = () => {
     { id: '4', name: 'Design', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
   ];
 
+  const author = {
+    profilePic: user?.profilePic ?? '',
+    username: user?.username ?? '',
+  }
+
   const handleOpenModal = (type: 'followers' | 'followings') => {
     setModalType(type);
     setModalVisible(true);
@@ -597,9 +602,10 @@ const AccountPage: React.FC = () => {
               likeCount={selectedPost.likeCount}
               sharedCount={selectedPost.sharedCount}
               caption={selectedPost.caption}
-              author={selectedPost.author}
+              author={author}
               isPublic={selectedPost.isPublic}
               isVerified={false}
+              isLike={selectedPost.isLike}
             />
           )}
         </View>

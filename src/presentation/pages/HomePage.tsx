@@ -69,6 +69,7 @@ const HomePage = () => {
             isVerified={false}
             isLoading={post.isLoading || false}
             authorId={post.authorId}
+            isLike={post.isLike}
           />
         ))}
       </ScrollView>

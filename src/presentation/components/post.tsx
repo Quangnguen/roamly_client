@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import ImageView from 'react-native-image-viewing';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { deletePost } from '../redux/slices/postSlice';
+import { likePost, unlikePost, initializeLikeStatus } from '../redux/slices/likeSlice';
 import Toast from 'react-native-toast-message';
 import { navigate } from 'expo-router/build/global-state/routing';
 import { useNavigation } from 'expo-router';
@@ -55,6 +56,7 @@ interface PostProps {
   isLoading?: boolean;
   postId?: string;
   authorId?: string;
+  isLike?: boolean;
 }
 
 const Post: React.FC<PostProps> = ({
@@ -82,6 +84,7 @@ const Post: React.FC<PostProps> = ({
   isLoading = false,
   postId,
   authorId,
+  isLike = false,
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
@@ -91,6 +94,27 @@ const Post: React.FC<PostProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector((state: RootState) => state.auth);
+
+  // Lấy trạng thái like từ Redux store
+  const isLiked = useSelector((state: RootState) =>
+    state.like.likedPosts.includes(postId || '')
+  );
+
+  // Lấy likeCount từ Redux store
+  const currentPost = useSelector((state: RootState) =>
+    state.post.posts.find(post => post.id === postId) ||
+    state.post.myPosts.find(post => post.id === postId)
+  );
+
+  const currentLikeCount = currentPost?.likeCount ?? likeCount;
+
+  // Khởi tạo trạng thái like khi component mount
+  useEffect(() => {
+    if (postId) {
+      dispatch(initializeLikeStatus({ postId, isLiked: isLike }));
+    }
+  }, [dispatch, postId, isLike]);
+
   const goToImage = useCallback((index: number) => {
     if (index >= 0 && index < images.length) {
       flatListRef.current?.scrollToOffset({
@@ -369,15 +393,29 @@ const Post: React.FC<PostProps> = ({
 
       {/* Likes */}
       <View style={styles.likesContainer}>
-        <Text style={styles.bold}>{likeCount.toLocaleString()} likes</Text>
+        <Text style={styles.bold}>{currentLikeCount.toLocaleString()} likes</Text>
         <Text style={styles.bold}>  {commentCount.toLocaleString()} comments</Text>
       </View>
 
       {/* Action Buttons */}
       <View style={styles.actions}>
         <View style={styles.leftActions}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Feather name="heart" size={24} color="#262626" />
+          <TouchableOpacity style={styles.actionButton} onPress={async () => {
+            try {
+              if (isLiked) {
+                await dispatch(unlikePost(postId || '')).unwrap();
+              } else {
+                await dispatch(likePost(postId || '')).unwrap();
+              }
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Có lỗi xảy ra',
+                text2: 'Không thể thực hiện thao tác này',
+              });
+            }
+          }}>
+            <FontAwesome name={isLiked ? 'heart' : 'heart-o'} size={24} color={isLiked ? '#e74c3c' : '#262626'} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <Feather name="message-circle" size={24} color="#262626" />

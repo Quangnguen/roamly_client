@@ -6,4 +6,5 @@ export interface PostRepository {
     getPostsByUserId(userId: string): Promise<Post[]>;
     getMyPosts(): Promise<Post[]>;
     deletePost(postId: string): Promise<void>;
+    getPostById(postId: string): Promise<Post>;
 }

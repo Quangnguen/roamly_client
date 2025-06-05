@@ -23,4 +23,8 @@ export class PostUseCase {
   async deletePost(postId: string): Promise<void> {
     return await this.repo.deletePost(postId)
   }
+
+  async getPostById(postId: string): Promise<Post> {
+    return await this.repo.getPostById(postId)
+  }
 }

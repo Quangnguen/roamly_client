@@ -3,6 +3,7 @@ import { PostUseCase } from '@/src/domain/usecases/postUsecase';
 import { Post } from '@/src/domain/models/Post';
 import { PostRepositoryImpl } from '@/src/data/implements/postRepositoryImpl';
 import { ResponseInterface } from '@/src/types/ResponseInterface';
+import { likePost, unlikePost, initializeLikeStatus } from './likeSlice';
 
 // Định nghĩa interface cho response API
 interface PostApiResponse extends ResponseInterface<Post> { }
@@ -91,6 +92,19 @@ export const deletePost = createAsyncThunk<any, string>(
     }
 );
 
+export const getPostById = createAsyncThunk<PostApiResponse, string>(
+    'post/getPostById',
+    async (postId: string, { rejectWithValue }) => {
+        try {
+            const response = await postUseCase.getPostById(postId);
+            return response as unknown as PostApiResponse;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi tải bài viết');
+        }
+    }
+);
+
+
 const postSlice = createSlice({
     name: 'post',
     initialState: {
@@ -101,6 +115,7 @@ const postSlice = createSlice({
         error: null as string | null,
         message: null as string | null,
         status: null as 'success' | 'error' | null,
+        currentPost: null as Post | null,
     },
     reducers: {
         clearMessage: (state) => {
@@ -246,6 +261,50 @@ const postSlice = createSlice({
                 state.error = action.payload as string;
                 state.message = action.payload as string;
                 state.status = 'error';
+            })
+            // Get Post By Id
+            .addCase(getPostById.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getPostById.fulfilled, (state, action) => {
+                state.loading = false;
+                state.currentPost = action.payload.data;
+                state.error = null;
+            })
+            .addCase(getPostById.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                state.message = action.payload as string;
+                state.status = 'error';
+            })
+            // Like Post - cập nhật likeCount khi like thành công
+            .addCase(likePost.fulfilled, (state, action) => {
+                const postId = action.meta.arg; // postId được truyền vào action
+                // Cập nhật likeCount trong posts
+                const postIndex = state.posts.findIndex(post => post.id === postId);
+                if (postIndex !== -1) {
+                    state.posts[postIndex].likeCount += 1;
+                }
+                // Cập nhật likeCount trong myPosts nếu có
+                const myPostIndex = state.myPosts.findIndex(post => post.id === postId);
+                if (myPostIndex !== -1) {
+                    state.myPosts[myPostIndex].likeCount += 1;
+                }
+            })
+            // Unlike Post - cập nhật likeCount khi unlike thành công
+            .addCase(unlikePost.fulfilled, (state, action) => {
+                const postId = action.meta.arg; // postId được truyền vào action
+                // Cập nhật likeCount trong posts
+                const postIndex = state.posts.findIndex(post => post.id === postId);
+                if (postIndex !== -1 && state.posts[postIndex].likeCount > 0) {
+                    state.posts[postIndex].likeCount -= 1;
+                }
+                // Cập nhật likeCount trong myPosts nếu có
+                const myPostIndex = state.myPosts.findIndex(post => post.id === postId);
+                if (myPostIndex !== -1 && state.myPosts[myPostIndex].likeCount > 0) {
+                    state.myPosts[myPostIndex].likeCount -= 1;
+                }
             });
     },
 });

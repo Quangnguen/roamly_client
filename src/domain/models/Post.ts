@@ -17,4 +17,5 @@ export interface Post {
     };
     isOptimistic?: boolean;
     isLoading?: boolean;
+    isLike?: boolean;
 }

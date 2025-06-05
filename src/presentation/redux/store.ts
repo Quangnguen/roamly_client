@@ -4,6 +4,8 @@ import userReducer from './slices/userSlice'
 import followReducer from './slices/followSlice'
 import postReducer from './slices/postSlice'
 import MemoryReducer from './slices/memorySlice'
+import likeReducer from './slices/likeSlice'
+import notificationReducer from './slices/notificationSlice'
 
 export const store = configureStore({
   reducer: {
@@ -11,7 +13,9 @@ export const store = configureStore({
     user: userReducer,
     follow: followReducer,
     post: postReducer,
-    memory: MemoryReducer
+    memory: MemoryReducer,
+    like: likeReducer,
+    notification: notificationReducer,
   },
 })
 

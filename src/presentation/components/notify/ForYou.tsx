@@ -1,52 +1,79 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from "react-native"
-import React from "react"
-
-type NotificationType = "like" | "mention" | "follow"
-
-interface Notification {
-  id: string
-  type: NotificationType
-  user: {
-    id: string
-    name: string
-    avatar: string
-  }
-  timeAgo: string
-  content?: {
-    text?: string
-    image?: string
-  }
-  isRead: boolean
-}
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, RefreshControl, Modal, ActivityIndicator } from "react-native"
+import React, { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { RootState, AppDispatch } from "@/src/presentation/redux/store"
+import { fetchNotifications, markAsRead } from "@/src/presentation/redux/slices/notificationSlice"
+import { getPostById } from "@/src/presentation/redux/slices/postSlice"
+import { formatDistanceToNow } from "date-fns"
+import { vi } from "date-fns/locale"
+import PostModal from "../postModal"
 
 interface NotificationSectionProps {
   title: string
-  notifications: Notification[]
+  notifications: NotificationType[]
+  onNotificationPress: (notification: NotificationType) => void
 }
 
-const NotificationItem = ({ notification }: { notification: Notification }) => {
+interface NotificationType {
+  id: string
+  type: 'LIKE' | 'COMMENT' | 'FOLLOW' | 'MENTION' | 'MESSAGE'
+  message: string
+  isRead: boolean
+  senderId: string
+  createdAt: string
+  sender: {
+    id: string
+    username: string
+    profilePic: string | null
+  }
+  post?: {
+    id: string
+    imageUrl: string[]
+  }
+}
+
+const NotificationItem = ({ notification, onPress }: { notification: NotificationType, onPress: (notification: NotificationType) => void }) => {
+  const getTimeAgo = (date: string) => {
+    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: vi })
+  }
+
   const renderNotificationContent = () => {
+    const timeAgo = getTimeAgo(notification.createdAt)
+
     switch (notification.type) {
-      case "like":
+      case "LIKE":
         return (
           <Text style={styles.notificationText}>
-            <Text style={styles.username}>{notification.user.name}</Text> liked your photo.{" "}
-            <Text style={styles.timeAgo}>{notification.timeAgo}</Text>
+            <Text style={styles.username}>{notification.sender.username}</Text><Text> đã thích bài viết của bạn</Text>
+            <Text style={styles.timeAgo}> {timeAgo}</Text>
           </Text>
         )
-      case "mention":
+      case "COMMENT":
         return (
           <Text style={styles.notificationText}>
-            <Text style={styles.username}>{notification.user.name}</Text> mentioned you in a comment:{" "}
-            <Text style={styles.comment}>{notification.content?.text}</Text>{" "}
-            <Text style={styles.timeAgo}>{notification.timeAgo}</Text>
+            <Text style={styles.username}>{notification.sender.username}</Text><Text> đã bình luận về bài viết của bạn</Text>
+            <Text style={styles.timeAgo}> {timeAgo}</Text>
           </Text>
         )
-      case "follow":
+      case "FOLLOW":
         return (
           <Text style={styles.notificationText}>
-            <Text style={styles.username}>{notification.user.name}</Text> started following you.{" "}
-            <Text style={styles.timeAgo}>{notification.timeAgo}</Text>
+            <Text style={styles.username}>{notification.sender.username}</Text><Text> đã bắt đầu theo dõi bạn</Text>
+            <Text style={styles.timeAgo}> {timeAgo}</Text>
+          </Text>
+        )
+      case "MENTION":
+        return (
+          <Text style={styles.notificationText}>
+            <Text style={styles.username}>{notification.sender.username}</Text><Text> đã nhắc đến bạn</Text>
+            <Text style={styles.timeAgo}> {timeAgo}</Text>
+          </Text>
+        )
+      case "MESSAGE":
+        return (
+          <Text style={styles.notificationText}>
+            <Text style={styles.username}>{notification.sender.username}</Text><Text> đã gửi tin nhắn cho bạn</Text>
+            <Text style={styles.timeAgo}> {timeAgo}</Text>
           </Text>
         )
       default:
@@ -55,146 +82,150 @@ const NotificationItem = ({ notification }: { notification: Notification }) => {
   }
 
   const renderActionButton = () => {
-    if (notification.type === "follow") {
+    if (notification.type === "FOLLOW") {
       return (
         <TouchableOpacity style={styles.followButton}>
-          <Text style={styles.followButtonText}>Follow</Text>
+          <Text style={styles.followButtonText}>Theo dõi</Text>
         </TouchableOpacity>
       )
-    } else if (notification.content?.image) {
-      return <Image source={{ uri: notification.content.image }} style={styles.contentImage} />
+    } else if (notification.post?.imageUrl[0]) {
+      return <Image source={{ uri: notification.post.imageUrl[0] }} style={styles.contentImage} />
     }
     return null
   }
 
   return (
-    <View style={styles.notificationItem}>
-      <Image source={{ uri: notification.user.avatar }} style={styles.avatar} />
+    <TouchableOpacity
+      style={[styles.notificationItem, !notification.isRead && styles.unreadItem]}
+      onPress={() => onPress(notification)}
+      activeOpacity={0.7}
+    >
+      <Image source={{ uri: notification.sender.profilePic || undefined }} style={styles.avatar} />
       <View style={styles.notificationContent}>
         {renderNotificationContent()}
-        {notification.type === "mention" && (
-          <TouchableOpacity style={styles.replyButton}>
-            <Text style={styles.replyText}>Reply</Text>
-          </TouchableOpacity>
-        )}
       </View>
       {renderActionButton()}
-    </View>
+    </TouchableOpacity>
   )
 }
 
-const NotificationSection = ({ title, notifications }: NotificationSectionProps) => {
+const NotificationSection = ({ title, notifications, onNotificationPress }: NotificationSectionProps) => {
   if (notifications.length === 0) return null
 
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {notifications.map((notification) => (
-        <NotificationItem key={notification.id} notification={notification} />
+        <NotificationItem key={notification.id} notification={notification} onPress={onNotificationPress} />
       ))}
     </View>
   )
 }
 
 const You = () => {
-  // Sample data
-  const notifications: Notification[] = [
-    {
-      id: "1",
-      type: "like",
-      user: {
-        id: "101",
-        name: "karenmme",
-        avatar: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=40&width=40",
-      },
-      timeAgo: "1h",
-      content: {
-        image: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=50&width=50",
-      },
-      isRead: false,
-    },
-    {
-      id: "2",
-      type: "like",
-      user: {
-        id: "102",
-        name: "kiero_d_zackjohn",
-        avatar: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=40&width=40",
-      },
-      timeAgo: "3h",
-      content: {
-        image: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=50&width=50",
-      },
-      isRead: false,
-    },
-    {
-      id: "3",
-      type: "mention",
-      user: {
-        id: "103",
-        name: "craig_love",
-        avatar: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=40&width=40",
-      },
-      timeAgo: "5d",
-      content: {
-        text: "@jacob_w exactly...",
-        image: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=50&width=50",
-      },
-      isRead: true,
-    },
-    {
-      id: "4",
-      type: "follow",
-      user: {
-        id: "104",
-        name: "martini_rond",
-        avatar: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=40&width=40",
-      },
-      timeAgo: "1d",
-      isRead: true,
-    },
-    {
-      id: "5",
-      type: "follow",
-      user: {
-        id: "105",
-        name: "maxjacobson",
-        avatar: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=40&width=40",
-      },
-      timeAgo: "3d",
-      isRead: true,
-    },
-    {
-      id: "6",
-      type: "follow",
-      user: {
-        id: "106",
-        name: "mis_potter",
-        avatar: "https://i.pinimg.com/736x/21/92/70/2192706054d96fb1bdfae0d1c2b6bf49.jpg?height=40&width=40",
-      },
-      timeAgo: "1w",
-      isRead: true,
-    },
-  ]
+  const dispatch = useDispatch<AppDispatch>()
+  const { notifications, loading, error } = useSelector((state: RootState) => state.notification)
+  const { currentPost, loading: postLoading } = useSelector((state: RootState) => state.post)
+  const [refreshing, setRefreshing] = useState(false)
+  const [showPostModal, setShowPostModal] = useState(false)
+
+  useEffect(() => {
+    dispatch(fetchNotifications())
+  }, [dispatch])
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true)
+    dispatch(fetchNotifications()).finally(() => {
+      setRefreshing(false)
+    })
+  }, [dispatch])
+
+  const handleNotificationPress = async (notification: NotificationType) => {
+    dispatch(markAsRead(notification.id))
+
+    if ((notification.type === 'LIKE' || notification.type === 'COMMENT') && notification.post?.id) {
+      // Hiển thị modal ngay lập tức
+      setShowPostModal(true)
+
+      try {
+        await dispatch(getPostById(notification.post.id)).unwrap()
+      } catch (error) {
+        console.error('Error fetching post:', error)
+        setShowPostModal(false)
+      }
+    }
+  }
+
+  const handleCloseModal = () => {
+    console.log('Closing modal')
+    setShowPostModal(false)
+  }
+
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>Đang tải...</Text>
+      </View>
+    )
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    )
+  }
+
+  const now = new Date()
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
   const newNotifications = notifications.filter((n) => !n.isRead)
-  const todayNotifications = notifications.filter((n) => n.timeAgo.includes("h"))
-  const thisWeekNotifications = notifications.filter((n) => n.timeAgo.includes("d"))
-  const thisMonthNotifications = notifications.filter((n) => n.timeAgo.includes("w"))
+  const todayNotifications = notifications.filter((n) => new Date(n.createdAt) > oneDayAgo)
+  const thisWeekNotifications = notifications.filter((n) => {
+    const date = new Date(n.createdAt)
+    return date <= oneDayAgo && date > oneWeekAgo
+  })
+  const thisMonthNotifications = notifications.filter((n) => {
+    const date = new Date(n.createdAt)
+    return date <= oneWeekAgo && date > oneMonthAgo
+  })
 
   return (
-    <ScrollView style={styles.notificationsContainer}>
-      <NotificationSection title="New" notifications={newNotifications} />
-      <NotificationSection title="Today" notifications={todayNotifications} />
-      <NotificationSection title="This Week" notifications={thisWeekNotifications} />
-      <NotificationSection title="This Month" notifications={thisMonthNotifications} />
-    </ScrollView>
+    <>
+      <ScrollView
+        style={styles.notificationsContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3B82F6"]}
+            tintColor="#3B82F6"
+          />
+        }
+      >
+        <NotificationSection title="Mới" notifications={newNotifications} onNotificationPress={handleNotificationPress} />
+        <NotificationSection title="Hôm nay" notifications={todayNotifications} onNotificationPress={handleNotificationPress} />
+        <NotificationSection title="Tuần này" notifications={thisWeekNotifications} onNotificationPress={handleNotificationPress} />
+        <NotificationSection title="Tháng này" notifications={thisMonthNotifications} onNotificationPress={handleNotificationPress} />
+      </ScrollView>
+
+      <PostModal
+        visible={showPostModal}
+        onClose={handleCloseModal}
+        loading={postLoading}
+        post={currentPost}
+      />
+    </>
   )
 }
 
 const styles = StyleSheet.create({
   notificationsContainer: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   section: {
     paddingTop: 10,
@@ -208,14 +239,19 @@ const styles = StyleSheet.create({
   notificationItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 15,
+    backgroundColor: '#fff',
+  },
+  unreadItem: {
+    backgroundColor: '#F0F9FF',
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
     marginRight: 12,
+    backgroundColor: '#E5E5E5',
   },
   notificationContent: {
     flex: 1,
@@ -224,15 +260,16 @@ const styles = StyleSheet.create({
   notificationText: {
     fontSize: 14,
     lineHeight: 20,
+    color: '#1F2937',
   },
   username: {
     fontWeight: "600",
+    color: '#111827',
   },
   timeAgo: {
-    color: "#8E8E8E",
-  },
-  comment: {
-    color: "#8E8E8E",
+    color: '#6B7280',
+    fontSize: 13,
+    marginTop: 4,
   },
   contentImage: {
     width: 44,
@@ -240,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   followButton: {
-    backgroundColor: "#3897F0",
+    backgroundColor: "#3B82F6",
     paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: 4,
@@ -250,12 +287,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
-  replyButton: {
-    marginTop: 5,
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  replyText: {
-    color: "#8E8E8E",
-    fontSize: 14,
+  errorText: {
+    color: '#EF4444',
+    textAlign: 'center',
   },
 })
 

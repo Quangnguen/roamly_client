@@ -15,4 +15,5 @@ export interface Post {
         username: string;
         profilePic: string | null;
     };
+    isLiked: boolean;
 } 
