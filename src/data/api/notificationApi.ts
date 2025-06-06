@@ -12,6 +12,6 @@ export const getNotificationsApi = async () => {
 
 export const markAsReadApi = async (notificationId: string) => {
     return await authorizedRequest(`${API_BASE_URL}/notifications/${notificationId}/read`, {
-        method: 'POST',
+        method: 'PATCH',
     });
 };

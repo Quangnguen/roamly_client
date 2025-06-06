@@ -43,24 +43,13 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<InfoAccPageRouteProp>();
   const { id } = route.params;
-  const { posts, loading } = useSelector((state: RootState) => state.post);
+  const { postsByUserId, loading } = useSelector((state: RootState) => state.post);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
-  // const [posts, setPosts] = useState<Post[]>([]);s
 
-  // useEffect(() => {
-  //   const getPosts = async () => {
-  //     const posts = await dependencies.postUsecase.getPostsByUserId(id)
-  //     // setPosts(posts)
-  //   }
-  //   getPosts()
-  // }, [id])
 
   useEffect(() => {
     dispatch(getUserById(id));
     dispatch(getPostsByUserId(id));
-    // dispatch(getPosts())
-    console.log('posts', posts);
-    console.log('id', id);
   }, [dispatch, id]);
 
   useEffect(() => {
@@ -141,6 +130,13 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
       avatar: user.profilePic || '',
     });
   };
+
+  const author = {
+    username: user?.username || '',
+    profilePic: user?.profilePic || '',
+  }
+
+  console.log('author', author);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -244,10 +240,11 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
         ListFooterComponent={
           activeTab === 'grid'
             ? <PostList
-              posts={posts}
+              posts={postsByUserId}
               mini={true}
               expandedPostId={expandedPostId}
               onPostPress={(post) => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+              author={author}
             />
             : <MemoriesGrid userId={user?.id ?? ''} />
         }

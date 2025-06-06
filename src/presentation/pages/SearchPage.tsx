@@ -3,62 +3,30 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
-  Image,
   Platform,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Dimensions,
   Keyboard,
   TouchableWithoutFeedback,
-  ImageSourcePropType,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ScrollView, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Post from '../components/post';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BACKGROUND } from '@/src/const/constants';
-import Card from '../components/card';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../redux/store';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../redux/store';
 import { getUsers } from '../redux/slices/userSlice';
-import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
+import { getFollowing } from '../redux/slices/followSlice';
 import { getPosts } from '../redux/slices/postSlice';
+import PostTab from '../components/search/PostTab';
+import AddressTab from '../components/search/AddressTab';
+import HomeStayTab from '../components/search/HomeStayTab';
+import UserTab from '../components/search/UserTab';
 
 type Tab = {
   name: string;
   icon: React.ComponentProps<typeof Ionicons>['name'];
 };
-
-const { width } = Dimensions.get('window');
-const imageSize: number = width / 3 - 2;
-
-// Định nghĩa kiểu dữ liệu cho ảnh
-type ImageItem = {
-  id: string;
-  uri: string | ImageSourcePropType;
-};
-
-interface Post {
-  id: string;
-  imageUrl: string[];
-  caption: string;
-  location: string | null;
-  likeCount: number;
-  commentCount: number;
-  sharedCount: number;
-  isPublic: boolean;
-  author: {
-    username: string;
-    profilePic: string | null;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
 
 const tabs: Tab[] = [
   { name: 'Post', icon: 'image-outline' },
@@ -67,76 +35,10 @@ const tabs: Tab[] = [
   { name: 'User', icon: 'person-outline' },
 ];
 
-const addressCards = [
-  {
-    image: { uri: 'https://cafebiz.cafebizcdn.vn/2018/12/22/photo-2-15454504530612141260827.jpg' },
-    title: 'Beautiful Location',
-    totalFollowers: 100,
-    description: 'This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
-  },
-  {
-    image: { uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-    title: 'Amazing View',
-    totalFollowers: 245,
-    description: 'Experience the breathtaking views of Vietnam\'s natural beauty.',
-  },
-  {
-    image: require('../../../assets/images/natural2.jpg'),
-    title: 'Beautiful Location',
-    totalFollowers: 345,
-    description: 'This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
-  },
-  {
-    image: { uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-    title: 'Amazing View',
-    totalFollowers: 521,
-    description: 'Experience the breathtaking views of Vietnam\'s natural beauty.',
-  },
-];
-
-const homeStays = [
-  {
-    id: '1',
-    image: { uri: 'https://static.vinwonders.com/production/homestay-la-gi-thumb.jpg' },
-    title: 'Cozy Home in Tokyo',
-    rating: 4,
-    totalRaters: 100,
-    description: 'A cozy and comfortable home located in the heart of Tokyo.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
-  },
-  {
-    id: '2',
-    image: { uri: 'https://vatlieuhousing.com/wp-content/uploads/2024/03/homestay-chuong-my.jpg' },
-    title: 'Luxury Villa in Vietnam',
-    rating: 5,
-    totalRaters: 122,
-    description: 'Experience the luxury of a private villa with breathtaking views.',
-  },
-  {
-    id: '3',
-    image: { uri: 'https://tourdulichmangden.vn/upload/news/homestay-mang-den-0-8434.jpg' },
-    title: 'Cozy Home in Tokyo',
-    rating: 4,
-    totalRaters: 15,
-    description: 'A cozy and comfortable home located in the heart of Tokyo.',
-  },
-  {
-    id: '4',
-    image: { uri: 'https://khachsandep.vn/storage/files/Homestay/thiet-ke-homestay.jpeg' },
-    title: 'Luxury Villa in Vietnam',
-    rating: 5,
-    totalRaters: 235,
-    description: 'Experience the luxury of a private villa with breathtaking views.',
-  },
-];
-
 const SearchPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('Post');
   const [searchText, setSearchText] = useState<string>('');
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
-  const { users, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
-  const { following, loading: followingLoading, error: followingError, message: followingMessage, status: followingStatus, statusCode: followingStatusCode } = useSelector((state: RootState) => state.follow);
-  const { posts, loading: postLoading } = useSelector((state: RootState) => state.post);
 
   useEffect(() => {
     if (activeTab === 'User') {
@@ -148,10 +50,23 @@ const SearchPage: React.FC = () => {
     }
   }, [dispatch, activeTab]);
 
-
-
   const handleClearSearch = () => {
     setSearchText('');
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'Post':
+        return <PostTab />;
+      case 'Address':
+        return <AddressTab />;
+      case 'Home Stay':
+        return <HomeStayTab />;
+      case 'User':
+        return <UserTab />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -204,118 +119,8 @@ const SearchPage: React.FC = () => {
             ))}
           </View>
 
-          {/* Nội dung theo tab */}
-          {activeTab === 'Post' && (
-            postLoading ? (
-              <View style={styles.emptyContainer}>
-                <ActivityIndicator size="large" color="#888" />
-              </View>
-            ) : (
-              <ScrollView>
-                {posts.map((post) => (
-                  <Post
-                    key={post.id}
-                    username={post.author.username}
-                    location={post.location}
-                    images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
-                    commentCount={post.commentCount}
-                    likeCount={post.likeCount}
-                    sharedCount={post.sharedCount}
-                    caption={post.caption}
-                    author={post.author}
-                    isPublic={post.isPublic}
-                    isVerified={false}
-                  />
-                ))}
-              </ScrollView>
-            )
-          )}
-
-          {activeTab === 'Address' && (
-            <ScrollView contentContainerStyle={styles.addressContainer}>
-              {addressCards.map((card, index) => (
-                <Card
-                  key={index}
-                  type="address"
-                  image={card.image}
-                  title={card.title}
-                  description={card.description}
-                  totalFollowers={card.totalFollowers}
-                  onPress={() => navigation.navigate('AddressDetailPage', {
-                    id: index.toString(),
-                  })}
-                />
-              ))}
-            </ScrollView>
-          )}
-
-          {activeTab === 'Home Stay' && (
-            <ScrollView contentContainerStyle={styles.addressContainer}>
-              {homeStays.map((homeStay, index) => (
-                <Card
-                  key={homeStay.id}
-                  type="homestay"
-                  image={homeStay.image}
-                  title={homeStay.title}
-                  description={homeStay.description}
-                  rating={homeStay.rating}
-                  cardHeight={250}
-                  totalRaters={homeStay.totalRaters}
-                  onPress={() => navigation.navigate('HomeStayDetailPage', {
-                    id: homeStay.id,
-                  })}
-                />
-              ))}
-            </ScrollView>
-          )}
-
-          {activeTab === 'User' && (
-            loading ? (
-              <View style={styles.emptyContainer}>
-                <ActivityIndicator size="large" color="#888" />
-              </View>
-            ) : (
-              <ScrollView contentContainerStyle={styles.addressContainer}>
-                {(Array.isArray(users) ? users : []).map((user, index) => {
-                  const isFollowing = following?.some(followingUser => followingUser.id === user.id);
-
-                  const handleFollowPress = async () => {
-                    try {
-                      if (!user.id) return;
-
-                      if (isFollowing) {
-                        await dispatch(unfollowUser(user.id));
-                      } else {
-                        await dispatch(followUser(user.id));
-                      }
-                      // Refresh lại danh sách following sau khi thay đổi
-                      dispatch(getFollowing());
-                    } catch (error) {
-                      console.error('Error following/unfollowing user:', error);
-                    }
-                  };
-
-                  return (
-                    <Card
-                      key={user.id}
-                      type="user"
-                      avatar={user.profilePic || undefined}
-                      title={user.name || user.username || 'No name'}
-                      userId={user.id}
-                      bio={user.bio || 'chu tich'}
-                      description={user.bio || 'No description'}
-                      totalFollowers={user.followersCount || 0}
-                      isFollowing={isFollowing}
-                      onFollowPress={handleFollowPress}
-                      onPress={() => navigation.navigate('InfoAccPage', {
-                        id: user.id ?? '',
-                      })}
-                    />
-                  );
-                })}
-              </ScrollView>
-            )
-          )}
+          {/* Tab Content */}
+          {renderTabContent()}
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </GestureHandlerRootView>
@@ -351,9 +156,6 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    // backgroundColor: '#fff',
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#000',
     paddingVertical: 5,
   },
   tab: {
@@ -371,43 +173,6 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: '#262626',
-  },
-  flatList: {
-    flex: 1,
-  },
-  gridItem: {
-    width: imageSize,
-    height: imageSize,
-    margin: 1,
-  },
-  postImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  addressContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  addressImage: {
-    width: width - 40,
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  addressDescription: {
-    fontSize: 16,
-    color: '#333',
-    textAlign: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#888',
   },
   clearIcon: {
     marginLeft: 8,

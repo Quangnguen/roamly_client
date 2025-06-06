@@ -109,6 +109,7 @@ const postSlice = createSlice({
     name: 'post',
     initialState: {
         posts: [] as Post[],
+        postsByUserId: [] as Post[],
         myPosts: [] as Post[],
         loading: false, // Loading cho getPosts, getPostsByUserId, getMyPosts
         createLoading: false, // Loading riêng cho createPost
@@ -218,7 +219,7 @@ const postSlice = createSlice({
             })
             .addCase(getPostsByUserId.fulfilled, (state, action) => {
                 state.loading = false;
-                state.posts = action.payload.data;
+                state.postsByUserId = action.payload.data;
                 state.error = null;
             })
             .addCase(getPostsByUserId.rejected, (state, action) => {

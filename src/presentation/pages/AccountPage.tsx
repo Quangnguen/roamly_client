@@ -31,7 +31,10 @@ import { launchImageLibraryAsync } from 'expo-image-picker';
 import { getFollowers, getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
 import { getMyPosts, getPosts } from '../redux/slices/postSlice';
 import Post from '../components/post';
-
+import AccountHeader from '../components/account/AccountHeader';
+import ProfileInfo from '../components/account/ProfileInfo';
+import TabSelector from '../components/account/TabSelector';
+import TabSelectorAccountPage from '../components/TabSelectorAccountPage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -47,12 +50,10 @@ type StoryHighlight = {
 
 
 const AccountPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
   const dispatch = useDispatch<AppDispatch>();
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
   const { followers, following, loading: followersLoading, error: followersError, message: followersMessage, status: followersStatus, statusCode: followersStatusCode } = useSelector((state: RootState) => state.follow);
   const user = useSelector((state: RootState) => state.auth.profile);
-  const { myPosts, loading: postLoading } = useSelector((state: RootState) => state.post);
   const [isOpen, setIsOpen] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'followers' | 'followings' | null>(null);
@@ -62,7 +63,6 @@ const AccountPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [showPostModal, setShowPostModal] = useState(false);
-  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [followingCount, setFollowingCount] = useState(user?.followingCount ?? 0);
   const [profilePic, setProfilePic] = useState(user?.profilePic ?? 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg');
 
@@ -72,9 +72,9 @@ const AccountPage: React.FC = () => {
 
 
   useEffect(() => {
-    dispatch(getMyPosts());
-    setActiveTab('grid');
-  }, [dispatch]);
+    setFollowingCount(user?.followingCount ?? 0);
+    setProfilePic(user?.profilePic ?? 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg');
+  }, [user]);
 
   // Thêm useEffect để lắng nghe thay đổi của followers và following
   useEffect(() => {
@@ -127,10 +127,11 @@ const AccountPage: React.FC = () => {
     { id: '4', name: 'Design', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
   ];
 
-  const author = {
-    profilePic: user?.profilePic ?? '',
-    username: user?.username ?? '',
-  }
+  // const author = {
+  //   profilePic: user?.profilePic ?? '',
+  //   username: user?.username ?? '',
+  // }
+
 
   const handleOpenModal = (type: 'followers' | 'followings') => {
     setModalType(type);
@@ -272,103 +273,38 @@ const AccountPage: React.FC = () => {
   };
 
   return (
-
-
-
     <SafeAreaView style={styles.container}>
-
       <FlatList
         data={[]}
-        keyExtractor={(item: any, index: any) => index.toString()}
+        keyExtractor={(_, index) => index.toString()}
+        renderItem={() => null}
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
-            {/* Header */}
-            <View style={styles.header}>
-              <View></View>
-              <View style={styles.usernameContainer}>
-                <Text style={styles.username}>{user?.username}</Text>
-              </View>
-              <TouchableOpacity onPress={toggleMenu}>
-                <Feather name="menu" size={24} color="black" />
-              </TouchableOpacity>
-            </View>
+            <AccountHeader
+              username={user?.username ?? ''}
+              onMenuPress={() => setIsOpen(true)}
+            />
 
-            {/* Profile Info */}
-            <View style={styles.profileSection}>
-              <View style={styles.profileInfo}>
-                <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
-                  <Image
-                    source={{ uri: profilePic }}
-                    style={styles.profileImage}
-                  />
-                </TouchableOpacity>
-                <View style={styles.statsContainer}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{user?.postCount ?? 0}</Text>
-                    <Text style={styles.statLabel}>Posts</Text>
-                  </View>
-                  <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followers')}>
-                    <Text style={styles.statNumber}>{user?.followersCount ?? 0}</Text>
-                    <Text style={styles.statLabel}>Followers</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.statItem} onPress={() => handleOpenModal('followings')}>
-                    <Text style={styles.statNumber}>{user?.followingCount ?? 0}</Text>
-                    <Text style={styles.statLabel}>Followings</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+            <ProfileInfo
+              profilePic={profilePic}
+              name={user?.name ?? ''}
+              bio={user?.bio ?? ''}
+              postCount={user?.postCount ?? 0}
+              followersCount={user?.followersCount ?? 0}
+              followingCount={followingCount}
+              onAvatarPress={() => setShowAvatarModal(true)}
+              onFollowersPress={() => handleOpenModal('followers')}
+              onFollowingPress={() => handleOpenModal('followings')}
+              onEditProfilePress={handleEditProfilePage}
+            />
 
-              {/* Bio */}
-              <View style={styles.bioContainer}>
-                <Text style={styles.name}>{user?.name}</Text>
-                <Text style={styles.bioText}>
-                  {user?.bio}
-                </Text>
-              </View>
-
-              {/* Edit Profile Button */}
-              <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfilePage}>
-                <Text style={styles.editProfileText}>Edit Profile</Text>
-              </TouchableOpacity>
-
-
-
-            </View>
-
-            {/* Tab Selector */}
-            <View style={styles.tabSelector}>
-              <TouchableOpacity
-                style={[styles.tabButton, activeTab === 'grid' && styles.activeTab]}
-                onPress={() => setActiveTab('grid')}
-              >
-                <MaterialIcons name="grid-on" size={24} color={activeTab === 'grid' ? 'black' : 'gray'} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tabButton, activeTab === 'list' && styles.activeTab]}
-                onPress={() => setActiveTab('list')}
-              >
-                <Feather name="user" size={24} color={activeTab === 'list' ? 'black' : 'gray'} />
-              </TouchableOpacity>
-            </View>
+            <TabSelectorAccountPage />
           </>
         }
-        renderItem={null} // Không có dữ liệu chính để hiển thị
-        ListFooterComponent={activeTab === 'grid' ?
-          postLoading
-            ? <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-              <ActivityIndicator size="large" color="#888" />
-            </View>
-            : <PostList
-              posts={myPosts}
-              mini={true}
-              expandedPostId={expandedPostId}
-              currentUserId={user?.id}
-              onPostPress={(post) => {
-                setExpandedPostId(expandedPostId === post.id ? null : post.id);
-              }}
-            />
-          : <MemoriesGrid userId={user?.id ?? ''} />} // Hiển thị danh sách bài đăng
+
       />
+
       {isOpen && (
         <>
           <TouchableOpacity
@@ -569,7 +505,7 @@ const AccountPage: React.FC = () => {
       </Modal>
 
       {/* Modal hiển thị bài viết đầy đủ */}
-      <Modal
+      {/* <Modal
         visible={showPostModal}
         transparent={false}
         animationType="slide"
@@ -609,7 +545,7 @@ const AccountPage: React.FC = () => {
             />
           )}
         </View>
-      </Modal>
+      </Modal> */}
     </SafeAreaView>
   );
 };
@@ -620,124 +556,7 @@ const styles = StyleSheet.create({
     backgroundColor: BACKGROUND,
     position: 'relative',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#000',
-  },
-  usernameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  username: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginRight: 5,
-  },
-  profileSection: {
-    padding: 15,
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  statsContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginLeft: 15,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#262626',
-  },
-  bioContainer: {
-    marginBottom: 15,
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  bioText: {
-    fontSize: 14,
-    color: '#262626',
-  },
-  editProfileButton: {
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: 4,
-    paddingVertical: 7,
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  editProfileText: {
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  highlightsContainer: {
-    marginBottom: 15,
-  },
-  highlightItem: {
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  highlightImageContainer: {
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
-    borderWidth: 1,
-    borderColor: '#DBDBDB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  highlightImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  newHighlightContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F9F9F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  highlightName: {
-    fontSize: 12,
-  },
-  tabSelector: {
-    flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: '#DBDBDB',
-  },
-  tabButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  activeTab: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'black',
-  },
+
   avatarModalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.9)',

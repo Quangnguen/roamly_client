@@ -2,7 +2,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, RefreshCon
 import React, { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { RootState, AppDispatch } from "@/src/presentation/redux/store"
-import { fetchNotifications, markAsRead } from "@/src/presentation/redux/slices/notificationSlice"
+import { fetchNotifications, markAsRead, markNotificationAsRead } from "@/src/presentation/redux/slices/notificationSlice"
 import { getPostById } from "@/src/presentation/redux/slices/postSlice"
 import { formatDistanceToNow } from "date-fns"
 import { vi } from "date-fns/locale"
@@ -141,7 +141,6 @@ const You = () => {
   }, [dispatch])
 
   const handleNotificationPress = async (notification: NotificationType) => {
-    dispatch(markAsRead(notification.id))
 
     if ((notification.type === 'LIKE' || notification.type === 'COMMENT') && notification.post?.id) {
       // Hiển thị modal ngay lập tức
@@ -154,6 +153,9 @@ const You = () => {
         setShowPostModal(false)
       }
     }
+    console.log(notification.id);
+    dispatch(markNotificationAsRead(notification.id))
+    dispatch(markAsRead(notification.id))
   }
 
   const handleCloseModal = () => {

@@ -44,6 +44,20 @@ export const fetchNotifications = createAsyncThunk<NotificationsApiResponse, voi
     }
 );
 
+export const markNotificationAsRead = createAsyncThunk<ResponseInterface<void>, string>(
+    'notification/markAsRead',
+    async (notificationId, { rejectWithValue }) => {
+        try {
+            const response = await notificationUseCase.markAsRead(notificationId);
+            console.log(response);
+            return response as unknown as ResponseInterface<void>;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi đánh dấu đã đọc thông báo');
+        }
+    }
+);
+
+
 // Create slice
 const notificationSlice = createSlice({
     name: 'notification',
@@ -104,8 +118,8 @@ const notificationSlice = createSlice({
 // Export actions
 export const {
     clearMessage,
-    markAsRead,
     markAllAsRead,
+    markAsRead,
     addNotification
 } = notificationSlice.actions;
 

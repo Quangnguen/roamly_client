@@ -1,5 +1,7 @@
-import { Notification } from "@/src/types/notificationInterface";
+import { ResponseInterface } from '@/src/types/ResponseInterface';
+import { Notification } from '@/src/presentation/redux/slices/notificationSlice';
 
 export interface NotificationRepository {
-    getNotifications(): Promise<Notification[]>;
-}
+    getNotifications(): Promise<ResponseInterface<Notification[]>>;
+    markAsRead(notificationId: string): Promise<ResponseInterface<void>>;
+} 
