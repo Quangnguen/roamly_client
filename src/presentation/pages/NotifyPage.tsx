@@ -22,13 +22,13 @@ const NotifyPage = () => {
           style={[styles.tab, activeTab === "you" && styles.activeTab]}
           onPress={() => setActiveTab("you")}
         >
-          <Text style={[styles.tabText, activeTab === "you" && styles.activeTabText]}>You</Text>
+          <Text style={[styles.tabText, activeTab === "you" && styles.activeTabText]}>Bạn</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "following" && styles.activeTab]}
           onPress={() => setActiveTab("following")}
         >
-          <Text style={[styles.tabText, activeTab === "following" && styles.activeTabText]}>Following</Text>
+          <Text style={[styles.tabText, activeTab === "following" && styles.activeTabText]}>Đang theo dõi</Text>
         </TouchableOpacity>
 
       </View>

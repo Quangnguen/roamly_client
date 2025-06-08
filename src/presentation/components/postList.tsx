@@ -5,28 +5,38 @@ import PostMini from './PostMini';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 
-type Post = {
+type PostType = {
   id: string;
   authorId: string;
   imageUrl: string[]; // Danh sách ảnh của bài đăng
   caption: string; // Nội dung bài đăng
-  likeCount: number; // Số lượt thích
-  commentCount: number; // Số lượt bình luận
+  likeCount?: number; // Số lượt thích (legacy, fallback)
+  commentCount?: number; // Số lượt bình luận (legacy, fallback)
   sharedCount: number; // Số lượt chia sẻ
   createdAt: string; // Ngày đăng bài
+  updatedAt?: string;
   location: string | null;
+  tags?: string[];
   isPublic: boolean;
-  isLike?: boolean;
   author: {
     username: string;
-    profilePic: string | null;
+    profilePic: string;
   };
+  _count?: {
+    likes: number;
+    comments: number;
+  };
+  score?: number;
+  isLike?: boolean;
+  isToday?: boolean;
+  isFollowing?: boolean;
+  isSelf?: boolean;
 };
 
 type PostListProps = {
-  posts: Post[];
+  posts: PostType[];
   mini?: boolean;
-  onPostPress?: (post: Post) => void;
+  onPostPress?: (post: PostType) => void;
   expandedPostId?: string | null;
   currentUserId?: string;
   author: {
@@ -36,6 +46,8 @@ type PostListProps = {
 };
 
 const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, expandedPostId, currentUserId, author }) => {
+  // Process posts structure
+
   // Sắp xếp bài đăng theo ngày đăng (mới nhất trước)
   const sortedPosts = [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const user = useSelector((state: RootState) => state.auth.profile);
@@ -53,19 +65,26 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
                 postId={item.id}
                 username={item.author.username}
                 location={item.location}
-                images={item.imageUrl.map((url, index) => ({
+                images={item.imageUrl.map((url: string, index: number) => ({
                   id: index.toString(),
                   uri: url
                 }))}
-                commentCount={item.commentCount}
-                likeCount={item.likeCount}
+                commentCount={item._count?.comments ?? item.commentCount ?? 0}
+                likeCount={item._count?.likes ?? item.likeCount ?? 0}
                 sharedCount={item.sharedCount}
                 caption={item.caption}
                 author={author}
                 isPublic={item.isPublic}
                 isVerified={false}
                 isOwner={item.authorId === currentUserId}
-                isLike={item.isLike}
+                authorId={item.authorId}
+                isLike={item.isLike ?? false}
+                isToday={item.isToday ?? false}
+                isFollowing={item.isFollowing ?? false}
+                isSelf={item.isSelf ?? false}
+                createdAt={item.createdAt}
+                updatedAt={item.updatedAt ?? item.createdAt}
+                tags={item.tags ?? []}
               />
               <TouchableOpacity style={{ alignSelf: 'center', marginVertical: 8 }} onPress={() => onPostPress && onPostPress(item)}>
                 <Text style={{ color: '#007AFF', fontWeight: 'bold', fontSize: 16 }}>Thu gọn</Text>
@@ -75,8 +94,8 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
             <PostMini
               image={item.imageUrl[0]}
               caption={item.caption}
-              likeCount={item.likeCount}
-              commentCount={item.commentCount}
+              likeCount={item._count?.likes ?? item.likeCount ?? 0}
+              commentCount={item._count?.comments ?? item.commentCount ?? 0}
               sharedCount={item.sharedCount}
               imageCount={item.imageUrl.length}
               onPress={() => onPostPress && onPostPress(item)}
@@ -87,19 +106,26 @@ const PostList: React.FC<PostListProps> = ({ posts, mini = false, onPostPress, e
             postId={item.id}
             username={item.author.username}
             location={item.location}
-            images={item.imageUrl.map((url, index) => ({
+            images={item.imageUrl.map((url: string, index: number) => ({
               id: index.toString(),
               uri: url
             }))}
-            commentCount={item.commentCount}
-            likeCount={item.likeCount}
+            commentCount={item._count?.comments ?? item.commentCount ?? 0}
+            likeCount={item._count?.likes ?? item.likeCount ?? 0}
             sharedCount={item.sharedCount}
             caption={item.caption}
             author={author}
             isPublic={item.isPublic}
             isVerified={false}
             isOwner={item.authorId === currentUserId}
-            isLike={item.isLike}
+            authorId={item.authorId}
+            isLike={item.isLike ?? false}
+            isToday={item.isToday ?? false}
+            isFollowing={item.isFollowing ?? false}
+            isSelf={item.isSelf ?? false}
+            createdAt={item.createdAt}
+            updatedAt={item.updatedAt ?? item.createdAt}
+            tags={item.tags ?? []}
           />
         )
       )}

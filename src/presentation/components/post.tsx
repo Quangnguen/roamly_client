@@ -25,6 +25,7 @@ import { navigate } from 'expo-router/build/global-state/routing';
 import { useNavigation } from 'expo-router';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import EditPostModal from './modals/EditPostModal';
 
 const { width } = Dimensions.get('window');
 
@@ -57,6 +58,12 @@ interface PostProps {
   postId?: string;
   authorId?: string;
   isLike?: boolean;
+  isToday?: boolean;
+  isFollowing?: boolean;
+  isSelf?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  tags?: string[];
 }
 
 const Post: React.FC<PostProps> = ({
@@ -89,31 +96,46 @@ const Post: React.FC<PostProps> = ({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
   const [isOptionsMenuVisible, setIsOptionsMenuVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector((state: RootState) => state.auth);
 
-  // Lấy trạng thái like từ Redux store
-  const isLiked = useSelector((state: RootState) =>
-    state.like.likedPosts.includes(postId || '')
-  );
+  // Lấy likeCount từ Redux store - ưu tiên non-optimistic posts
+  const currentPost = useSelector((state: RootState) => {
+    // Tìm trong feedPosts trước (vì đây là nguồn chính cho HomePage)
+    const feedPost = state.post.feedPosts.find(post => post.id === postId);
+    if (feedPost) return feedPost;
 
-  // Lấy likeCount từ Redux store
-  const currentPost = useSelector((state: RootState) =>
-    state.post.posts.find(post => post.id === postId) ||
-    state.post.myPosts.find(post => post.id === postId)
-  );
+    // Sau đó tìm trong posts
+    const post = state.post.posts.find(post => post.id === postId);
+    if (post) return post;
 
-  const currentLikeCount = currentPost?.likeCount ?? likeCount;
+    // Cuối cùng tìm trong myPosts
+    const myPost = state.post.myPosts.find(post => post.id === postId);
+    return myPost;
+  });
 
-  // Khởi tạo trạng thái like khi component mount
+  // Sử dụng isLike từ Redux store post hoặc fallback to prop
+  const isLiked = currentPost?.isLike ?? isLike ?? false;
+
+  // Ưu tiên _count từ Redux, fallback theo thứ tự: Redux _count -> Redux likeCount -> prop likeCount
+  const currentLikeCount = currentPost?._count?.likes ?? currentPost?.likeCount ?? likeCount;
+
+  // Defensive coding cho commentCount
+  const currentCommentCount = currentPost?._count?.comments ?? currentPost?.commentCount ?? commentCount;
+
+  // Khởi tạo và sync trạng thái like
   useEffect(() => {
     if (postId) {
-      dispatch(initializeLikeStatus({ postId, isLiked: isLike }));
+      // Sync với likeSlice để tracking
+      dispatch(initializeLikeStatus({ postId, isLiked: isLiked }));
     }
-  }, [dispatch, postId, isLike]);
+  }, [dispatch, postId, isLiked]);
+
+
 
   const goToImage = useCallback((index: number) => {
     if (index >= 0 && index < images.length) {
@@ -140,8 +162,12 @@ const Post: React.FC<PostProps> = ({
 
   const handleEditPost = useCallback(() => {
     setIsOptionsMenuVisible(false);
-    onEditPost?.();
-  }, [onEditPost]);
+    setIsEditModalVisible(true);
+  }, []);
+
+  const handleCloseEditModal = useCallback(() => {
+    setIsEditModalVisible(false);
+  }, []);
 
   const handleDeletePost = useCallback(async () => {
     setIsOptionsMenuVisible(false);
@@ -255,8 +281,11 @@ const Post: React.FC<PostProps> = ({
       {/* Loading Overlay */}
       {isLoading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Đang đăng bài...</Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>Đang đăng bài...</Text>
+            <Text style={styles.loadingSubText}>Vui lòng đợi trong giây lát</Text>
+          </View>
         </View>
       )}
 
@@ -391,21 +420,57 @@ const Post: React.FC<PostProps> = ({
         doubleTapToZoomEnabled={true}
       />
 
+      {/* Edit Post Modal */}
+      {postId && (
+        <EditPostModal
+          visible={isEditModalVisible}
+          onClose={handleCloseEditModal}
+          post={{
+            caption,
+            location: location || null,
+            isPublic,
+            images: images.map(img => ({
+              uri: typeof img.uri === 'string' ? img.uri : Image.resolveAssetSource(img.uri).uri
+            }))
+          }}
+          postId={postId}
+        />
+      )}
+
       {/* Likes */}
       <View style={styles.likesContainer}>
-        <Text style={styles.bold}>{currentLikeCount.toLocaleString()} likes</Text>
-        <Text style={styles.bold}>  {commentCount.toLocaleString()} comments</Text>
+        <Text style={styles.bold}>{currentLikeCount.toLocaleString()} lượt thích</Text>
+        <Text style={styles.bold}>  {currentCommentCount.toLocaleString()} bình luận</Text>
       </View>
 
       {/* Action Buttons */}
       <View style={styles.actions}>
         <View style={styles.leftActions}>
           <TouchableOpacity style={styles.actionButton} onPress={async () => {
+            if (!postId) {
+              Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: 'Không tìm thấy ID bài viết',
+              });
+              return;
+            }
+
+            // Không cho phép like/unlike optimistic posts
+            if (postId.startsWith('temp-')) {
+              Toast.show({
+                type: 'info',
+                text1: 'Đợi một chút',
+                text2: 'Bài viết đang được đăng, vui lòng đợi...',
+              });
+              return;
+            }
+
             try {
               if (isLiked) {
-                await dispatch(unlikePost(postId || '')).unwrap();
+                await dispatch(unlikePost(postId)).unwrap();
               } else {
-                await dispatch(likePost(postId || '')).unwrap();
+                await dispatch(likePost(postId)).unwrap();
               }
             } catch (error) {
               Toast.show({
@@ -540,6 +605,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   likesContainer: {
+    marginTop: 8,
     paddingHorizontal: 12,
     marginBottom: 6,
     flexDirection: 'row',
@@ -555,7 +621,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   caption: {
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 18,
   },
   overlay: {
@@ -620,11 +686,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   loadingText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
     marginTop: 10,
+  },
+  loadingSubText: {
+    color: '#ccc',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
 

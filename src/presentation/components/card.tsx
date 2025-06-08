@@ -104,7 +104,7 @@ const Card: React.FC<CardProps> = ({
               <View style={styles.infoContainer}>
                 <Text style={styles.name} numberOfLines={2}>{title}</Text>
                 <Text style={styles.achievements} numberOfLines={2}>{description}</Text>
-                <Text style={styles.description} numberOfLines={2}>{totalFollowers} Followers</Text>
+                <Text style={styles.description} numberOfLines={2}>{totalFollowers} Người theo dõi</Text>
               </View>
               <TouchableOpacity
                 style={[

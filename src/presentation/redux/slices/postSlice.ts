@@ -31,7 +31,6 @@ export const createPost = createAsyncThunk<PostApiResponse, { images: FormData, 
             formData.append('isPublic', 'true');
 
             const response = await postUseCase.createPost(formData);
-            console.log('Response POST :', response);
             return response as unknown as PostApiResponse;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Có lỗi xảy ra');
@@ -79,14 +78,9 @@ export const deletePost = createAsyncThunk<any, string>(
     'post/deletePost',
     async (postId: string, { rejectWithValue }) => {
         try {
-            console.log('Deleting post with ID:', postId);
             const response = await postUseCase.deletePost(postId);
-            console.log('Delete post response:', response);
             return { postId, response };
         } catch (error: any) {
-            console.error('Delete post error:', error);
-            console.error('Error message:', error.message);
-            console.error('Error response:', error.response);
             return rejectWithValue(error.response?.data?.message || error.message || 'Có lỗi khi xóa bài viết');
         }
     }
@@ -104,6 +98,29 @@ export const getPostById = createAsyncThunk<PostApiResponse, string>(
     }
 );
 
+export const updatePost = createAsyncThunk<PostApiResponse, { postId: string, formData: FormData }>(
+    'post/updatePost',
+    async (data: { postId: string, formData: FormData }, { rejectWithValue }) => {
+        try {
+            const response = await postUseCase.updatePost(data.postId, data.formData);
+            return response as unknown as PostApiResponse;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi cập nhật bài viết');
+        }
+    }
+);
+
+export const getPostsFeed = createAsyncThunk<PostsApiResponse, { page: number, limit: number }>(
+    'post/getPostsFeed',
+    async (data: { page: number, limit: number }, { rejectWithValue }) => {
+        try {
+            const response = await postUseCase.getPostsFeed(data.page, data.limit);
+            return response as unknown as PostsApiResponse;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi tải feed bài viết');
+        }
+    }
+);
 
 const postSlice = createSlice({
     name: 'post',
@@ -111,7 +128,9 @@ const postSlice = createSlice({
         posts: [] as Post[],
         postsByUserId: [] as Post[],
         myPosts: [] as Post[],
+        feedPosts: [] as Post[], // Thêm state cho feed posts
         loading: false, // Loading cho getPosts, getPostsByUserId, getMyPosts
+        feedLoading: false, // Loading riêng cho getPostsFeed
         createLoading: false, // Loading riêng cho createPost
         error: null as string | null,
         message: null as string | null,
@@ -128,9 +147,9 @@ const postSlice = createSlice({
             const optimisticPost: Post = {
                 id: `temp-${Date.now()}`,
                 authorId: action.payload.authorId,
-                imageUrl: action.payload.imageUrls,
-                caption: action.payload.caption,
-                location: action.payload.location,
+                imageUrl: action.payload.imageUrls || [],
+                caption: action.payload.caption || '',
+                location: action.payload.location || null,
                 tags: [],
                 isPublic: true,
                 likeCount: 0,
@@ -138,11 +157,26 @@ const postSlice = createSlice({
                 sharedCount: 0,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                author: action.payload.author,
+                author: {
+                    username: action.payload.author?.username || 'Unknown',
+                    profilePic: action.payload.author?.profilePic || null,
+                },
+                _count: {
+                    likes: 0,
+                    comments: 0,
+                },
+                score: 0,
+                isLike: false,
+                isToday: true,
+                isFollowing: false,
+                isSelf: true,
                 isOptimistic: true, // Flag để phân biệt post tạm thời
                 isLoading: true, // Flag để hiển thị loading state
             };
+
+            // Thêm vào posts và feedPosts
             state.posts = [optimisticPost, ...state.posts];
+            state.feedPosts = [optimisticPost, ...state.feedPosts];
         },
         updateOptimisticPost: (state, action) => {
             // Cập nhật hoặc thay thế post tạm thời bằng post thực từ server
@@ -167,33 +201,55 @@ const postSlice = createSlice({
             })
             .addCase(createPost.fulfilled, (state, action) => {
                 state.createLoading = false;
-                // Tìm và cập nhật post tạm thời
-                const tempIndex = state.posts.findIndex(post => post.id.startsWith('temp-'));
-                if (tempIndex !== -1) {
+                // Tìm và cập nhật post tạm thời trong posts
+                const tempPostIndex = state.posts.findIndex(post => post.id.startsWith('temp-'));
+                // Tìm và cập nhật post tạm thời trong feedPosts
+                const tempFeedIndex = state.feedPosts.findIndex(post => post.id.startsWith('temp-'));
+
+                if (tempPostIndex !== -1) {
                     // Giữ lại thông tin author từ optimistic post vì API không trả về author đầy đủ
-                    const optimisticPost = state.posts[tempIndex];
+                    const optimisticPost = state.posts[tempPostIndex];
                     const updatedPost = {
                         ...action.payload.data,
                         author: optimisticPost.author, // Giữ lại author từ optimistic post
+                        _count: action.payload.data._count || {
+                            likes: 0,
+                            comments: 0,
+                        },
                         isOptimistic: false,
                         isLoading: false,
                     };
-                    state.posts[tempIndex] = updatedPost;
-                    // Thêm post vào myPosts nữa
+
+                    // Cập nhật trong posts
+                    state.posts[tempPostIndex] = updatedPost;
+
+                    // Cập nhật trong feedPosts
+                    if (tempFeedIndex !== -1) {
+                        state.feedPosts[tempFeedIndex] = updatedPost;
+                    }
+
+                    // Thêm post vào myPosts
                     state.myPosts = [updatedPost, ...state.myPosts];
                 }
-                state.message = 'Đăng bài viết thành công';
+                state.message = 'Bài viết đã được đăng thành công! 🎉';
                 state.status = 'success';
             })
             .addCase(createPost.rejected, (state, action) => {
                 state.createLoading = false;
-                // Xóa post tạm thời nếu thất bại
-                const tempIndex = state.posts.findIndex(post => post.id.startsWith('temp-'));
-                if (tempIndex !== -1) {
-                    state.posts.splice(tempIndex, 1);
+                // Xóa post tạm thời nếu thất bại khỏi posts
+                const tempPostIndex = state.posts.findIndex(post => post.id.startsWith('temp-'));
+                if (tempPostIndex !== -1) {
+                    state.posts.splice(tempPostIndex, 1);
                 }
+
+                // Xóa post tạm thời nếu thất bại khỏi feedPosts
+                const tempFeedIndex = state.feedPosts.findIndex(post => post.id.startsWith('temp-'));
+                if (tempFeedIndex !== -1) {
+                    state.feedPosts.splice(tempFeedIndex, 1);
+                }
+
                 state.error = action.payload as string;
-                state.message = action.payload as string;
+                state.message = `Không thể đăng bài viết: ${action.payload}`;
                 state.status = 'error';
             })
             // Get Posts
@@ -203,7 +259,9 @@ const postSlice = createSlice({
             })
             .addCase(getPosts.fulfilled, (state, action) => {
                 state.loading = false;
-                state.posts = action.payload.data;
+                // Giữ lại optimistic posts khi replace
+                const optimisticPosts = state.posts.filter(post => post.isOptimistic);
+                state.posts = [...optimisticPosts, ...action.payload.data];
                 state.error = null;
             })
             .addCase(getPosts.rejected, (state, action) => {
@@ -235,7 +293,8 @@ const postSlice = createSlice({
             })
             .addCase(getMyPosts.fulfilled, (state, action) => {
                 state.loading = false;
-                state.myPosts = action.payload.data;
+                const posts = action.payload.data || [];
+                state.myPosts = posts;
                 state.error = null;
             })
             .addCase(getMyPosts.rejected, (state, action) => {
@@ -282,31 +341,146 @@ const postSlice = createSlice({
             // Like Post - cập nhật likeCount khi like thành công
             .addCase(likePost.fulfilled, (state, action) => {
                 const postId = action.meta.arg; // postId được truyền vào action
-                // Cập nhật likeCount trong posts
-                const postIndex = state.posts.findIndex(post => post.id === postId);
-                if (postIndex !== -1) {
-                    state.posts[postIndex].likeCount += 1;
+
+                // Bỏ qua optimistic posts
+                if (postId.startsWith('temp-')) {
+                    return;
                 }
-                // Cập nhật likeCount trong myPosts nếu có
-                const myPostIndex = state.myPosts.findIndex(post => post.id === postId);
+
+                // Cập nhật trong posts
+                const postIndex = state.posts.findIndex(post => post.id === postId && !post.isOptimistic);
+                if (postIndex !== -1) {
+                    if (state.posts[postIndex]._count) {
+                        state.posts[postIndex]._count.likes += 1;
+                    }
+                    state.posts[postIndex].isLike = true;
+                }
+
+                // Cập nhật trong feedPosts
+                const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId && !post.isOptimistic);
+                if (feedPostIndex !== -1) {
+                    if (state.feedPosts[feedPostIndex]._count) {
+                        state.feedPosts[feedPostIndex]._count.likes += 1;
+                    }
+                    state.feedPosts[feedPostIndex].isLike = true;
+                }
+
+                // Cập nhật trong myPosts nếu có
+                const myPostIndex = state.myPosts.findIndex(post => post.id === postId && !post.isOptimistic);
                 if (myPostIndex !== -1) {
-                    state.myPosts[myPostIndex].likeCount += 1;
+                    if (state.myPosts[myPostIndex]._count) {
+                        state.myPosts[myPostIndex]._count.likes += 1;
+                    } else if (state.myPosts[myPostIndex].likeCount !== undefined) {
+                        // Fallback cho legacy likeCount
+                        state.myPosts[myPostIndex].likeCount += 1;
+                    }
+                    state.myPosts[myPostIndex].isLike = true;
                 }
             })
             // Unlike Post - cập nhật likeCount khi unlike thành công
             .addCase(unlikePost.fulfilled, (state, action) => {
                 const postId = action.meta.arg; // postId được truyền vào action
-                // Cập nhật likeCount trong posts
-                const postIndex = state.posts.findIndex(post => post.id === postId);
-                if (postIndex !== -1 && state.posts[postIndex].likeCount > 0) {
-                    state.posts[postIndex].likeCount -= 1;
+
+                // Bỏ qua optimistic posts
+                if (postId.startsWith('temp-')) {
+                    return;
                 }
-                // Cập nhật likeCount trong myPosts nếu có
-                const myPostIndex = state.myPosts.findIndex(post => post.id === postId);
-                if (myPostIndex !== -1 && state.myPosts[myPostIndex].likeCount > 0) {
-                    state.myPosts[myPostIndex].likeCount -= 1;
+
+                // Cập nhật trong posts
+                const postIndex = state.posts.findIndex(post => post.id === postId && !post.isOptimistic);
+                if (postIndex !== -1) {
+                    if (state.posts[postIndex]._count && state.posts[postIndex]._count.likes > 0) {
+                        state.posts[postIndex]._count.likes -= 1;
+                    }
+                    state.posts[postIndex].isLike = false;
                 }
-            });
+
+                // Cập nhật trong feedPosts
+                const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId && !post.isOptimistic);
+                if (feedPostIndex !== -1) {
+                    if (state.feedPosts[feedPostIndex]._count && state.feedPosts[feedPostIndex]._count.likes > 0) {
+                        state.feedPosts[feedPostIndex]._count.likes -= 1;
+                    }
+                    state.feedPosts[feedPostIndex].isLike = false;
+                }
+
+                // Cập nhật trong myPosts nếu có
+                const myPostIndex = state.myPosts.findIndex(post => post.id === postId && !post.isOptimistic);
+                if (myPostIndex !== -1) {
+                    if (state.myPosts[myPostIndex]._count && state.myPosts[myPostIndex]._count.likes > 0) {
+                        state.myPosts[myPostIndex]._count.likes -= 1;
+                    } else if (state.myPosts[myPostIndex].likeCount !== undefined && state.myPosts[myPostIndex].likeCount > 0) {
+                        // Fallback cho legacy likeCount
+                        state.myPosts[myPostIndex].likeCount -= 1;
+                    }
+                    state.myPosts[myPostIndex].isLike = false;
+                }
+            })
+            // Update Post
+            .addCase(updatePost.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updatePost.fulfilled, (state, action) => {
+                state.loading = false;
+                const updatedPost = action.payload.data;
+
+                // Cập nhật trong danh sách posts
+                const postIndex = state.posts.findIndex(post => post.id === updatedPost.id);
+                if (postIndex !== -1) {
+                    state.posts[postIndex] = {
+                        ...state.posts[postIndex],
+                        ...updatedPost,
+                    };
+                }
+
+                // Cập nhật trong danh sách myPosts
+                const myPostIndex = state.myPosts.findIndex(post => post.id === updatedPost.id);
+                if (myPostIndex !== -1) {
+                    state.myPosts[myPostIndex] = {
+                        ...state.myPosts[myPostIndex],
+                        ...updatedPost,
+                    };
+                }
+
+                state.currentPost = updatedPost;
+                state.message = 'Đã cập nhật bài viết thành công';
+                state.status = 'success';
+            })
+            .addCase(updatePost.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                state.message = action.payload as string;
+                state.status = 'error';
+            })
+            // Get Posts Feed
+            .addCase(getPostsFeed.pending, (state) => {
+                state.feedLoading = true;
+                state.error = null;
+            })
+            .addCase(getPostsFeed.fulfilled, (state, action) => {
+                state.feedLoading = false;
+                const newPosts = action.payload.data;
+                const page = action.meta.arg.page;
+
+                if (page === 1) {
+                    // Giữ lại optimistic posts khi replace
+                    const optimisticPosts = state.feedPosts.filter(post => post.isOptimistic);
+                    state.feedPosts = [...optimisticPosts, ...newPosts];
+                } else {
+                    // Append new posts, loại bỏ duplicate nếu có
+                    const existingIds = new Set(state.feedPosts.map(post => post.id));
+                    const uniqueNewPosts = newPosts.filter(post => !existingIds.has(post.id));
+                    state.feedPosts = [...state.feedPosts, ...uniqueNewPosts];
+                }
+                state.error = null;
+            })
+            .addCase(getPostsFeed.rejected, (state, action) => {
+                state.feedLoading = false;
+                state.error = action.payload as string;
+                state.message = action.payload as string;
+                state.status = 'error';
+            })
     },
 });
 

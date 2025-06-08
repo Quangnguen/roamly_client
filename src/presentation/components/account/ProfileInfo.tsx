@@ -35,15 +35,15 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
                 <View style={styles.statsContainer}>
                     <View style={styles.statItem}>
                         <Text style={styles.statNumber}>{postCount}</Text>
-                        <Text style={styles.statLabel}>Posts</Text>
+                        <Text style={styles.statLabel}>Bài viết</Text>
                     </View>
                     <TouchableOpacity style={styles.statItem} onPress={onFollowersPress}>
                         <Text style={styles.statNumber}>{followersCount}</Text>
-                        <Text style={styles.statLabel}>Followers</Text>
+                        <Text style={styles.statLabel}>Người theo dõi</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.statItem} onPress={onFollowingPress}>
                         <Text style={styles.statNumber}>{followingCount}</Text>
-                        <Text style={styles.statLabel}>Following</Text>
+                        <Text style={styles.statLabel}>Đang theo dõi</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -54,7 +54,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
             </View>
 
             <TouchableOpacity style={styles.editProfileButton} onPress={onEditProfilePress}>
-                <Text style={styles.editProfileText}>Edit Profile</Text>
+                <Text style={styles.editProfileText}>Chỉnh sửa hồ sơ</Text>
             </TouchableOpacity>
         </View>
     );

@@ -32,4 +32,14 @@ export class PostRepositoryImpl implements PostRepository {
         const response = await postApi.getPostByIdApi(postId);
         return response;
     }
+
+    async updatePost(postId: string, formData: FormData): Promise<Post> {
+        const response = await postApi.updatePostApi(postId, formData);
+        return response;
+    }
+
+    async getPostsFeed(page: number, limit: number): Promise<Post[]> {
+        const response = await postApi.getPostsFeedApi(page, limit);
+        return response;
+    }
 }

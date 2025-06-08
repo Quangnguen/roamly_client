@@ -58,9 +58,9 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
 
 
   const storyHighlights: StoryHighlight[] = [
-    { id: '1', name: 'New', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
-    { id: '2', name: 'Friends', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
-    { id: '3', name: 'Sport', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
+    { id: '1', name: 'Mới', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
+    { id: '2', name: 'Bạn bè', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
+    { id: '3', name: 'Thể thao', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
   ];
 
   // Fake data cho memories
@@ -136,7 +136,6 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
     profilePic: user?.profilePic || '',
   }
 
-  console.log('author', author);
 
   return (
     <SafeAreaView style={styles.container}>

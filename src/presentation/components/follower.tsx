@@ -14,7 +14,7 @@ const FollowList = () => {
   const users: User[] = [
     {
       id: "1",
-      username: "Your Story",
+      username: "Tin của bạn",
       avatar: "",
       hasStory: true,
       viewed: false,
@@ -71,8 +71,8 @@ const FollowList = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -85,55 +85,55 @@ const FollowList = () => {
 };
 
 const UserStory = ({ user }: { user: User }) => {
-    const renderBorder = () => {
-        if (user.hasStory && !user.viewed) {
-          return (
-            <View style={styles.gradientBorderSimulated}>
-              <View style={styles.whiteBorder}>
-                <Image 
-                  source={ user.avatar 
-                    ? { uri: user.avatar } 
-                    : require('../../../assets/images/avatar-test.jpg')
-                 } 
-                  style={styles.avatar} 
-                  resizeMode="cover"
-                />
-              </View>
-            </View>
-          );
-        } else if (user.hasStory && user.viewed) {
-          return (
-            <View style={styles.viewedBorder}>
-              <View style={styles.whiteBorder}>
-                <Image 
-                  source={ user.avatar 
-                    ? { uri: user.avatar } 
-                    : require('../../../assets/images/avatar-test.jpg')}
-                  style={styles.avatar} 
-                  resizeMode="cover"
-                />
-              </View>
-            </View>
-          );
-        } else {
-          return (
-            <View style={styles.noBorder}>
-              <Image 
-                source={{ uri: user.avatar }} 
-                style={styles.avatar} 
-                resizeMode="cover"
-              />
-            </View>
-          );
-        }
-      };
-      
+  const renderBorder = () => {
+    if (user.hasStory && !user.viewed) {
+      return (
+        <View style={styles.gradientBorderSimulated}>
+          <View style={styles.whiteBorder}>
+            <Image
+              source={user.avatar
+                ? { uri: user.avatar }
+                : require('../../../assets/images/avatar-test.jpg')
+              }
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
+      );
+    } else if (user.hasStory && user.viewed) {
+      return (
+        <View style={styles.viewedBorder}>
+          <View style={styles.whiteBorder}>
+            <Image
+              source={user.avatar
+                ? { uri: user.avatar }
+                : require('../../../assets/images/avatar-test.jpg')}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
+      );
+    } else {
+      return (
+        <View style={styles.noBorder}>
+          <Image
+            source={{ uri: user.avatar }}
+            style={styles.avatar}
+            resizeMode="cover"
+          />
+        </View>
+      );
+    }
+  };
+
 
   return (
     <View style={styles.userContainer}>
       <View style={styles.avatarContainer}>
         {renderBorder()}
-        
+
       </View>
       <Text style={styles.username} numberOfLines={1} ellipsizeMode="tail">
         {user.username}
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
+
   scrollContent: {
     paddingHorizontal: 6,
   },

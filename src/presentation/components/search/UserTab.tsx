@@ -49,10 +49,10 @@ const UserTab = () => {
                         key={user.id}
                         type="user"
                         avatar={user.profilePic || undefined}
-                        title={user.name || user.username || 'No name'}
+                        title={user.name || user.username || 'Không có tên'}
                         userId={user.id}
-                        bio={user.bio || 'chu tich'}
-                        description={user.bio || 'No description'}
+                        bio={user.bio || 'Chưa có tiểu sử'}
+                        description={user.bio || 'Chưa có mô tả'}
                         totalFollowers={user.followersCount || 0}
                         isFollowing={isFollowing}
                         onFollowPress={handleFollowPress}

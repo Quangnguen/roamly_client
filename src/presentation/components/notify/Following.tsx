@@ -4,7 +4,7 @@ import React from "react"
 const Following = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Following</Text>
+      <Text style={styles.text}>Đang theo dõi</Text>
     </View>
   )
 }

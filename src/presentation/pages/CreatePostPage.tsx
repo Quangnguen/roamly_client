@@ -15,6 +15,7 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  Vibration,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -63,13 +64,13 @@ const CreatePostPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, message, status } = useSelector((state: RootState) => state.post);
   const { profile } = useSelector((state: RootState) => state.auth);
-  console.log(profile);
 
   useEffect(() => {
     if (message && status === 'success') {
       Toast.show({
         type: 'success',
-        text1: 'Đã tạo thành công bài viết mới',
+        text1: message,
+        visibilityTime: 3000,
         onHide: () => {
           dispatch(clearMessage());
         },
@@ -78,6 +79,7 @@ const CreatePostPage = () => {
       Toast.show({
         type: 'error',
         text1: message,
+        visibilityTime: 4000,
         onHide: () => {
           dispatch(clearMessage());
         },
@@ -95,6 +97,11 @@ const CreatePostPage = () => {
     }
 
     try {
+      // Haptic feedback khi đăng bài
+      if (Platform.OS === 'ios') {
+        Vibration.vibrate(100);
+      }
+
       // Thêm post tạm thời vào Redux store ngay lập tức
       dispatch(addOptimisticPost({
         authorId: profile?.id || '',
@@ -107,18 +114,30 @@ const CreatePostPage = () => {
         },
       }));
 
-      // Quay về home ngay lập tức
-      navigation.goBack();
+      // Hiển thị toast thông báo đang đăng
+      Toast.show({
+        type: 'info',
+        text1: 'Đang đăng bài viết...',
+        text2: 'Bài viết của bạn đã được thêm vào feed',
+        visibilityTime: 2000,
+      });
 
-      // Reset form ngay
+      // Reset form trước khi quay về
+      const currentCaption = caption.trim();
+      const currentImages = [...selectedImages];
+      const currentLocation = location;
+
       setCaption('');
       setSelectedImages([]);
       setLocation(null);
 
+      // Quay về home ngay lập tức
+      navigation.goBack();
+
       const formData = new FormData();
 
       // Thêm ảnh vào formData
-      selectedImages.forEach((image) => {
+      currentImages.forEach((image) => {
         const localUri = image.uri;
         const filename = localUri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename || '');
@@ -134,12 +153,11 @@ const CreatePostPage = () => {
       // Dispatch action trong background - không await để không block UI
       dispatch(createPost({
         images: formData,
-        caption: caption.trim(),
-        location: location
+        caption: currentCaption,
+        location: currentLocation
       }));
 
     } catch (error) {
-      console.error('Error creating post:', error);
       Toast.show({
         type: 'error',
         text1: 'Có lỗi xảy ra khi đăng bài',

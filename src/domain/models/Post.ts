@@ -1,3 +1,13 @@
+export interface Author {
+    username: string;
+    profilePic: string;
+}
+
+export interface PostCount {
+    likes: number;
+    comments: number;
+}
+
 export interface Post {
     id: string;
     authorId: string;
@@ -11,11 +21,14 @@ export interface Post {
     sharedCount: number;
     createdAt: string;
     updatedAt: string;
-    author: {
-        username: string;
-        profilePic: string | null;
-    };
+    author: Author;
+    _count: PostCount;
+    score: number;
+    isLike: boolean;
+    isToday: boolean;
+    isFollowing: boolean;
+    isSelf: boolean;
+    // Optional fields for UI state
     isOptimistic?: boolean;
     isLoading?: boolean;
-    isLike?: boolean;
 }

@@ -102,17 +102,17 @@ const AccountPage: React.FC = () => {
 
 
   const menuItems = [
-    { icon: <Feather name="archive" size={20} color="black" />, label: "Archive" },
-    { icon: <Feather name="clock" size={20} color="black" />, label: "Your Activity" },
-    { icon: <Feather name="tag" size={20} color="black" />, label: "Nametag" },
-    { icon: <Feather name="bookmark" size={20} color="black" />, label: "Saved" },
-    { icon: <Feather name="users" size={20} color="black" />, label: "Close Friends" },
-    { icon: <Feather name="user-plus" size={20} color="black" />, label: "Discover People" },
-    { icon: <Feather name="lock" size={20} color="black" />, label: "Change Password" },
-    { icon: <Feather name="settings" size={20} color="black" />, label: "Settings" },
-    { icon: <Feather name="help-circle" size={20} color="black" />, label: "Help" },
-    { icon: <Feather name="shield" size={20} color="black" />, label: "Privacy Policy" },
-    { icon: <Feather name="log-out" size={20} color="black" />, label: "Log Out" },
+    { icon: <Feather name="archive" size={20} color="black" />, label: "Lưu trữ" },
+    { icon: <Feather name="clock" size={20} color="black" />, label: "Hoạt động của bạn" },
+    { icon: <Feather name="tag" size={20} color="black" />, label: "Thẻ tên" },
+    { icon: <Feather name="bookmark" size={20} color="black" />, label: "Đã lưu" },
+    { icon: <Feather name="users" size={20} color="black" />, label: "Bạn thân" },
+    { icon: <Feather name="user-plus" size={20} color="black" />, label: "Khám phá mọi người" },
+    { icon: <Feather name="lock" size={20} color="black" />, label: "Đổi mật khẩu" },
+    { icon: <Feather name="settings" size={20} color="black" />, label: "Cài đặt" },
+    { icon: <Feather name="help-circle" size={20} color="black" />, label: "Trợ giúp" },
+    { icon: <Feather name="shield" size={20} color="black" />, label: "Chính sách bảo mật" },
+    { icon: <Feather name="log-out" size={20} color="black" />, label: "Đăng xuất" },
   ]
 
 
@@ -121,10 +121,10 @@ const AccountPage: React.FC = () => {
   };
 
   const storyHighlights: StoryHighlight[] = [
-    { id: '1', name: 'New', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
-    { id: '2', name: 'Friends', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
-    { id: '3', name: 'Sport', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
-    { id: '4', name: 'Design', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
+    { id: '1', name: 'Mới', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
+    { id: '2', name: 'Bạn bè', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
+    { id: '3', name: 'Thể thao', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
+    { id: '4', name: 'Thiết kế', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
   ];
 
   // const author = {
@@ -349,10 +349,10 @@ const AccountPage: React.FC = () => {
                   }}
                   onPress={() => {
                     setIsOpen(false);
-                    if (item.label === 'Change Password') {
+                    if (item.label === 'Đổi mật khẩu') {
                       setShowChangePassword(true);
                     }
-                    if (item.label === 'Log Out') {
+                    if (item.label === 'Đăng xuất') {
                       console.log('Log Out');
                       dispatch(logout());
                       navigation.replace('Auth');
@@ -403,7 +403,9 @@ const AccountPage: React.FC = () => {
                     followers?.map((user) => {
                       const isAlreadyFollowing = isFollowingUser(user.id);
                       return (
-                        <TouchableOpacity key={user.id} style={styles.userItem}>
+                        <TouchableOpacity key={user.id} style={styles.userItem} onPress={() => {
+                          navigation.navigate('InfoAccPage', { id: user.id });
+                        }}>
                           <View style={styles.userInfo}>
                             <Image
                               source={{ uri: user.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}
@@ -437,7 +439,9 @@ const AccountPage: React.FC = () => {
                     })
                   ) : (
                     following?.map((user) => (
-                      <TouchableOpacity key={user.id} style={styles.userItem}>
+                      <TouchableOpacity key={user.id} style={styles.userItem} onPress={() => {
+                        navigation.navigate('InfoAccPage', { id: user.id });
+                      }}>
                         <View style={styles.userInfo}>
                           <Image
                             source={{ uri: user.profilePic || 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' }}

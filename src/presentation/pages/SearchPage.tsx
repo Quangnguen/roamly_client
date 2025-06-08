@@ -29,23 +29,23 @@ type Tab = {
 };
 
 const tabs: Tab[] = [
-  { name: 'Post', icon: 'image-outline' },
-  { name: 'Address', icon: 'location-outline' },
-  { name: 'Home Stay', icon: 'home-outline' },
-  { name: 'User', icon: 'person-outline' },
+  { name: 'Bài viết', icon: 'image-outline' },
+  { name: 'Địa điểm', icon: 'location-outline' },
+  { name: 'Nhà nghỉ', icon: 'home-outline' },
+  { name: 'Người dùng', icon: 'person-outline' },
 ];
 
 const SearchPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('Post');
+  const [activeTab, setActiveTab] = useState<string>('Bài viết');
   const [searchText, setSearchText] = useState<string>('');
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
-    if (activeTab === 'User') {
+    if (activeTab === 'Người dùng') {
       dispatch(getUsers({ page: 1, limit: 5 }));
       dispatch(getFollowing());
     }
-    if (activeTab === 'Post') {
+    if (activeTab === 'Bài viết') {
       dispatch(getPosts());
     }
   }, [dispatch, activeTab]);
@@ -56,13 +56,13 @@ const SearchPage: React.FC = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'Post':
+      case 'Bài viết':
         return <PostTab />;
-      case 'Address':
+      case 'Địa điểm':
         return <AddressTab />;
-      case 'Home Stay':
+      case 'Nhà nghỉ':
         return <HomeStayTab />;
-      case 'User':
+      case 'Người dùng':
         return <UserTab />;
       default:
         return null;
@@ -79,7 +79,7 @@ const SearchPage: React.FC = () => {
               <Ionicons name="search-outline" size={20} color="#888" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchBar}
-                placeholder="Search"
+                placeholder="Tìm kiếm"
                 placeholderTextColor="#888"
                 value={searchText}
                 onChangeText={setSearchText}

@@ -43,7 +43,10 @@ interface WeatherType {
         temp: number;
         humidity: number;
     };
-    weather: { main: string }[];
+    weather: {
+        main: string;
+        description: string;
+    }[];
     rain?: {
         [key: string]: number;
     };
@@ -269,6 +272,106 @@ const isLocationInVietnam = (latitude: number, longitude: number) => {
     // Tọa độ xấp xỉ của Việt Nam
     return latitude >= 8.18 && latitude <= 23.39 && // Vĩ độ từ Nam lên Bắc
         longitude >= 102.14 && longitude <= 109.46; // Kinh độ từ Tây sang Đông
+};
+
+/**
+ * Chuyển đổi mô tả thời tiết từ tiếng Anh sang tiếng Việt
+ * @param description Mô tả thời tiết bằng tiếng Anh
+ * @returns Mô tả thời tiết bằng tiếng Việt
+ */
+const translateWeatherDescription = (description: string): string => {
+    const weatherTranslations: { [key: string]: string } = {
+        // Clear sky
+        'clear sky': 'trời quang',
+        'clear': 'quang đãng',
+
+        // Clouds
+        'few clouds': 'ít mây',
+        'scattered clouds': 'mây rải rác',
+        'broken clouds': 'nhiều mây',
+        'overcast clouds': 'mây che phủ',
+        'overcast cloud': 'mây che phủ',
+        'partly cloudy': 'có mây',
+
+        // Rain
+        'light rain': 'mưa nhỏ',
+        'moderate rain': 'mưa vừa',
+        'heavy intensity rain': 'mưa to',
+        'very heavy rain': 'mưa rất to',
+        'extreme rain': 'mưa cực to',
+        'freezing rain': 'mưa đá nhỏ',
+        'light intensity shower rain': 'mưa rào nhẹ',
+        'shower rain': 'mưa rào',
+        'heavy intensity shower rain': 'mưa rào to',
+        'ragged shower rain': 'mưa rào không đều',
+        'rain': 'mưa',
+
+        // Drizzle
+        'light intensity drizzle': 'mưa phùn nhẹ',
+        'drizzle': 'mưa phùn',
+        'heavy intensity drizzle': 'mưa phùn dày',
+        'light intensity drizzle rain': 'mưa phùn nhỏ',
+        'drizzle rain': 'mưa phùn',
+        'heavy intensity drizzle rain': 'mưa phùn to',
+        'shower rain and drizzle': 'mưa rào và mưa phùn',
+        'heavy shower rain and drizzle': 'mưa rào to và mưa phùn',
+        'shower drizzle': 'mưa phùn rào',
+
+        // Thunderstorm
+        'thunderstorm with light rain': 'dông có mưa nhỏ',
+        'thunderstorm with rain': 'dông có mưa',
+        'thunderstorm with heavy rain': 'dông có mưa to',
+        'light thunderstorm': 'dông nhẹ',
+        'thunderstorm': 'dông',
+        'heavy thunderstorm': 'dông to',
+        'ragged thunderstorm': 'dông không đều',
+        'thunderstorm with light drizzle': 'dông có mưa phùn nhẹ',
+        'thunderstorm with drizzle': 'dông có mưa phùn',
+        'thunderstorm with heavy drizzle': 'dông có mưa phùn dày',
+
+        // Snow
+        'light snow': 'tuyết nhỏ',
+        'snow': 'tuyết',
+        'heavy snow': 'tuyết to',
+        'sleet': 'mưa tuyết',
+        'light shower sleet': 'mưa tuyết nhẹ',
+        'shower sleet': 'mưa tuyết',
+        'light rain and snow': 'mưa và tuyết nhẹ',
+        'rain and snow': 'mưa và tuyết',
+        'light shower snow': 'tuyết rào nhẹ',
+        'shower snow': 'tuyết rào',
+        'heavy shower snow': 'tuyết rào to',
+
+        // Atmosphere
+        'mist': 'sương mù',
+        'smoke': 'khói',
+        'haze': 'sương khói',
+        'sand/dust whirls': 'lốc cát/bụi',
+        'fog': 'sương mù dày',
+        'sand': 'cát',
+        'dust': 'bụi',
+        'volcanic ash': 'tro núi lửa',
+        'squalls': 'gió giật',
+        'tornado': 'lốc xoáy'
+    };
+
+    // Chuyển về chữ thường để so sánh
+    const lowerDescription = description.toLowerCase().trim();
+
+    // Tìm kiếm exact match trước
+    if (weatherTranslations[lowerDescription]) {
+        return weatherTranslations[lowerDescription];
+    }
+
+    // Tìm kiếm partial match nếu không có exact match
+    for (const [key, value] of Object.entries(weatherTranslations)) {
+        if (lowerDescription.includes(key)) {
+            return value;
+        }
+    }
+
+    // Nếu không tìm thấy, trả về mô tả gốc
+    return description;
 };
 
 /**
@@ -944,7 +1047,7 @@ export default function WeatherPage() {
                             <Text style={styles.temperatureUnit}>°C</Text>
                         </Text>
                         <Text style={styles.weatherDescription}>
-                            {weatherData?.weather[0]?.main || "Clear"}
+                            {translateWeatherDescription(weatherData?.weather[0]?.description || weatherData?.weather[0]?.main || "Clear")}
                         </Text>
                     </View>
                 </View>
@@ -989,7 +1092,7 @@ export default function WeatherPage() {
                                 date={formatDate(item.dt)}
                                 temp={Math.round(item.main.temp)}
                                 icon={weatherIcons[item.weather[0]?.main as keyof typeof weatherIcons] || weatherIcons.Clear}
-                                description={item.weather[0]?.description || ""}
+                                description={translateWeatherDescription(item.weather[0]?.description || "")}
                             />
                         ))}
                     </ScrollView>

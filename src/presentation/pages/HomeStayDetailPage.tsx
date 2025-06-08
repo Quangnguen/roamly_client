@@ -504,212 +504,271 @@ const HomeStayDetailPage: React.FC = () => {
         { date: '30/6', status: 'available' }
     ];
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-                {/* Slide ảnh có thể vuốt - full width và đẩy lên đầu trang */}
-                <View style={styles.imageSliderContainer}>
-                    <FlatList
-                        ref={flatListRef}
-                        data={mockImages}
-                        renderItem={renderImageItem}
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        snapToInterval={screenWidth}
-                        snapToAlignment="center"
-                        decelerationRate={0.9}
-                        onScrollBeginDrag={handleScrollBegin}
-                        onScroll={handleImageScroll}
-                        onMomentumScrollEnd={handleScrollEnd}
-                        keyExtractor={(item) => item.id}
-                        disableIntervalMomentum={true}
-                        snapToOffsets={mockImages.map((_, index) => index * screenWidth)}
-                        scrollEventThrottle={16}
-                    />
+    // Tạo render function cho header content (tất cả content trừ posts)
+    const renderHeader = useCallback(() => (
+        <>
+            {/* Slide ảnh có thể vuốt - full width và đẩy lên đầu trang */}
+            <View style={styles.imageSliderContainer}>
+                <FlatList
+                    ref={flatListRef}
+                    data={mockImages}
+                    renderItem={renderImageItem}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    snapToInterval={screenWidth}
+                    snapToAlignment="center"
+                    decelerationRate={0.9}
+                    onScrollBeginDrag={handleScrollBegin}
+                    onScroll={handleImageScroll}
+                    onMomentumScrollEnd={handleScrollEnd}
+                    keyExtractor={(item) => item.id}
+                    disableIntervalMomentum={true}
+                    snapToOffsets={mockImages.map((_, index) => index * screenWidth)}
+                    scrollEventThrottle={16}
+                />
 
-                    {/* Nút quay lại đặt bên trong hình */}
-                    <TouchableOpacity
-                        style={styles.backButtonOverlay}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color="#fff" />
-                    </TouchableOpacity>
+                {/* Nút quay lại đặt bên trong hình */}
+                <TouchableOpacity
+                    style={styles.backButtonOverlay}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                </TouchableOpacity>
 
-                    {/* Nút yêu thích */}
-                    <TouchableOpacity
-                        style={styles.favoriteButton}
-                        onPress={toggleFavorite}
-                    >
-                        <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={24} color={isFavorite ? "#FF385C" : "#fff"} />
-                    </TouchableOpacity>
+                {/* Nút yêu thích */}
+                <TouchableOpacity
+                    style={styles.favoriteButton}
+                    onPress={toggleFavorite}
+                >
+                    <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={24} color={isFavorite ? "#FF385C" : "#fff"} />
+                </TouchableOpacity>
 
-                    {/* Hiển thị số thứ tự ảnh */}
-                    <View style={styles.paginationContainer}>
-                        <View style={styles.paginationDot}>
-                            <Text style={styles.paginationText}>
-                                {activeImageIndex + 1}/{mockImages.length}
-                            </Text>
-                        </View>
+                {/* Hiển thị số thứ tự ảnh */}
+                <View style={styles.paginationContainer}>
+                    <View style={styles.paginationDot}>
+                        <Text style={styles.paginationText}>
+                            {activeImageIndex + 1}/{mockImages.length}
+                        </Text>
                     </View>
                 </View>
+            </View>
 
-                <View style={styles.contentContainer}>
-                    {/* Header thông tin */}
-                    <View>
-                        <Text style={styles.title}>Homstay A</Text>
+            <View style={styles.contentContainer}>
+                {/* Header thông tin */}
+                <View>
+                    <Text style={styles.title}>Homstay A</Text>
 
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Text style={{ fontSize: 14, color: '#666', marginRight: 16 }}>
-                                <Text style={{ fontWeight: 'bold', color: '#222' }}>123</Text> lượt thích
-                            </Text>
-                            <Text style={{ fontSize: 14, color: '#666' }}>
-                                <Text style={{ fontWeight: 'bold', color: '#222' }}>45</Text> Following
-                            </Text>
-                        </View>
-                        {/* Rating với giao diện mới */}
-                        <View style={styles.ratingContainer}>
-                            <View style={styles.starsContainer}>
-                                {Array.from({ length: 5 }).map((_, idx) => (
-                                    <Ionicons
-                                        key={idx}
-                                        name={idx < 5 ? "star" : "star-outline"}
-                                        size={22}
-                                        color={idx < 5 ? "#FFD700" : "#ccc"}
-                                        style={{ marginRight: 2 }}
-                                    />
-                                ))}
-                            </View>
-                            <View style={styles.ratingCountContainer}>
-                                <Text style={styles.ratingCount}>5</Text>
-                                <Text style={styles.ratingTotal}>(100 đánh giá)</Text>
-                            </View>
-                        </View>
-
-                        {/* Thêm địa chỉ */}
-                        <View style={styles.locationContainer}>
-                            <Ionicons name="location-outline" size={18} color="#666" />
-                            <Text style={styles.locationText}>Đường Hoàng Hoa Thám, Phường 12, Quận Tân Bình</Text>
-                        </View>
-                    </View>
-
-                    {/* Box giá */}
-                    <View style={styles.priceContainer}>
-                        <View style={styles.priceRow}>
-                            <Text style={styles.priceLabel}>Giá</Text>
-                            <Text style={styles.priceValue}>1.200.000đ<Text style={styles.priceUnit}>/đêm</Text></Text>
-                        </View>
-                        <Text style={styles.priceNote}>Đã bao gồm thuế và phí</Text>
-                    </View>
-
-                    {/* Mô tả với tiêu đề */}
-                    <View style={styles.descriptionContainer}>
-                        <Text style={styles.descriptionTitle}>Mô tả</Text>
-                        <Text
-                            style={styles.description}
-                            numberOfLines={showFullDescription ? undefined : 3}
-                        >
-                            Dưới đây là fake data mẫu cho trang HomeStayDetailPage, bạn có thể thay thế các biến như title, description, rating, totalRaters, ... bằng dữ liệu này để hiển thị đúng với từng homestay theo id.
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                        <Text style={{ fontSize: 14, color: '#666', marginRight: 16 }}>
+                            <Text style={{ fontWeight: 'bold', color: '#222' }}>123</Text> lượt thích
                         </Text>
-                        <TouchableOpacity
-                            onPress={() => setShowFullDescription(!showFullDescription)}
-                            style={styles.readMoreButton}
-                        >
-                            <Text style={styles.readMoreText}>
-                                {showFullDescription ? 'Ẩn bớt' : 'Xem thêm...'}
-                            </Text>
-                        </TouchableOpacity>
+                        <Text style={{ fontSize: 14, color: '#666' }}>
+                            <Text style={{ fontWeight: 'bold', color: '#222' }}>45</Text> Following
+                        </Text>
                     </View>
-
-                    {/* Tiện nghi */}
-                    {renderAmenities()}
-
-                    {/* Đánh giá và bình luận */}
-                    <View style={{ width: '100%' }}>
-                        <View style={styles.reviewsHeader}>
-                            <Text style={styles.sectionTitle}>Đánh giá & Bình luận</Text>
-                            <Text style={styles.reviewsCount}>{mockReviews.length} đánh giá</Text>
-                        </View>
-
-                        {/* Danh sách đánh giá */}
-                        {displayedReviews.map(item => renderReviewItem({ item }))}
-
-                        {/* Nút tải thêm đánh giá */}
-                        {visibleReviewsCount < mockReviews.length ? (
-                            <TouchableOpacity
-                                style={styles.viewMoreButton}
-                                onPress={loadMoreReviews}
-                            >
-                                <Text style={styles.viewMoreText}>
-                                    Tải thêm 10 đánh giá
-                                </Text>
-                            </TouchableOpacity>
-                        ) : visibleReviewsCount > 3 ? (
-                            <TouchableOpacity
-                                style={styles.viewMoreButton}
-                                onPress={() => setVisibleReviewsCount(3)}
-                            >
-                                <Text style={styles.viewMoreText}>
-                                    Thu gọn
-                                </Text>
-                            </TouchableOpacity>
-                        ) : null}
-                    </View>
-
-                    {/* Phần nhập đánh giá mới */}
-                    <View style={styles.addReviewBox}>
-                        <Text style={styles.addReviewTitle}>Đánh giá của bạn</Text>
-                        <View style={styles.starsRow}>
+                    {/* Rating với giao diện mới */}
+                    <View style={styles.ratingContainer}>
+                        <View style={styles.starsContainer}>
                             {Array.from({ length: 5 }).map((_, idx) => (
-                                <TouchableOpacity key={idx} onPress={() => setUserRating(idx + 1)}>
-                                    <Ionicons
-                                        name={idx < userRating ? 'star' : 'star-outline'}
-                                        size={28}
-                                        color={idx < userRating ? '#FFD700' : '#ccc'}
-                                        style={{ marginHorizontal: 2 }}
-                                    />
-                                </TouchableOpacity>
+                                <Ionicons
+                                    key={idx}
+                                    name={idx < 5 ? "star" : "star-outline"}
+                                    size={22}
+                                    color={idx < 5 ? "#FFD700" : "#ccc"}
+                                    style={{ marginRight: 2 }}
+                                />
                             ))}
                         </View>
-                        <View style={styles.inputBox}>
-                            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Bình luận</Text>
-                            <View style={styles.inputWrapper}>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Nhập bình luận của bạn..."
-                                    value={userComment}
-                                    onChangeText={setUserComment}
-                                    multiline
-                                    numberOfLines={3}
-                                />
-                            </View>
+                        <View style={styles.ratingCountContainer}>
+                            <Text style={styles.ratingCount}>5</Text>
+                            <Text style={styles.ratingTotal}>(100 đánh giá)</Text>
                         </View>
-                        <TouchableOpacity
-                            style={[styles.sendButton, (!userRating || !userComment.trim()) && { backgroundColor: '#ccc' }]}
-                            onPress={handleSendReview}
-                            disabled={!userRating || !userComment.trim() || sending}
-                        >
-                            <Text style={styles.sendButtonText}>{sending ? 'Đang gửi...' : 'Gửi đánh giá'}</Text>
-                        </TouchableOpacity>
                     </View>
 
+                    {/* Thêm địa chỉ */}
+                    <View style={styles.locationContainer}>
+                        <Ionicons name="location-outline" size={18} color="#666" />
+                        <Text style={styles.locationText}>Đường Hoàng Hoa Thám, Phường 12, Quận Tân Bình</Text>
+                    </View>
                 </View>
-                {posts.map((post) => (
-                    <Post
-                        key={post.id}
-                        username={post.author.username}
-                        location={post.location}
-                        images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
-                        commentCount={post.commentCount}
-                        likeCount={post.likeCount}
-                        sharedCount={post.sharedCount}
-                        caption={post.caption}
-                        author={post.author}
-                        isPublic={post.isPublic}
-                        isVerified={false}
-                    />
-                ))}
-            </ScrollView>
+
+                {/* Box giá */}
+                <View style={styles.priceContainer}>
+                    <View style={styles.priceRow}>
+                        <Text style={styles.priceLabel}>Giá</Text>
+                        <Text style={styles.priceValue}>1.200.000đ<Text style={styles.priceUnit}>/đêm</Text></Text>
+                    </View>
+                    <Text style={styles.priceNote}>Đã bao gồm thuế và phí</Text>
+                </View>
+
+                {/* Mô tả với tiêu đề */}
+                <View style={styles.descriptionContainer}>
+                    <Text style={styles.descriptionTitle}>Mô tả</Text>
+                    <Text
+                        style={styles.description}
+                        numberOfLines={showFullDescription ? undefined : 3}
+                    >
+                        Dưới đây là fake data mẫu cho trang HomeStayDetailPage, bạn có thể thay thế các biến như title, description, rating, totalRaters, ... bằng dữ liệu này để hiển thị đúng với từng homestay theo id.
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => setShowFullDescription(!showFullDescription)}
+                        style={styles.readMoreButton}
+                    >
+                        <Text style={styles.readMoreText}>
+                            {showFullDescription ? 'Ẩn bớt' : 'Xem thêm...'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Tiện nghi */}
+                {renderAmenities()}
+
+                {/* Đánh giá và bình luận */}
+                <View style={{ width: '100%' }}>
+                    <View style={styles.reviewsHeader}>
+                        <Text style={styles.sectionTitle}>Đánh giá & Bình luận</Text>
+                        <Text style={styles.reviewsCount}>{mockReviews.length} đánh giá</Text>
+                    </View>
+
+                    {/* Danh sách đánh giá */}
+                    {displayedReviews.map(item => renderReviewItem({ item }))}
+
+                    {/* Nút tải thêm đánh giá */}
+                    {visibleReviewsCount < mockReviews.length ? (
+                        <TouchableOpacity
+                            style={styles.viewMoreButton}
+                            onPress={loadMoreReviews}
+                        >
+                            <Text style={styles.viewMoreText}>
+                                Tải thêm 10 đánh giá
+                            </Text>
+                        </TouchableOpacity>
+                    ) : visibleReviewsCount > 3 ? (
+                        <TouchableOpacity
+                            style={styles.viewMoreButton}
+                            onPress={() => setVisibleReviewsCount(3)}
+                        >
+                            <Text style={styles.viewMoreText}>
+                                Thu gọn
+                            </Text>
+                        </TouchableOpacity>
+                    ) : null}
+                </View>
+
+                {/* Phần nhập đánh giá mới */}
+                <View style={styles.addReviewBox}>
+                    <Text style={styles.addReviewTitle}>Đánh giá của bạn</Text>
+                    <View style={styles.starsRow}>
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                            <TouchableOpacity key={idx} onPress={() => setUserRating(idx + 1)}>
+                                <Ionicons
+                                    name={idx < userRating ? 'star' : 'star-outline'}
+                                    size={28}
+                                    color={idx < userRating ? '#FFD700' : '#ccc'}
+                                    style={{ marginHorizontal: 2 }}
+                                />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                    <View style={styles.inputBox}>
+                        <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Bình luận</Text>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Nhập bình luận của bạn..."
+                                value={userComment}
+                                onChangeText={setUserComment}
+                                multiline
+                                numberOfLines={3}
+                            />
+                        </View>
+                    </View>
+                    <TouchableOpacity
+                        style={[styles.sendButton, (!userRating || !userComment.trim()) && { backgroundColor: '#ccc' }]}
+                        onPress={handleSendReview}
+                        disabled={!userRating || !userComment.trim() || sending}
+                    >
+                        <Text style={styles.sendButtonText}>{sending ? 'Đang gửi...' : 'Gửi đánh giá'}</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Separator và tiêu đề cho phần posts */}
+                <View style={styles.postsSection}>
+                    <Text style={styles.sectionTitle}>Bài viết liên quan</Text>
+                </View>
+            </View>
+        </>
+    ), [
+        mockImages,
+        renderImageItem,
+        screenWidth,
+        handleScrollBegin,
+        handleImageScroll,
+        handleScrollEnd,
+        activeImageIndex,
+        isFavorite,
+        toggleFavorite,
+        showFullDescription,
+        renderAmenities,
+        displayedReviews,
+        renderReviewItem,
+        visibleReviewsCount,
+        mockReviews.length,
+        loadMoreReviews,
+        userRating,
+        userComment,
+        handleSendReview,
+        sending
+    ]);
+
+    // Render function cho mỗi post
+    const renderPost = useCallback(({ item: post }: { item: any }) => (
+        <Post
+            key={post.id}
+            postId={post.id}
+            username={post.author.username}
+            location={post.location}
+            images={post.imageUrl.map((url: string, index: number) => ({ id: index.toString(), uri: url }))}
+            commentCount={post.commentCount}
+            likeCount={post.likeCount}
+            sharedCount={post.sharedCount}
+            caption={post.caption}
+            author={post.author}
+            isPublic={post.isPublic}
+            isVerified={false}
+            authorId={post.authorId}
+            isLike={post.isLike}
+        />
+    ), []);
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <FlatList
+                data={posts}
+                renderItem={renderPost}
+                keyExtractor={(item) => item.id}
+                ListHeaderComponent={renderHeader}
+                showsVerticalScrollIndicator={false}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={3}
+                windowSize={5}
+                initialNumToRender={3}
+                onEndReachedThreshold={0.5}
+                contentContainerStyle={{ paddingBottom: 80 }}
+                ListEmptyComponent={
+                    loading ? (
+                        <View style={styles.emptyContainer}>
+                            <ActivityIndicator size="large" color="#888" />
+                            <Text style={styles.emptyText}>Đang tải bài viết...</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>Chưa có bài viết nào</Text>
+                        </View>
+                    )
+                }
+            />
 
             {/* Nút đặt phòng cố định ở dưới */}
             <View style={styles.bookingButtonContainer}>
@@ -1058,6 +1117,24 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    postsSection: {
+        marginTop: 20,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginTop: 10,
     },
 });
 

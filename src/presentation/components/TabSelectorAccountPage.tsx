@@ -2,36 +2,52 @@ import { View, Text, ActivityIndicator, StyleSheet } from "react-native"
 import TabSelector from "./account/TabSelector";
 import MemoriesGrid from "./memories/memory";
 import PostList from "./postList";
-import { useEffect, useState } from "react";
-import { getPosts } from "../redux/slices/postSlice";
+import { useEffect, useState, useCallback } from "react";
+import { getMyPosts } from "../redux/slices/postSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
+import { useFocusEffect } from "@react-navigation/native";
 
 const TabSelectorAccountPage = () => {
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [hasLoaded, setHasLoaded] = useState(false);
     const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
     const dispatch = useDispatch<AppDispatch>();
-    const { posts, loading } = useSelector((state: RootState) => state.post);
+    const { myPosts, loading } = useSelector((state: RootState) => state.post);
     const profile = useSelector((state: RootState) => state.auth.profile);
 
     useEffect(() => {
         if (!hasLoaded) {
-            dispatch(getPosts());
+            refreshPosts();
             setHasLoaded(true);
         }
     }, [hasLoaded, dispatch]);
+
+    // Refresh posts when user returns to AccountPage
+    useFocusEffect(
+        useCallback(() => {
+            if (hasLoaded) {
+                refreshPosts();
+            }
+        }, [hasLoaded])
+    );
 
     const handlePostPress = (post: any) => {
         setExpandedPostId(expandedPostId === post.id ? null : post.id);
     };
 
-    const filteredPosts = posts.filter(post => post.authorId === profile?.id);
+    // Sử dụng myPosts thay vì filter posts
+    const filteredPosts = myPosts;
 
     const author = {
         username: profile?.username ?? '',
         profilePic: profile?.profilePic ?? '',
     }
+
+    // Refresh posts when tab changes or when needed
+    const refreshPosts = () => {
+        dispatch(getMyPosts());
+    };
 
     const renderContent = () => {
         if (activeTab === 'grid') {

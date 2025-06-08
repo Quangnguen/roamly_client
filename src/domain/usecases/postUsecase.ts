@@ -27,4 +27,12 @@ export class PostUseCase {
   async getPostById(postId: string): Promise<Post> {
     return await this.repo.getPostById(postId)
   }
+
+  async updatePost(postId: string, formData: FormData): Promise<Post> {
+    return await this.repo.updatePost(postId, formData)
+  }
+
+  async getPostsFeed(page: number, limit: number): Promise<Post[]> {
+    return await this.repo.getPostsFeed(page, limit)
+  }
 }

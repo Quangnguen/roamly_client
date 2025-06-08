@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, FlatList, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { BACKGROUND, PRIMARY } from '@/src/const/constants';
@@ -31,30 +31,13 @@ const AddressDetailPage = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
-    const [shouldLoadPosts, setShouldLoadPosts] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
     const { posts, loading } = useSelector((state: RootState) => state.post);
 
-    // Auto-load posts khi scroll đến gần cuối trang
-    const handleScroll = (event: any) => {
-        const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-        const scrollPosition = contentOffset.y + layoutMeasurement.height;
-        const contentHeight = contentSize.height;
-
-        // Khi scroll đến 80% chiều cao trang thì load posts
-        if (scrollPosition > contentHeight * 0.8 && !shouldLoadPosts) {
-            setShouldLoadPosts(true);
-            dispatch(getPosts());
-        }
-    };
-
-    // Sử dụng useFocusEffect thay vì useEffect để tối ưu
-    useFocusEffect(
-        React.useCallback(() => {
-            // Reset state khi vào trang
-            setShouldLoadPosts(false);
-        }, [])
-    );
+    // Load posts khi component mount
+    useEffect(() => {
+        dispatch(getPosts());
+    }, [dispatch]);
 
     const toggleFollow = () => {
         setIsFollowing(prev => !prev);
@@ -164,18 +147,9 @@ const AddressDetailPage = () => {
         ]
     };
 
-    return (
-        <ScrollView
-            style={styles.container}
-            onScroll={handleScroll}
-            scrollEventThrottle={400}
-        >
-            {loading && !shouldLoadPosts && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#888" />
-                    <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-                </View>
-            )}
+    // Tạo render function cho header content (tất cả content trừ posts)
+    const renderHeader = useCallback(() => (
+        <>
             {/* Ảnh địa điểm với nút quay lại */}
             <View style={styles.imageContainer}>
                 <Image
@@ -302,38 +276,74 @@ const AddressDetailPage = () => {
                         ))}
                     </ScrollView>
                 </View>
-                <Text style={styles.sectionTitle}>Bài viết</Text>
+
+                {/* Separator và tiêu đề cho phần posts */}
+                <View style={styles.postsSection}>
+                    <Text style={styles.sectionTitle}>Bài viết liên quan</Text>
+                </View>
             </View>
-            {shouldLoadPosts && (
-                <View>
-                    {loading ? (
-                        <View style={styles.postsLoadingContainer}>
+        </>
+    ), [
+        placeDetails,
+        isFollowing,
+        toggleFollow,
+        isExpanded,
+        currentIndex,
+        isVisible,
+        navigation
+    ]);
+
+    // Render function cho mỗi post
+    const renderPost = useCallback(({ item: post }: { item: any }) => (
+        <Post
+            key={post.id}
+            postId={post.id}
+            username={post.author.username}
+            location={post.location}
+            images={post.imageUrl.map((url: string, index: number) => ({
+                id: index.toString(),
+                uri: url
+            }))}
+            commentCount={post.commentCount}
+            likeCount={post.likeCount}
+            sharedCount={post.sharedCount}
+            caption={post.caption}
+            author={post.author}
+            isPublic={post.isPublic}
+            isVerified={false}
+            authorId={post.authorId}
+            isLike={post.isLike}
+        />
+    ), []);
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <FlatList
+                data={posts}
+                renderItem={renderPost}
+                keyExtractor={(item) => item.id}
+                ListHeaderComponent={renderHeader}
+                showsVerticalScrollIndicator={false}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={3}
+                windowSize={5}
+                initialNumToRender={3}
+                onEndReachedThreshold={0.5}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                ListEmptyComponent={
+                    loading ? (
+                        <View style={styles.emptyContainer}>
                             <ActivityIndicator size="large" color="#888" />
-                            <Text style={styles.loadingText}>Đang tải bài viết...</Text>
+                            <Text style={styles.emptyText}>Đang tải bài viết...</Text>
                         </View>
                     ) : (
-                        posts.map((post) => (
-                            <Post
-                                key={post.id}
-                                username={post.author.username}
-                                location={post.location}
-                                images={post.imageUrl.map((url, index) => ({
-                                    id: index.toString(),
-                                    uri: url
-                                }))}
-                                commentCount={post.commentCount}
-                                likeCount={post.likeCount}
-                                sharedCount={post.sharedCount}
-                                caption={post.caption}
-                                author={post.author}
-                                isPublic={post.isPublic}
-                                isVerified={false}
-                            />
-                        ))
-                    )}
-                </View>
-            )}
-        </ScrollView>
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>Chưa có bài viết nào</Text>
+                        </View>
+                    )
+                }
+            />
+        </SafeAreaView>
     );
 };
 
@@ -550,6 +560,22 @@ const styles = StyleSheet.create({
     postsLoadingContainer: {
         padding: 20,
         alignItems: 'center',
+    },
+    postsSection: {
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    emptyContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 100,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginTop: 8,
     },
 });
 

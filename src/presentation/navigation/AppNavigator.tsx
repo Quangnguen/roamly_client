@@ -136,18 +136,35 @@ const InAppNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomePage} />
-      <Tab.Screen name="Search" component={SearchPage} />
+      <Tab.Screen
+        name="Home"
+        component={HomePage}
+        options={{ title: 'Trang chủ' }}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchPage}
+        options={{ title: 'Tìm kiếm' }}
+      />
       <Tab.Screen
         name="Post"
         component={CreatePostPage}
         options={{
           tabBarStyle: { display: 'none' },
           headerShown: false,
+          title: 'Đăng bài'
         }}
       />
-      <Tab.Screen name="Notify" component={NotifyPage} />
-      <Tab.Screen name="Account" component={AccountPage} />
+      <Tab.Screen
+        name="Notify"
+        component={NotifyPage}
+        options={{ title: 'Thông báo' }}
+      />
+      <Tab.Screen
+        name="Account"
+        component={AccountPage}
+        options={{ title: 'Tài khoản' }}
+      />
     </Tab.Navigator>
   );
 };

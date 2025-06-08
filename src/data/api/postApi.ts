@@ -23,9 +23,10 @@ export const getPostsByUserIdApi = async (userId: string) => {
 };
 
 export const getMyPostsApi = async () => {
-    return await authorizedRequest(`${API_BASE_URL}/posts/my-posts`, {
+    const result = await authorizedRequest(`${API_BASE_URL}/posts/my-posts`, {
         method: 'GET',
     });
+    return result;
 };
 
 export const deletePostApi = async (postId: string) => {
@@ -36,6 +37,19 @@ export const deletePostApi = async (postId: string) => {
 
 export const getPostByIdApi = async (postId: string) => {
     return await authorizedRequest(`${API_BASE_URL}/posts/${postId}`, {
+        method: 'GET',
+    });
+};
+
+export const updatePostApi = async (postId: string, formData: FormData) => {
+    return await authorizedRequest(`${API_BASE_URL}/posts/${postId}`, {
+        method: 'PATCH',
+        body: formData
+    });
+};
+
+export const getPostsFeedApi = async (page: number, limit: number) => {
+    return await authorizedRequest(`${API_BASE_URL}/posts/feed?page=${page}&limit=${limit}`, {
         method: 'GET',
     });
 };

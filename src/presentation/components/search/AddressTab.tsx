@@ -10,27 +10,27 @@ const { width } = Dimensions.get('window');
 const addressCards = [
     {
         image: { uri: 'https://cafebiz.cafebizcdn.vn/2018/12/22/photo-2-15454504530612141260827.jpg' },
-        title: 'Beautiful Location',
+        title: 'Địa Điểm Đẹp',
         totalFollowers: 100,
-        description: 'This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
+        description: 'Đây là một địa điểm tuyệt đẹp ở Tokyo, Nhật Bản. Hoàn hảo cho việc tham quan và chụp những bức ảnh tuyệt vời.',
     },
     {
         image: { uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-        title: 'Amazing View',
+        title: 'Tầm Nhìn Tuyệt Vời',
         totalFollowers: 245,
-        description: 'Experience the breathtaking views of Vietnam\'s natural beauty.',
+        description: 'Trải nghiệm những tầm nhìn ngoạn mục của vẻ đẹp thiên nhiên Việt Nam.',
     },
     {
         image: require('../../../../assets/images/natural2.jpg'),
-        title: 'Beautiful Location',
+        title: 'Địa Điểm Đẹp',
         totalFollowers: 345,
-        description: 'This is a beautiful location in Tokyo, Japan. Perfect for sightseeing and capturing stunning photos.',
+        description: 'Đây là một địa điểm tuyệt đẹp ở Tokyo, Nhật Bản. Hoàn hảo cho việc tham quan và chụp những bức ảnh tuyệt vời.',
     },
     {
         image: { uri: 'https://ik.imagekit.io/tvlk/blog/2024/07/canh-dep-viet-nam-6.jpg?tr=q-70,c-at_max,w-500,h-300,dpr-2' },
-        title: 'Amazing View',
+        title: 'Tầm Nhìn Tuyệt Vời',
         totalFollowers: 521,
-        description: 'Experience the breathtaking views of Vietnam\'s natural beauty.',
+        description: 'Trải nghiệm những tầm nhìn ngoạn mục của vẻ đẹp thiên nhiên Việt Nam.',
     },
 ];
 

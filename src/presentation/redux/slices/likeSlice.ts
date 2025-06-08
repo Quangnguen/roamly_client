@@ -15,17 +15,25 @@ const initialState: LikeState = {
 
 export const likePost = createAsyncThunk(
     'like/likePost',
-    async (postId: string) => {
-        const response = await likeApi(postId, 'post');
-        return { postId, response };
+    async (postId: string, { rejectWithValue }) => {
+        try {
+            const response = await likeApi(postId, 'post');
+            return { postId, response };
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to like post');
+        }
     }
 );
 
 export const unlikePost = createAsyncThunk(
     'like/unlikePost',
-    async (postId: string) => {
-        const response = await unlikeApi(postId, 'post');
-        return { postId, response };
+    async (postId: string, { rejectWithValue }) => {
+        try {
+            const response = await unlikeApi(postId, 'post');
+            return { postId, response };
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to unlike post');
+        }
     }
 );
 
@@ -62,7 +70,7 @@ const likeSlice = createSlice({
             })
             .addCase(likePost.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message || 'Có lỗi xảy ra khi thích bài viết';
+                state.error = action.payload as string || action.error.message || 'Có lỗi xảy ra khi thích bài viết';
             })
             // Unlike post
             .addCase(unlikePost.pending, (state) => {
@@ -75,7 +83,7 @@ const likeSlice = createSlice({
             })
             .addCase(unlikePost.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message || 'Có lỗi xảy ra khi bỏ thích bài viết';
+                state.error = action.payload as string || action.error.message || 'Có lỗi xảy ra khi bỏ thích bài viết';
             });
     }
 });
