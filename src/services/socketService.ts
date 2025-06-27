@@ -46,14 +46,7 @@ class SocketService {
       console.log('✅ Socket connected:', this.socket?.id);
       this.reconnectAttempts = 0;
       
-      // Emit test connection immediately after connecting
-      setTimeout(() => {
-        console.log('🧪 Auto-testing socket connection after connect...');
-        this.emit('test_connection', { 
-          message: 'Auto test from client',
-          timestamp: new Date().toISOString()
-        });
-      }, 1000);
+      
     });
 
     // Lắng nghe connection success từ server
@@ -61,10 +54,10 @@ class SocketService {
       console.log('🎉 Connection success from server:', data);
     });
 
-    // Lắng nghe test response
-    this.socket.on('test_response', (data) => {
-      console.log('🧪 Test response:', data);
-    });
+    // // Lắng nghe test response
+    // this.socket.on('test_response', (data) => {
+    //   console.log('🧪 Test response:', data);
+    // });
 
     this.socket.on('disconnect', (reason) => {
       console.log('❌ Socket disconnected:', reason);

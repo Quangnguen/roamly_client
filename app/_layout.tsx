@@ -48,19 +48,19 @@ function AppContent() {
       socketService.on('connection_success', (data: unknown) => {
         console.log('🎉 Connection success:', data);
       });
-      socketService.on('test_response', (data: unknown) => {
-        console.log('🧪 Test response received:', data);
-      });
+      // socketService.on('test_response', (data: unknown) => {
+      //   console.log('🧪 Test response received:', data);
+      // });
 
-      // Test connection sau 2 giây
-      setTimeout(() => {
-        console.log('🧪 Testing socket connection...');
-        socketService.emit('test_connection', { 
-          userId: user.profile?.id,
-          message: 'Hello from client',
-          timestamp: new Date().toISOString()
-        });
-      }, 2000);
+      // // Test connection sau 2 giây
+      // setTimeout(() => {
+      //   console.log('🧪 Testing socket connection...');
+      //   socketService.emit('test_connection', { 
+      //     userId: user.profile?.id,
+      //     message: 'Hello from client',
+      //     timestamp: new Date().toISOString()
+      //   });
+      // }, 2000);
 
     } else {
       console.log('❌ Cannot setup listeners - Socket not connected or no user');
