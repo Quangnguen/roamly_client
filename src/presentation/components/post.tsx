@@ -12,6 +12,9 @@ import {
   NativeScrollEvent,
   Alert,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { BACKGROUND } from '@/src/const/constants';
@@ -35,6 +38,19 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 type ImageItem = {
   id: string;
   uri: string | ImageSourcePropType;
+};
+
+// Định nghĩa kiểu dữ liệu cho bình luận
+type Comment = {
+  id: string;
+  author: {
+    username: string;
+    profilePic: string;
+  };
+  content: string;
+  createdAt: string;
+  likeCount: number;
+  isLiked: boolean;
 };
 
 interface PostProps {
@@ -97,11 +113,73 @@ const Post: React.FC<PostProps> = ({
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
   const [isOptionsMenuVisible, setIsOptionsMenuVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isCommentsModalVisible, setIsCommentsModalVisible] = useState(false);
+  const [newComment, setNewComment] = useState('');
   const flatListRef = useRef<FlatList>(null);
+  const commentInputRef = useRef<TextInput>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector((state: RootState) => state.auth);
+
+  // Dữ liệu giả cho bình luận
+  const [comments, setComments] = useState<Comment[]>([
+    {
+      id: '1',
+      author: {
+        username: 'alice_wonder',
+        profilePic: 'https://randomuser.me/api/portraits/women/1.jpg',
+      },
+      content: 'Những bức ảnh tuyệt vời! Nhật Bản thật đẹp 😍',
+      createdAt: '2 giờ trước',
+      likeCount: 12,
+      isLiked: false,
+    },
+    {
+      id: '2',
+      author: {
+        username: 'david_travel',
+        profilePic: 'https://randomuser.me/api/portraits/men/2.jpg',
+      },
+      content: 'Mình cũng muốn đến Tokyo quá! Có thể chia sẻ thêm kinh nghiệm không?',
+      createdAt: '1 giờ trước',
+      likeCount: 8,
+      isLiked: true,
+    },
+    {
+      id: '3',
+      author: {
+        username: 'sarah_photo',
+        profilePic: 'https://randomuser.me/api/portraits/women/3.jpg',
+      },
+      content: 'Góc chụp này ở đâu vậy? Mình cũng muốn check-in 📸',
+      createdAt: '45 phút trước',
+      likeCount: 5,
+      isLiked: false,
+    },
+    {
+      id: '4',
+      author: {
+        username: 'mike_adventures',
+        profilePic: 'https://randomuser.me/api/portraits/men/4.jpg',
+      },
+      content: 'Amazing shots! Japan is definitely on my bucket list now 🇯🇵',
+      createdAt: '30 phút trước',
+      likeCount: 15,
+      isLiked: false,
+    },
+    {
+      id: '5',
+      author: {
+        username: 'jenny_foodie',
+        profilePic: 'https://randomuser.me/api/portraits/women/5.jpg',
+      },
+      content: 'Có thử món nào ngon ở Tokyo không? Chia sẻ cho mình với! 🍜',
+      createdAt: '15 phút trước',
+      likeCount: 3,
+      isLiked: false,
+    },
+  ]);
 
   // Lấy likeCount từ Redux store - ưu tiên non-optimistic posts
   const currentPost = useSelector((state: RootState) => {
@@ -134,8 +212,6 @@ const Post: React.FC<PostProps> = ({
       dispatch(initializeLikeStatus({ postId, isLiked: isLiked }));
     }
   }, [dispatch, postId, isLiked]);
-
-
 
   const goToImage = useCallback((index: number) => {
     if (index >= 0 && index < images.length) {
@@ -275,6 +351,87 @@ const Post: React.FC<PostProps> = ({
   const imageViewImages = images.map(img => ({
     uri: typeof img.uri === 'string' ? img.uri : Image.resolveAssetSource(img.uri).uri
   }));
+
+  const handleCommentsPress = useCallback(() => {
+    setIsCommentsModalVisible(true);
+  }, []);
+
+  const handleCloseCommentsModal = useCallback(() => {
+    setIsCommentsModalVisible(false);
+    setNewComment('');
+  }, []);
+
+  const handleCommentLike = useCallback((commentId: string) => {
+    setComments(prevComments =>
+      prevComments.map(comment =>
+        comment.id === commentId
+          ? {
+            ...comment,
+            isLiked: !comment.isLiked,
+            likeCount: comment.isLiked ? comment.likeCount - 1 : comment.likeCount + 1
+          }
+          : comment
+      )
+    );
+  }, []);
+
+  const handleAddComment = useCallback(() => {
+    if (newComment.trim()) {
+      const comment: Comment = {
+        id: Date.now().toString(),
+        author: {
+          username: user.profile?.username || 'current_user',
+          profilePic: user.profile?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg',
+        },
+        content: newComment.trim(),
+        createdAt: 'Vừa xong',
+        likeCount: 0,
+        isLiked: false,
+      };
+      setComments(prevComments => [comment, ...prevComments]);
+      setNewComment('');
+      // Blur input để tắt bàn phím sau khi gửi
+      commentInputRef.current?.blur();
+    }
+  }, [newComment, user.profile]);
+
+  const handleKeyPress = useCallback((e: any) => {
+    if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+      e.preventDefault();
+      handleAddComment();
+    }
+  }, [handleAddComment]);
+
+  const renderCommentItem = useCallback(({ item }: { item: Comment }) => (
+    <View style={styles.commentItem}>
+      <Image source={{ uri: item.author.profilePic }} style={styles.commentProfilePic} />
+      <View style={styles.commentContent}>
+        <View style={styles.commentHeader}>
+          <Text style={styles.commentUsername}>{item.author.username}</Text>
+          <Text style={styles.commentTime}>{item.createdAt}</Text>
+        </View>
+        <Text style={styles.commentText}>{item.content}</Text>
+        <View style={styles.commentActions}>
+          <TouchableOpacity
+            style={styles.commentLikeButton}
+            onPress={() => handleCommentLike(item.id)}
+          >
+            <FontAwesome
+              name={item.isLiked ? 'heart' : 'heart-o'}
+              size={12}
+              color={item.isLiked ? '#e74c3c' : '#8e8e8e'}
+            />
+            <Text style={[styles.commentLikeCount, item.isLiked && styles.commentLikeCountActive]}>
+              {item.likeCount}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.commentReplyButton}>
+            <Text style={styles.commentReplyText}>Trả lời</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  ), [handleCommentLike]);
 
   return (
     <View style={styles.container}>
@@ -440,7 +597,9 @@ const Post: React.FC<PostProps> = ({
       {/* Likes */}
       <View style={styles.likesContainer}>
         <Text style={styles.bold}>{currentLikeCount.toLocaleString()} lượt thích</Text>
-        <Text style={styles.bold}>  {currentCommentCount.toLocaleString()} bình luận</Text>
+        <TouchableOpacity onPress={handleCommentsPress}>
+          <Text style={styles.bold}>  {currentCommentCount.toLocaleString()} bình luận</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Action Buttons */}
@@ -482,7 +641,7 @@ const Post: React.FC<PostProps> = ({
           }}>
             <FontAwesome name={isLiked ? 'heart' : 'heart-o'} size={24} color={isLiked ? '#e74c3c' : '#262626'} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleCommentsPress}>
             <Feather name="message-circle" size={24} color="#262626" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
@@ -494,6 +653,65 @@ const Post: React.FC<PostProps> = ({
           <Feather name="bookmark" size={24} color="#262626" />
         </TouchableOpacity>
       </View>
+
+      {/* Comments Modal */}
+      <Modal
+        visible={isCommentsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseCommentsModal}
+      >
+        <View style={styles.commentsModal}>
+          <View style={styles.commentsHeader}>
+            <Text style={styles.commentsTitle}>Bình luận</Text>
+            <TouchableOpacity onPress={handleCloseCommentsModal}>
+              <Feather name="x" size={24} color="#262626" />
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={comments}
+            renderItem={renderCommentItem}
+            keyExtractor={(item) => item.id}
+            style={styles.commentsList}
+            showsVerticalScrollIndicator={false}
+          />
+
+          <View style={styles.commentInputContainer}>
+            <Image
+              source={{
+                uri: user.profile?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg',
+              }}
+              style={styles.commentInputProfilePic}
+            />
+            <TextInput
+              ref={commentInputRef}
+              style={styles.commentInput}
+              placeholder="Thêm bình luận..."
+              value={newComment}
+              onChangeText={setNewComment}
+              maxLength={500}
+              returnKeyType="send"
+              onSubmitEditing={handleAddComment}
+              enablesReturnKeyAutomatically={true}
+            />
+            <TouchableOpacity
+              style={[
+                styles.commentSendButton,
+                newComment.trim() ? styles.commentSendButtonActive : {}
+              ]}
+              onPress={handleAddComment}
+              disabled={!newComment.trim()}
+            >
+              <Feather
+                name="send"
+                size={20}
+                color={newComment.trim() ? '#3897f0' : '#8e8e8e'}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -704,6 +922,124 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     textAlign: 'center',
+  },
+  // Comments Modal Styles
+  commentsModal: {
+    flex: 1,
+    backgroundColor: BACKGROUND,
+  },
+  commentsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  commentsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#262626',
+  },
+  commentsList: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  commentItem: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#f0f0f0',
+  },
+  commentProfilePic: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 12,
+  },
+  commentContent: {
+    flex: 1,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  commentUsername: {
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#262626',
+    marginRight: 8,
+  },
+  commentTime: {
+    fontSize: 12,
+    color: '#8e8e8e',
+  },
+  commentText: {
+    fontSize: 14,
+    color: '#262626',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  commentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentLikeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  commentLikeCount: {
+    fontSize: 12,
+    color: '#8e8e8e',
+    marginLeft: 4,
+  },
+  commentLikeCountActive: {
+    color: '#e74c3c',
+  },
+  commentReplyButton: {
+    paddingVertical: 2,
+  },
+  commentReplyText: {
+    fontSize: 12,
+    color: '#8e8e8e',
+    fontWeight: '500',
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    backgroundColor: BACKGROUND,
+  },
+  commentInputProfilePic: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 12,
+  },
+  commentInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    maxHeight: 80,
+    fontSize: 14,
+    backgroundColor: '#f8f8f8',
+  },
+  commentSendButton: {
+    marginLeft: 12,
+    padding: 8,
+  },
+  commentSendButtonActive: {
+    backgroundColor: 'rgba(56, 151, 240, 0.1)',
+    borderRadius: 16,
   },
 });
 
