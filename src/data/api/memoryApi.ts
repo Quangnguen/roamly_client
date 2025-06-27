@@ -163,24 +163,33 @@ export const updateMemoryApi = async (memoryId: string, memoryData: Partial<Crea
       formData.append('privacy', memoryData.privacy);
     }
 
-    // Xử lý hình ảnh
-    if (memoryData.images && memoryData.images.length > 0) {
-      for (let i = 0; i < memoryData.images.length; i++) {
-        const imageUri = memoryData.images[i];
-        try {
-          const fileName = imageUri.split('/').pop() || `image_${i}.jpg`;
-          const fileType = 'image/jpeg';
-          formData.append('images', {
-            uri: imageUri,
-            name: fileName,
-            type: fileType,
-          } as any);
-        } catch (error) {
-          console.error(`Error processing image ${i}:`, error);
-        }
+   
+    
+    // Xử lý ảnh
+    const localImages = memoryData.images?.filter(img => img.startsWith('file:')) || [];
+    const cloudImages = memoryData.images?.filter(img => img.includes('cloudinary.com')) || [];
+    
+    // Upload ảnh local
+    for (let i = 0; i < localImages.length; i++) {
+      const imageUri = localImages[i];
+      try {
+        const fileName = imageUri.split('/').pop() || `image_${i}.jpg`;
+        const fileType = 'image/jpeg';
+        formData.append('images', {
+          uri: imageUri,
+          name: fileName,
+          type: fileType,
+        } as any);
+      } catch (error) {
+        console.error(`Error processing image ${i}:`, error);
       }
     }
-
+    
+    // Thêm URLs của ảnh cloud
+    cloudImages.forEach(url => {
+      formData.append('existingImages', url);
+    });
+    
 
     const response = await authorizedRequest(`${API_BASE_URL}/memory/update/${memoryId}`, {
       method: 'PUT',

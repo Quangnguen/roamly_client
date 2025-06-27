@@ -19,13 +19,15 @@ import ImageView from 'react-native-image-viewing';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { deletePost } from '../redux/slices/postSlice';
-import { likePost, unlikePost, initializeLikeStatus } from '../redux/slices/likeSlice';
+import { likePost, unlikePost, initializeLikeStatus, handleSocketPostLiked, handleSocketPostUnliked } from '../redux/slices/likeSlice';
 import Toast from 'react-native-toast-message';
 import { navigate } from 'expo-router/build/global-state/routing';
 import { useNavigation } from 'expo-router';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import EditPostModal from './modals/EditPostModal';
+import { useSocket } from '@/src/hook/useSocket';
+import { socketService } from '@/src/services/socketService';
 
 const { width } = Dimensions.get('window');
 
@@ -102,6 +104,7 @@ const Post: React.FC<PostProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector((state: RootState) => state.auth);
+  
 
   // Lấy likeCount từ Redux store - ưu tiên non-optimistic posts
   const currentPost = useSelector((state: RootState) => {
@@ -136,6 +139,61 @@ const Post: React.FC<PostProps> = ({
   }, [dispatch, postId, isLiked]);
 
 
+  const { socket, isConnected } = useSocket();
+
+ useEffect(() => {
+    console.log('🔌 Socket connection status:', isConnected);
+    console.log('🔌 Socket instance:', socket);
+
+    if (!socket || !isConnected) {
+        console.log('❌ Socket not ready, skipping event listener');
+        return;
+    }
+
+    socket.on('post_liked', (data) => {
+        console.log('🔥 Received socket event post_liked:', data);
+
+        // kiểm tra socket connection
+        if (!socketService.isConnected()) {
+            console.log('❌ Socket is not connected, skipping post_liked event');
+            return;
+        }
+        
+        // ✅ Chỉ cập nhật nếu đây KHÔNG phải là action của chính user này
+        if (data.userId !== user.profile?.id) {
+            dispatch(handleSocketPostLiked({
+                postId: data.postId,
+                userId: data.userId
+            }));
+        } else {
+            console.log('📱 [SOCKET] Skipping own action for user:', data.userId);
+        }
+    });
+
+    socket.on('post_unliked', (data) => {
+        console.log('🔥 Received socket event post_unliked:', data);
+        
+        // ✅ Chỉ cập nhật nếu đây KHÔNG phải là action của chính user này  
+        if (data.userId !== user.profile?.id) {
+            dispatch(handleSocketPostUnliked({
+                postId: data.postId,
+                userId: data.userId
+            }));
+        } else {
+            console.log('📱 [SOCKET] Skipping own unlike action for user:', data.userId);
+        }
+    });
+
+    socket.on('new_notification', (data) => {
+        console.log('notification received:', data);
+    });
+
+    return () => {
+        socket.off('post_liked');
+        socket.off('post_unliked');  
+        socket.off('new_notification');
+    };
+}, [dispatch, socket, isConnected, user.profile?.id]); // ✅ Thêm user.profile?.id
 
   const goToImage = useCallback((index: number) => {
     if (index >= 0 && index < images.length) {
@@ -456,7 +514,6 @@ const Post: React.FC<PostProps> = ({
               return;
             }
 
-            // Không cho phép like/unlike optimistic posts
             if (postId.startsWith('temp-')) {
               Toast.show({
                 type: 'info',
@@ -472,7 +529,12 @@ const Post: React.FC<PostProps> = ({
               } else {
                 await dispatch(likePost(postId)).unwrap();
               }
+              
+              // ✅ Backend sẽ tự động emit socket events
+              // Client chỉ cần lắng nghe và cập nhật UI
+              
             } catch (error) {
+              console.error('❌ Like/Unlike error:', error);
               Toast.show({
                 type: 'error',
                 text1: 'Có lỗi xảy ra',

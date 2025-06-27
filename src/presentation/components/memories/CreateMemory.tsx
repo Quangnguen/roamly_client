@@ -86,10 +86,24 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave, m
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 1,
-      selectionLimit: 10,
+      selectionLimit: 10 - newImages.length, // Giới hạn số lượng ảnh có thể chọn thêm
     });
+    
     if (!result.canceled) {
-      setNewImages(result.assets.map(asset => asset.uri));
+      // Kết hợp ảnh mới với ảnh cũ, chứ không ghi đè
+      const updatedImages = [...newImages, ...result.assets.map(asset => asset.uri)];
+      
+      // Giới hạn số lượng ảnh tối đa là 10
+      if (updatedImages.length > 10) {
+        // Hiển thị thông báo nếu vượt quá giới hạn
+        Toast.show({
+          type: 'info',
+          text1: 'Chỉ có thể chọn tối đa 10 ảnh',
+        });
+        setNewImages(updatedImages.slice(0, 10));
+      } else {
+        setNewImages(updatedImages);
+      }
     }
   };
 
@@ -374,6 +388,12 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave, m
     }
   }, [memory, visible]);
 
+  const removeImage = (index: number) => {
+    const newImagesList = [...newImages];
+    newImagesList.splice(index, 1);
+    setNewImages(newImagesList);
+  };
+
   return (
     <Modal
       visible={visible}
@@ -396,14 +416,34 @@ const CreateMemory: React.FC<CreateMemoryProps> = ({ visible, onClose, onSave, m
           {/* Các section không có suggestion: z-index thấp */}
           <View style={[styles.section, { zIndex: 1 }]}>
             <Text style={styles.sectionTitle}>📸 Hình ảnh</Text>
-            <TouchableOpacity style={styles.pickImageBtn} onPress={pickImages}>
-              <Text style={styles.pickImageText}>+ Chọn ảnh (tối đa 10)</Text>
-            </TouchableOpacity>
-            {newImages.length > 0 && (
+            
+            {newImages.length === 0 ? (
+              // Chỉ hiển thị nút chọn ảnh khi chưa có ảnh
+              <TouchableOpacity style={styles.pickImageBtn} onPress={pickImages}>
+                <Text style={styles.pickImageText}>+ Chọn ảnh (tối đa 10)</Text>
+              </TouchableOpacity>
+            ) : (
+              // Khi đã có ảnh, hiển thị danh sách ảnh và nút thêm ảnh (nếu chưa đủ 10 ảnh)
               <View style={styles.previewContainer}>
                 {newImages.map((uri, idx) => (
-                  <Image key={idx} source={{ uri }} style={styles.previewImage} />
+                  <View key={idx} style={styles.imageWrapper}>
+                    <Image source={{ uri }} style={styles.previewImage} />
+                    <TouchableOpacity 
+                      style={styles.imageRemoveBtn}
+                      onPress={() => removeImage(idx)}
+                    >
+                      <Ionicons name="close-circle" size={22} color="#ff4444" />
+                    </TouchableOpacity>
+                  </View>
                 ))}
+                
+                {/* Nút thêm ảnh chỉ hiển thị khi chưa đạt tối đa 10 ảnh */}
+                {newImages.length < 10 && (
+                  <TouchableOpacity style={styles.addImageBtn} onPress={pickImages}>
+                    <Ionicons name="add-circle" size={24} color="#228be6" />
+                    <Text style={styles.addImageText}>Thêm ảnh</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -827,16 +867,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 16,
+    justifyContent: 'flex-start', // Thêm để phân bổ ảnh đều
+    gap: 12, // Khoảng cách giữa các ảnh
+  },
+  imageWrapper: {
+    position: 'relative',
+    marginBottom: 12,
+    width: '22%', // Khoảng 4 ảnh một dòng (nên nhỏ hơn 25% để có khoảng cách)
   },
   previewImage: {
-    width: 72,
-    height: 72,
+    width: '100%', // Thay vì kích thước cố định, dùng 100% của wrapper
+    aspectRatio: 1, // Giữ tỷ lệ 1:1 (hình vuông)
     borderRadius: 12,
-    marginRight: 12,
-    marginBottom: 8,
     borderWidth: 2,
     borderColor: '#e8f2ff',
     backgroundColor: '#fff',
+  },
+  imageRemoveBtn: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  addImageBtn: {
+    width: '22%', // Tương tự như imageWrapper
+    aspectRatio: 1,
+    backgroundColor: '#e8f2ff',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#90caf9',
+    borderStyle: 'dashed',
+    marginBottom: 12,
   },
   datePickerContainer: {
     flexDirection: 'row',

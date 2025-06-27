@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { dependencies } from "../../../dependencies/dependencies";
-import { Alert } from "react-native";
 
 // Define the shape of the nested user data
 interface User {
