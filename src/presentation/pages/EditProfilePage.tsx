@@ -99,11 +99,11 @@ const EditProfilePage: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
-          <Text style={styles.cancelButton} onPress={handleCancelEdit}>Cancel</Text>
+          <Text style={styles.cancelButton} onPress={handleCancelEdit}>Hủy</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
         <TouchableOpacity onPress={handleDone}>
-          <Text style={styles.doneButton}>Done</Text>
+          <Text style={styles.doneButton}>Xong</Text>
         </TouchableOpacity>
       </View>
 
@@ -123,7 +123,7 @@ const EditProfilePage: React.FC = () => {
         {/* Form Fields */}
         <View style={styles.formContainer}>
           <View style={styles.formRow}>
-            <Text style={styles.label}>Name</Text>
+            <Text style={styles.label}>Tên</Text>
             <TextInput
               style={styles.input}
               value={profileData.name}
@@ -132,7 +132,7 @@ const EditProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.formRow}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={styles.label}>Tên người dùng</Text>
             <TextInput
               style={styles.input}
               value={profileData.username}
@@ -152,7 +152,7 @@ const EditProfilePage: React.FC = () => {
           </View> */}
 
           <View style={styles.formRow}>
-            <Text style={styles.label}>Bio</Text>
+            <Text style={styles.label}>Tiểu sử</Text>
             <TextInput
               style={styles.input}
               value={profileData.bio}
@@ -164,12 +164,12 @@ const EditProfilePage: React.FC = () => {
 
         {/* Professional Account Button */}
         <TouchableOpacity style={styles.professionalButton}>
-          <Text style={styles.professionalButtonText}>Switch to Professional Account</Text>
+          <Text style={styles.professionalButtonText}>Chuyển sang tài khoản chuyên nghiệp</Text>
         </TouchableOpacity>
 
         {/* Private Information Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionHeaderText}>Private Information</Text>
+          <Text style={styles.sectionHeaderText}>Thông tin cá nhân</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -183,7 +183,7 @@ const EditProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.formRow}>
-            <Text style={styles.label}>Phone</Text>
+            <Text style={styles.label}>Số điện thoại</Text>
             <TextInput
               style={styles.input}
               value={profileData.phoneNumber}
@@ -192,10 +192,10 @@ const EditProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.formRow}>
-            <Text style={styles.label}>Gender</Text>
+            <Text style={styles.label}>Giới tính</Text>
             <TextInput
               style={styles.input}
-              value="Male"
+              value="Nam"
               onChangeText={(text: string) => handleChange('gender', text)}
             />
           </View>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Modal, TouchableOpacity, Text, StyleSheet, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
 import Post from './post';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 const { width, height } = Dimensions.get('window');
 
@@ -12,6 +14,12 @@ interface PostModalProps {
 }
 
 const PostModal: React.FC<PostModalProps> = ({ visible, onClose, loading, post }) => {
+    const profile = useSelector((state: RootState) => state.auth.profile);
+    console.log(profile?.username);
+    const author = {
+        username: profile?.username || post.author.username || post.author.name || '',
+        profilePic: profile?.profilePic || post.author.profilePic || '',
+    }
     return (
         <Modal
             visible={visible}
@@ -58,7 +66,7 @@ const PostModal: React.FC<PostModalProps> = ({ visible, onClose, loading, post }
                         >
                             <Post
                                 postId={post.id}
-                                username={post.author.username || post.author.name}
+                                username={profile?.username || post.author.username || post.author.name || ''}
                                 location={post.location}
                                 images={post.imageUrl.map((url: string, index: number) => ({
                                     id: index.toString(),
@@ -68,7 +76,7 @@ const PostModal: React.FC<PostModalProps> = ({ visible, onClose, loading, post }
                                 likeCount={post.likeCount}
                                 sharedCount={post.sharedCount}
                                 caption={post.caption}
-                                author={post.author}
+                                author={author}
                                 isPublic={post.isPublic}
                                 isVerified={false}
                                 isLike={post.isLike}
