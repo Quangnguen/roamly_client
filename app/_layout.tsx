@@ -6,21 +6,25 @@ import type { RootState } from '../src/presentation/redux/store'
 import AppNavigator from '@/src/presentation/navigation/AppNavigator'
 import Toast from 'react-native-toast-message'
 import toastConfig from '../src/config/toast.config';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSocketWithRetry } from '@/src/hook/useSocketWithRetry';
 import { socketService } from '@/src/services/socketService';
 
 function AppContent() {
-  const { connectionState, isConnected, retry } = useSocketWithRetry();
+  const { connectionState, isConnected } = useSocketWithRetry(); // ✅ Bỏ connect từ đây
   const user = useSelector((state: RootState) => state.auth);
-  // console.log('👤 User profile:', user.profile);
+  
+  // ✅ Ref để track listeners đã setup chưa
+  const listenersSetupRef = useRef(false);
+  const testSentRef = useRef(false);
 
+
+  // ✅ Chỉ setup listeners 1 lần khi connected
   useEffect(() => {
-    console.log('👤 Current user ID:', user.profile?.id);
     console.log('🔍 Socket connection state:', connectionState);
     console.log('🔍 Is connected:', isConnected);
     
-    if (isConnected && user.profile?.id) {
+    if (isConnected && user.profile?.id && !listenersSetupRef.current) {
       console.log('✅ Setting up socket listeners for user:', user.profile.id);
       
       interface NotificationData {
@@ -28,7 +32,13 @@ function AppContent() {
         [key: string]: any;
       }
 
-      // Setup listeners
+      // ✅ Clean up existing listeners trước
+      socketService.off('new_notification');
+      socketService.off('post_liked');
+      socketService.off('connection_success');
+      socketService.off('test_response');
+
+      // ✅ Setup listeners mới
       socketService.onNewNotification((data: NotificationData) => {
         console.log('📢 NEW NOTIFICATION RECEIVED:', data);
         Toast.show({
@@ -37,6 +47,7 @@ function AppContent() {
           text2: data.message || 'Bạn có thông báo mới',
         });
       });
+
       socketService.onPostLiked((data: unknown) => {
         console.log('❤️ POST LIKED EVENT RECEIVED:', data);
         Toast.show({
@@ -45,39 +56,53 @@ function AppContent() {
           text2: 'Ai đó vừa thích bài viết của bạn',
         });
       });
-      socketService.on('connection_success', (data: unknown) => {
-        console.log('🎉 Connection success:', data);
-      });
+
+      // socketService.on('connection_success', (data: unknown) => {
+      //   console.log('🎉 Connection success from _layout:', data);
+      // });
+
       // socketService.on('test_response', (data: unknown) => {
       //   console.log('🧪 Test response received:', data);
       // });
 
-      // // Test connection sau 2 giây
-      // setTimeout(() => {
-      //   console.log('🧪 Testing socket connection...');
-      //   socketService.emit('test_connection', { 
-      //     userId: user.profile?.id,
-      //     message: 'Hello from client',
-      //     timestamp: new Date().toISOString()
-      //   });
-      // }, 2000);
+      // ✅ Mark listeners as setup
+      listenersSetupRef.current = true;
 
-    } else {
-      console.log('❌ Cannot setup listeners - Socket not connected or no user');
+      // ✅ Test connection chỉ 1 lần
+      if (!testSentRef.current) {
+        setTimeout(() => {
+          console.log('🧪 Testing socket connection...');
+          socketService.emit('test_connection', { 
+            userId: user.profile?.id,
+            message: 'Hello from client',
+            timestamp: new Date().toISOString()
+          });
+          testSentRef.current = true;
+        }, 2000);
+      }
+
+    } else if (!isConnected || !user.profile?.id) {
+      listenersSetupRef.current = false;
+      testSentRef.current = false;
     }
 
+    // ✅ Cleanup khi component unmount hoặc user logout
     return () => {
-      console.log('🧹 Cleaning up socket listeners');
-      socketService.off('new_notification');
-      socketService.off('post_liked');
-      socketService.off('connection_success');
-      socketService.off('test_response');
+      if (!isConnected || !user.profile?.id) {
+        console.log('🧹 Cleaning up socket listeners');
+        socketService.off('new_notification');
+        socketService.off('post_liked');
+        socketService.off('connection_success');
+        socketService.off('test_response');
+        listenersSetupRef.current = false;
+        testSentRef.current = false;
+      }
     };
-  }, [isConnected, user.profile?.id]);
+  }, [isConnected, user.profile?.id, user.isAuthenticated]); // ✅ Depend vào isConnected và user.profile.id
 
-  // Optional: Show connection status
+  // ✅ Debug connection state changes
   useEffect(() => {
-    console.log('Socket connection state:', connectionState);
+    console.log('🔄 Socket connection state changed:', connectionState);
   }, [connectionState]);
 
   return (

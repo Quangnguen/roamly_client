@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { dependencies } from "../../../dependencies/dependencies";
+import { is } from "date-fns/locale";
 
 // Define the shape of the nested user data
 interface User {
@@ -26,6 +27,7 @@ interface AuthState {
   error: string | null;
   access_token: string | null; // Thêm access_token
   refreshToken: string | null; // Thêm refreshToken
+  isAuthenticated: boolean; // Thêm isAuthenticated
 }
 
 interface AuthResponse {
@@ -41,6 +43,7 @@ const initialState: AuthState = {
   error: null,
   access_token: null, // Khởi tạo access_token
   refreshToken: null, // Khởi tạo refreshToken
+  isAuthenticated: false, // Khởi tạo isAuthenticated
 };
 
 // Login thunk
@@ -95,6 +98,11 @@ const authSlice = createSlice({
         state.profile = { ...state.profile, ...action.payload };
       }
     },
+
+    // Thêm reducer để cập nhật trạng thái isAuthenticated
+    setIsAuthenticated: (state, action) => {
+      state.isAuthenticated = action.payload;
+    } 
   },
   extraReducers: (builder) => {
     // Login cases
@@ -108,10 +116,12 @@ const authSlice = createSlice({
         state.profile = action.payload.user;
         state.access_token = action.payload.access_token;
         state.refreshToken = action.payload.refresh_token;
+        state.isAuthenticated = true; // Cập nhật trạng thái isAuthenticated
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.isAuthenticated = false; // Đặt lại trạng thái isAuthenticated khi đăng nhập thất bại
       });
 
     // Register cases
