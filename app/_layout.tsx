@@ -8,102 +8,163 @@ import Toast from 'react-native-toast-message'
 import toastConfig from '../src/config/toast.config';
 import React, { useEffect, useRef } from 'react';
 import { useSocketWithRetry } from '@/src/hook/useSocketWithRetry';
-import { socketService } from '@/src/services/socketService';
+import { socketService } from '@/src/services/socketService'; // ✅ Named import
+import * as Notifications from 'expo-notifications';
+import { AppState } from 'react-native';
 
 function AppContent() {
-  const { connectionState, isConnected } = useSocketWithRetry(); // ✅ Bỏ connect từ đây
+  const { connectionState, isConnected } = useSocketWithRetry();
   const user = useSelector((state: RootState) => state.auth);
   
-  // ✅ Ref để track listeners đã setup chưa
   const listenersSetupRef = useRef(false);
   const testSentRef = useRef(false);
 
+  // ✅ Debug logs với safe access
+  console.log('👤 User profile:', user.profile);
+  console.log('🔐 Is authenticated:', user.isAuthenticated);
+  console.log('🔗 Connection state:', connectionState);
+  console.log('📡 Is connected:', isConnected);
+  console.log('🔍 Socket service exists:', !!socketService);
+  console.log('🔍 Socket isConnected method exists:', typeof socketService?.isConnected);
 
-  // ✅ Chỉ setup listeners 1 lần khi connected
+  // ✅ Request notification permissions on app start
   useEffect(() => {
-    console.log('🔍 Socket connection state:', connectionState);
-    console.log('🔍 Is connected:', isConnected);
-    
-    if (isConnected && user.profile?.id && !listenersSetupRef.current) {
-      console.log('✅ Setting up socket listeners for user:', user.profile.id);
-      
-      interface NotificationData {
-        message?: string;
-        [key: string]: any;
-      }
-
-      // ✅ Clean up existing listeners trước
-      socketService.off('new_notification');
-      socketService.off('post_liked');
-      socketService.off('connection_success');
-      socketService.off('test_response');
-
-      // ✅ Setup listeners mới
-      socketService.onNewNotification((data: NotificationData) => {
-        console.log('📢 NEW NOTIFICATION RECEIVED:', data);
-        Toast.show({
-          type: 'success',
-          text1: '🔔 Thông báo mới',
-          text2: data.message || 'Bạn có thông báo mới',
-        });
-      });
-
-      socketService.onPostLiked((data: unknown) => {
-        console.log('❤️ POST LIKED EVENT RECEIVED:', data);
-        Toast.show({
-          type: 'info',
-          text1: '❤️ Bài viết được thích',
-          text2: 'Ai đó vừa thích bài viết của bạn',
-        });
-      });
-
-      // socketService.on('connection_success', (data: unknown) => {
-      //   console.log('🎉 Connection success from _layout:', data);
-      // });
-
-      // socketService.on('test_response', (data: unknown) => {
-      //   console.log('🧪 Test response received:', data);
-      // });
-
-      // ✅ Mark listeners as setup
-      listenersSetupRef.current = true;
-
-      // ✅ Test connection chỉ 1 lần
-      if (!testSentRef.current) {
-        setTimeout(() => {
-          console.log('🧪 Testing socket connection...');
-          socketService.emit('test_connection', { 
-            userId: user.profile?.id,
-            message: 'Hello from client',
-            timestamp: new Date().toISOString()
-          });
-          testSentRef.current = true;
-        }, 2000);
-      }
-
-    } else if (!isConnected || !user.profile?.id) {
-      listenersSetupRef.current = false;
-      testSentRef.current = false;
-    }
-
-    // ✅ Cleanup khi component unmount hoặc user logout
-    return () => {
-      if (!isConnected || !user.profile?.id) {
-        console.log('🧹 Cleaning up socket listeners');
-        socketService.off('new_notification');
-        socketService.off('post_liked');
-        socketService.off('connection_success');
-        socketService.off('test_response');
-        listenersSetupRef.current = false;
-        testSentRef.current = false;
+    const initNotifications = async () => {
+      try {
+        if (socketService && typeof socketService.requestNotificationPermissions === 'function') {
+          await socketService.requestNotificationPermissions();
+        } else {
+          console.log('⚠️ requestNotificationPermissions method not available');
+        }
+      } catch (error) {
+        console.error('❌ Failed to init notifications:', error);
       }
     };
-  }, [isConnected, user.profile?.id, user.isAuthenticated]); // ✅ Depend vào isConnected và user.profile.id
+    
+    initNotifications();
+  }, []);
 
-  // ✅ Debug connection state changes
+  // ✅ Setup socket listeners with enhanced notifications
   useEffect(() => {
-    console.log('🔄 Socket connection state changed:', connectionState);
-  }, [connectionState]);
+    if (isConnected && user.profile?.id && !listenersSetupRef.current) {
+      console.log('✅ Setting up enhanced socket listeners for user:', user.profile.id);
+      
+      // ✅ Clean up existing listeners
+      if (socketService && typeof socketService.off === 'function') {
+        socketService.off('new_notification');
+        socketService.off('post_liked');
+        socketService.off('new_comment');
+        socketService.off('new_follower');
+      }
+
+      // ✅ UNIFIED: Single handler cho tất cả notifications
+      const showNotificationToast = (data: any, type: string) => {
+        console.log(`📢 ${type.toUpperCase()} DATA:`, data);
+        
+        // ✅ Get formatted content từ socketService
+        const template = socketService.getNotificationTemplate(type);
+        const formattedTitle = data.title || template.title;
+        const formattedBody = data.message || data.content || template.bodyTemplate(data);
+        
+        console.log('🎯 Formatted notification:', {
+          type,
+          title: formattedTitle,
+          body: formattedBody
+        });
+        
+        // ✅ Determine toast type based on notification priority
+        let toastType = 'info';
+        switch (template.priority) {
+          case 'urgent': toastType = 'error'; break;
+          case 'high': toastType = 'success'; break;
+          case 'medium': toastType = 'info'; break;
+          case 'low': toastType = 'info'; break;
+        }
+        
+        Toast.show({
+          type: toastType,
+          text1: formattedTitle,
+          text2: formattedBody,
+          visibilityTime: 4000,
+        });
+      };
+
+      // ✅ Setup listeners với unified handler
+      if (socketService && typeof socketService.onNewNotification === 'function') {
+        socketService.onNewNotification((data: any) => {
+          const notificationType = (data.type || 'notification').toLowerCase();
+          showNotificationToast(data, notificationType);
+        });
+      }
+
+      if (socketService && typeof socketService.onPostLiked === 'function') {
+        socketService.onPostLiked((data: any) => {
+          showNotificationToast(data, 'like');
+        });
+      }
+
+      if (socketService && typeof socketService.onNewComment === 'function') {
+        socketService.onNewComment((data: any) => {
+          showNotificationToast(data, 'comment');
+        });
+      }
+
+      if (socketService && typeof socketService.onNewFollower === 'function') {
+        socketService.onNewFollower((data: any) => {
+          showNotificationToast(data, 'follow');
+        });
+      }
+
+      listenersSetupRef.current = true;
+    }
+  }, [isConnected, user.profile?.id]);
+
+  // ✅ Handle notification when app is opened from notification
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const { categoryIdentifier, data } = response.notification.request.content;
+      
+      console.log('📱 Notification tapped:', categoryIdentifier, data);
+      
+      // ✅ Navigate based on notification type
+      switch (categoryIdentifier) {
+        case 'post_liked':
+          // Navigate to post detail
+          // navigation.navigate('PostDetail', { postId: data.postId });
+          break;
+        case 'new_comment':
+          // Navigate to post with comments
+          // navigation.navigate('PostDetail', { postId: data.postId, focusComments: true });
+          break;
+        case 'new_follower':
+          // Navigate to profile
+          // navigation.navigate('Profile', { userId: data.followerId });
+          break;
+        default:
+          // Navigate to notifications screen
+          // navigation.navigate('Notifications');
+          break;
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // ✅ Thêm AppState listener
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      console.log('📱 App state changed to:', nextAppState);
+      if (nextAppState === 'active') {
+        // Clear notifications when app becomes active
+        if (socketService && typeof socketService.clearAllNotifications === 'function') {
+          socketService.clearAllNotifications();
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, []);
 
   return (
     <>

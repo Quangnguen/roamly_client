@@ -60,7 +60,8 @@
     "reflect-metadata": "^0.2.2",
     "socket.io-client": "^4.8.1",
     "tailwindcss-react-native": "^1.7.10",
-    "tsyringe": "^4.9.1"
+    "tsyringe": "^4.9.1",
+    "expo-notifications": "~0.31.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
