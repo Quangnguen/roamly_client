@@ -5,12 +5,12 @@ export class LikeUsecase {
         this.likeRepository = likeRepository;
     }
 
-    async like(targetId: string, type: string): Promise<any> {
-        return await this.likeRepository.like(targetId, type);
+    async like(postId: string, type: string): Promise<any> {
+        return await this.likeRepository.like(postId, type);
     }
 
-    async unlike(targetId: string, type: string): Promise<any> {
-        return await this.likeRepository.unlike(targetId, type);
+    async unlike(postId: string, type: string): Promise<any> {
+        return await this.likeRepository.unlike(postId, type);
     }
 
 }
