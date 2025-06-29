@@ -11,6 +11,7 @@ import { useSocketWithRetry } from '@/src/hook/useSocketWithRetry';
 import { socketService } from '@/src/services/socketService'; // ✅ Named import
 import * as Notifications from 'expo-notifications';
 import { AppState } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { incrementLikeFromSocket, decrementLikeFromSocket } from '../src/presentation/redux/slices/postSlice';
 import { incrementUnreadNotifications } from '../src/presentation/redux/slices/authSlice';
 
@@ -175,10 +176,10 @@ function AppContent() {
   }, []);
 
   return (
-    <>
-        <AppNavigator />
+    <SafeAreaView style={{ flex: 1 }}>
+      <AppNavigator />
       <Toast config={toastConfig} position="top" />
-    </>
+    </SafeAreaView>
   );
 }
 

@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { PostUseCase } from '@/src/domain/usecases/postUsecase';
 import { Post } from '@/src/domain/models/Post';
 import { PostRepositoryImpl } from '@/src/data/implements/postRepositoryImpl';
