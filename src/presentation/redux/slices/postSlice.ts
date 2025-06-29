@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { PostUseCase } from '@/src/domain/usecases/postUsecase';
 import { Post } from '@/src/domain/models/Post';
 import { PostRepositoryImpl } from '@/src/data/implements/postRepositoryImpl';
@@ -171,21 +172,23 @@ export const getPostsFeed = createAsyncThunk<PostsApiResponse, { page: number, l
     }
 );
 
+const initialState = {
+    posts: [] as Post[],
+    postsByUserId: [] as Post[],
+    myPosts: [] as Post[],
+    feedPosts: [] as Post[], // Thêm state cho feed posts
+    loading: false, // Loading cho getPosts, getPostsByUserId, getMyPosts
+    feedLoading: false, // Loading riêng cho getPostsFeed
+    createLoading: false, // Loading riêng cho createPost
+    error: null as string | null,
+    message: null as string | null,
+    status: null as 'success' | 'error' | null,
+    currentPost: null as Post | null,
+};
+
 const postSlice = createSlice({
     name: 'post',
-    initialState: {
-        posts: [] as Post[],
-        postsByUserId: [] as Post[],
-        myPosts: [] as Post[],
-        feedPosts: [] as Post[], // Thêm state cho feed posts
-        loading: false, // Loading cho getPosts, getPostsByUserId, getMyPosts
-        feedLoading: false, // Loading riêng cho getPostsFeed
-        createLoading: false, // Loading riêng cho createPost
-        error: null as string | null,
-        message: null as string | null,
-        status: null as 'success' | 'error' | null,
-        currentPost: null as Post | null,
-    },
+    initialState,
     reducers: {
         clearMessage: (state) => {
             state.message = null;

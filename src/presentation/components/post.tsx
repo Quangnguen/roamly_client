@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, use } from 'react';
 import {
   View,
   Text,
@@ -29,8 +29,9 @@ import { useNavigation } from 'expo-router';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import EditPostModal from './modals/EditPostModal';
-import { useSocket } from '@/src/hook/useSocket';
-import { socketService } from '@/src/services/socketService';
+import { clearComments, createComment, getComments } from '../redux/slices/commentSlice';
+import { socketService } from '../../services/socketService'; // Import socket instance
+import TypingIndicator from './TypingIndicator';
 
 const { width } = Dimensions.get('window');
 
@@ -117,71 +118,22 @@ const Post: React.FC<PostProps> = ({
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isCommentsModalVisible, setIsCommentsModalVisible] = useState(false);
   const [newComment, setNewComment] = useState('');
+
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyingToUsername, setReplyingToUsername] = useState<string>('');
+  const [isTyping, setIsTyping] = useState(false);
+  
   const flatListRef = useRef<FlatList>(null);
   const commentInputRef = useRef<TextInput>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector((state: RootState) => state.auth);
+  const { comments: reduxComments, loading: loadingComment } = useSelector((state: RootState) => state.comment);
 
-  // Dữ liệu giả cho bình luận
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: '1',
-      author: {
-        username: 'alice_wonder',
-        profilePic: 'https://randomuser.me/api/portraits/women/1.jpg',
-      },
-      content: 'Những bức ảnh tuyệt vời! Nhật Bản thật đẹp 😍',
-      createdAt: '2 giờ trước',
-      likeCount: 12,
-      isLiked: false,
-    },
-    {
-      id: '2',
-      author: {
-        username: 'david_travel',
-        profilePic: 'https://randomuser.me/api/portraits/men/2.jpg',
-      },
-      content: 'Mình cũng muốn đến Tokyo quá! Có thể chia sẻ thêm kinh nghiệm không?',
-      createdAt: '1 giờ trước',
-      likeCount: 8,
-      isLiked: true,
-    },
-    {
-      id: '3',
-      author: {
-        username: 'sarah_photo',
-        profilePic: 'https://randomuser.me/api/portraits/women/3.jpg',
-      },
-      content: 'Góc chụp này ở đâu vậy? Mình cũng muốn check-in 📸',
-      createdAt: '45 phút trước',
-      likeCount: 5,
-      isLiked: false,
-    },
-    {
-      id: '4',
-      author: {
-        username: 'mike_adventures',
-        profilePic: 'https://randomuser.me/api/portraits/men/4.jpg',
-      },
-      content: 'Amazing shots! Japan is definitely on my bucket list now 🇯🇵',
-      createdAt: '30 phút trước',
-      likeCount: 15,
-      isLiked: false,
-    },
-    {
-      id: '5',
-      author: {
-        username: 'jenny_foodie',
-        profilePic: 'https://randomuser.me/api/portraits/women/5.jpg',
-      },
-      content: 'Có thử món nào ngon ở Tokyo không? Chia sẻ cho mình với! 🍜',
-      createdAt: '15 phút trước',
-      likeCount: 3,
-      isLiked: false,
-    },
-  ]);
+  useEffect(() => {
+    console.log('Post component mounted with postId:', user.profile);
+  }, [])
 
   // Lấy likeCount từ Redux store - ưu tiên non-optimistic posts
   const currentPost = useSelector((state: RootState) => {
@@ -356,46 +308,187 @@ const Post: React.FC<PostProps> = ({
 
   const handleCommentsPress = useCallback(() => {
     setIsCommentsModalVisible(true);
-  }, []);
+    if (postId) {
+    console.log('📋 Fetching comments for post:', postId);
+    dispatch(getComments(postId));
+    console.log('✅ Comments fetched successfully', reduxComments);
+  }
+}, [postId, dispatch]);
 
   const handleCloseCommentsModal = useCallback(() => {
     setIsCommentsModalVisible(false);
     setNewComment('');
+    dispatch(clearComments()); // Clear comments from Redux store
   }, []);
 
   const handleCommentLike = useCallback((commentId: string) => {
-    setComments(prevComments =>
-      prevComments.map(comment =>
-        comment.id === commentId
-          ? {
-            ...comment,
-            isLiked: !comment.isLiked,
-            likeCount: comment.isLiked ? comment.likeCount - 1 : comment.likeCount + 1
-          }
-          : comment
-      )
-    );
+    console.log('🔍 Handling comment like for commentId:', commentId);
   }, []);
 
-  const handleAddComment = useCallback(() => {
-    if (newComment.trim()) {
-      const comment: Comment = {
-        id: Date.now().toString(),
+  // ✅ Setup socket listeners
+  useEffect(() => {
+    console.log('🔍 Socket service check:', {
+      socketService: !!socketService,
+      socketExists: typeof socketService.isConnected === 'function' ? true : false,
+      socketConnected: typeof socketService.isConnected === 'function' ? socketService.isConnected() : false,
+      postId: postId
+    });
+
+    if (!socketService) {
+      console.warn('❌ SocketService is null/undefined');
+      return;
+    }
+
+    if (typeof socketService.isConnected !== 'function' || !socketService.isConnected()) {
+      console.warn('❌ Socket is not connected');
+      return;
+    }
+
+    console.log('✅ Socket is ready, setting up listeners for postId:', postId);
+
+    const handleNewComment = (data: { postId: string, comment: any, commentCount: number }) => {
+      console.log('🔥 Real-time new comment received:', data);
+      console.log('🔍 Current postId:', postId, 'Received postId:', data.postId);
+      
+      // Chỉ update nếu comment thuộc về post hiện tại
+      if (data.postId === postId) {
+        console.log('✅ PostId matches, updating UI');
+        
+        // ✅ Thêm comment vào Redux store (bao gồm cả parent và reply)
+        dispatch({
+          type: 'comment/addRealTimeComment',
+          payload: data.comment
+        });
+
+        // ✅ Update comment count
+        dispatch({
+          type: 'post/updateCommentCount',
+          payload: {
+            postId: data.postId,
+            commentCount: data.commentCount
+          }
+        });
+
+        // ✅ Hiển thị toast nếu không phải người dùng hiện tại
+        if (data.comment.authorId !== user.profile?.id) {
+          const isReply = data.comment.parentId ? ' (trả lời)' : '';
+          Toast.show({
+            type: 'info',
+            text1: `Bình luận mới${isReply}`,
+            text2: `${data.comment.author.username}: ${data.comment.content.substring(0, 50)}${data.comment.content.length > 50 ? '...' : ''}`,
+            visibilityTime: 2000,
+          });
+        }
+      } else {
+        console.log('⚠️ PostId does not match, ignoring comment');
+      }
+    };
+
+    const handleCommentDeleted = (data: { commentId: string, postId: string }) => {
+      console.log('🗑️ Real-time comment deleted:', data);
+      if (data.postId === postId) {
+        dispatch({
+          type: 'comment/removeComment',
+          payload: data.commentId
+        });
+      }
+    };
+
+    // ✅ Register listeners với logging
+    console.log('📡 Registering socket listeners...');
+    socketService.on('new_comment_auth', handleNewComment);
+    socketService.on('comment_deleted', handleCommentDeleted);
+
+    // Test listener bằng cách emit một event test
+
+    // ✅ Cleanup listeners
+    return () => {
+      console.log('🧹 Cleaning up socket listeners for postId:', postId);
+      socketService.off('new_comment_auth', handleNewComment);
+      socketService.off('comment_deleted', handleCommentDeleted);
+    };
+  }, [postId, dispatch, user.profile?.id]);
+
+  // ✅ Optimistic + Real-time comment handling
+  const handleAddComment = useCallback(async () => {
+    if (newComment.trim() && postId) {
+      const commentText = newComment.trim();
+      const parentId = replyingTo; // Use replyingTo as parentId
+    
+      // ✅ Tạo optimistic comment/reply
+      const optimisticItem = {
+        id: `temp-${Date.now()}`,
+        content: commentText,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         author: {
-          username: user.profile?.username || 'current_user',
+          id: user.profile?.id || '',
+          username: user.profile?.username || 'You',
           profilePic: user.profile?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg',
         },
-        content: newComment.trim(),
-        createdAt: 'Vừa xong',
+        authorId: user.profile?.id || '',
+        postId: postId,
+        parentId: parentId || null,
         likeCount: 0,
         isLiked: false,
+        isOptimistic: true,
+        isEdited: false,
       };
-      setComments(prevComments => [comment, ...prevComments]);
-      setNewComment('');
-      // Blur input để tắt bàn phím sau khi gửi
-      commentInputRef.current?.blur();
+
+      try {
+        // // ✅ Thêm optimistic comment ngay lập tức
+        // dispatch({
+        //   type: 'comment/addOptimisticComment',
+        //   payload: optimisticItem
+        // });
+
+        setNewComment('');
+        setIsTyping(false);
+        commentInputRef.current?.blur();
+        
+        // Clear reply state
+        setReplyingTo(null);
+        setReplyingToUsername('');
+
+        // ✅ Gửi request đến server
+        const result = await dispatch(createComment({
+          postId: postId,
+          content: commentText,
+          parentId: parentId || undefined
+        })).unwrap();
+
+        console.log('✅ Comment/Reply created successfully:', result);
+
+        // ✅ Remove optimistic comment
+        dispatch({
+          type: 'comment/removeOptimisticComment',
+          payload: optimisticItem.id
+        });
+
+      } catch (error: any) {
+        // ✅ Remove optimistic comment nếu thất bại
+        dispatch({
+          type: 'comment/removeOptimisticComment',
+          payload: optimisticItem.id
+        });
+
+        setNewComment(commentText);
+        
+        // Restore reply state if was replying
+        if (parentId) {
+          setReplyingTo(parentId);
+          setReplyingToUsername(replyingToUsername);
+        }
+        
+        Toast.show({
+          type: 'error',
+          text1: 'Không thể thêm bình luận',
+          text2: error || 'Vui lòng thử lại sau',
+          visibilityTime: 3000,
+        });
+      }
     }
-  }, [newComment, user.profile]);
+  }, [newComment, postId, replyingTo, replyingToUsername, dispatch, user.profile]);
 
   const handleKeyPress = useCallback((e: any) => {
     if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
@@ -404,36 +497,176 @@ const Post: React.FC<PostProps> = ({
     }
   }, [handleAddComment]);
 
-  const renderCommentItem = useCallback(({ item }: { item: Comment }) => (
-    <View style={styles.commentItem}>
-      <Image source={{ uri: item.author.profilePic }} style={styles.commentProfilePic} />
-      <View style={styles.commentContent}>
-        <View style={styles.commentHeader}>
-          <Text style={styles.commentUsername}>{item.author.username}</Text>
-          <Text style={styles.commentTime}>{item.createdAt}</Text>
-        </View>
-        <Text style={styles.commentText}>{item.content}</Text>
-        <View style={styles.commentActions}>
-          <TouchableOpacity
-            style={styles.commentLikeButton}
-            onPress={() => handleCommentLike(item.id)}
-          >
-            <FontAwesome
-              name={item.isLiked ? 'heart' : 'heart-o'}
-              size={12}
-              color={item.isLiked ? '#e74c3c' : '#8e8e8e'}
-            />
-            <Text style={[styles.commentLikeCount, item.isLiked && styles.commentLikeCountActive]}>
-              {item.likeCount}
+  const handleReplyPress = useCallback((commentId: string, username: string) => {
+    setReplyingTo(commentId);
+    setReplyingToUsername(username);
+    setNewComment(`@${username} `);
+    commentInputRef.current?.focus();
+  }, []);
+
+  // ✅ Component render reply item
+  const renderReplyItem = useCallback(({ reply }: { reply: any }) => {
+    if (!reply || !reply.id || !reply.content || !reply.author) {
+      return null;
+    }
+
+    return (
+      <View style={styles.replyItem}>
+        <View style={styles.replyLine} />
+        <Image 
+          source={{ 
+            uri: reply.author.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg' 
+          }} 
+          style={styles.replyProfilePic} 
+        />
+        <View style={styles.replyContent}>
+          <View style={styles.commentHeader}>
+            <Text style={styles.commentUsername}>
+              {reply.author.username}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.commentReplyButton}>
-            <Text style={styles.commentReplyText}>Trả lời</Text>
-          </TouchableOpacity>
+            <Text style={styles.commentTime}>
+              {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString() : ''}
+            </Text>
+          </View>
+          <Text style={styles.commentText}>
+            {reply.content}
+          </Text>
+          <View style={styles.commentActions}>
+            <TouchableOpacity
+              style={styles.commentLikeButton}
+              onPress={() => handleCommentLike(reply.id)}
+            >
+              <FontAwesome
+                name={reply.isLiked ? 'heart' : 'heart-o'}
+                size={12}
+                color={reply.isLiked ? '#e74c3c' : '#8e8e8e'}
+              />
+              <Text style={[styles.commentLikeCount, reply.isLiked && styles.commentLikeCountActive]}>
+                {reply.likeCount || 0}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.commentReplyButton}
+              onPress={() => handleReplyPress(reply.parentId, reply.author.username)}
+            >
+              <Text style={styles.commentReplyText}>Trả lời</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  ), [handleCommentLike]);
+    );
+  }, [handleCommentLike, handleReplyPress]);
+
+  // ✅ Cập nhật renderCommentItem để hiển thị nested
+  const renderCommentItem = useCallback(({ item, index }: { item: any; index: number }) => {
+    // Validation
+    if (!item || !item.id || !item.content || !item.author || !item.author.username) {
+      return null;
+    }
+
+    // ✅ Kiểm tra nếu đây là reply (có parentId) thì không render ở top level
+    if (item.parentId) {
+      return null;
+    }
+
+    // ✅ Tìm tất cả replies cho comment này
+    const replies = reduxComments?.filter(comment => 
+      comment.parentId === item.id
+    ) || [];
+
+    return (
+      <View style={styles.commentItemContainer}>
+        {/* Parent Comment */}
+        <View style={styles.commentItem}>
+          <Image 
+            source={{ 
+              uri: item.author.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg' 
+            }} 
+            style={styles.commentProfilePic} 
+          />
+          <View style={styles.commentContent}>
+            <View style={styles.commentHeader}>
+              <Text style={styles.commentUsername}>
+                {item.author.username}
+              </Text>
+              <Text style={styles.commentTime}>
+                {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+              </Text>
+              {item.isOptimistic && (
+                <ActivityIndicator size="small" color="#3897f0" style={{ marginLeft: 8 }} />
+              )}
+            </View>
+            <Text style={[styles.commentText, item.isOptimistic && styles.optimisticText]}>
+              {item.content}
+            </Text>
+            {!item.isOptimistic && (
+              <View style={styles.commentActions}>
+                <TouchableOpacity
+                  style={styles.commentLikeButton}
+                  onPress={() => handleCommentLike(item.id)}
+                >
+                  <FontAwesome
+                    name={item.isLiked ? 'heart' : 'heart-o'}
+                    size={12}
+                    color={item.isLiked ? '#e74c3c' : '#8e8e8e'}
+                  />
+                  <Text style={[styles.commentLikeCount, item.isLiked && styles.commentLikeCountActive]}>
+                    {item.likeCount || 0}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.commentReplyButton}
+                  onPress={() => handleReplyPress(item.id, item.author.username)}
+                >
+                  <Text style={styles.commentReplyText}>Trả lời</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ✅ Replies Section */}
+        {replies.length > 0 && (
+          <View style={styles.repliesContainer}>
+            {replies.map((reply, replyIndex) => (
+              <View key={reply.id || `reply-${replyIndex}`}>
+                {renderReplyItem({ reply })}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ✅ Show reply indicator if currently replying to this comment */}
+        {replyingTo === item.id && (
+          <View style={styles.replyingIndicator}>
+            <View style={styles.replyLine} />
+            <Text style={styles.replyingText}>Đang soạn trả lời...</Text>
+          </View>
+        )}
+      </View>
+    );
+  }, [handleCommentLike, handleReplyPress, replyingTo, reduxComments, renderReplyItem]);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyingTo(null);
+    setReplyingToUsername('');
+    setNewComment('');
+    commentInputRef.current?.blur();
+  }, []);
+
+  const handleInputChange = useCallback((text: string) => {
+    setNewComment(text);
+    
+    // ✅ Show typing animation
+    setIsTyping(true);
+    
+    // ✅ Hide typing animation after 1 second of no typing
+    const timer = setTimeout(() => {
+      setIsTyping(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -448,7 +681,8 @@ const Post: React.FC<PostProps> = ({
         </View>
       )}
 
-      {/* Overlay để đóng menu khi click bên ngoài */}
+
+
       {isOptionsMenuVisible && (
         <TouchableOpacity
           style={styles.overlay}
@@ -675,46 +909,93 @@ const Post: React.FC<PostProps> = ({
             </TouchableOpacity>
           </View>
 
-          <FlatList
-            data={comments}
-            renderItem={renderCommentItem}
-            keyExtractor={(item) => item.id}
-            style={styles.commentsList}
-            showsVerticalScrollIndicator={false}
-          />
+          {/* {loadingComment ? (
+            <View style={styles.loadingCommentsContainer}>
+              <ActivityIndicator size="large" color="#3897f0" />
+              <Text style={styles.loadingCommentsText}>Đang tải bình luận...</Text>
+            </View>
+          ) : ( */}
+            <FlatList
+              data={reduxComments || []}
+              renderItem={renderCommentItem}
+              keyExtractor={(item, index) => {
+                // ✅ Đảm bảo key luôn unique và valid
+                if (item?.id) {
+                  return item.id.toString();
+                }
+                // Fallback cho các comment không có id
+                return `comment-${index}-${Date.now()}`;
+              }}
+              style={styles.commentsList}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyCommentsContainer}>
+                  <Text style={styles.emptyCommentsText}>Chưa có bình luận nào</Text>
+                </View>
+              }
+              removeClippedSubviews={false} // ✅ Tắt để tránh lỗi render
+              initialNumToRender={10}
+              maxToRenderPerBatch={5}
+              windowSize={10}
+            />
+          {/* )} */}
 
           <View style={styles.commentInputContainer}>
-            <Image
-              source={{
-                uri: user.profile?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg',
-              }}
-              style={styles.commentInputProfilePic}
-            />
-            <TextInput
-              ref={commentInputRef}
-              style={styles.commentInput}
-              placeholder="Thêm bình luận..."
-              value={newComment}
-              onChangeText={setNewComment}
-              maxLength={500}
-              returnKeyType="send"
-              onSubmitEditing={handleAddComment}
-              enablesReturnKeyAutomatically={true}
-            />
-            <TouchableOpacity
-              style={[
-                styles.commentSendButton,
-                newComment.trim() ? styles.commentSendButtonActive : {}
-              ]}
-              onPress={handleAddComment}
-              disabled={!newComment.trim()}
-            >
-              <Feather
-                name="send"
-                size={20}
-                color={newComment.trim() ? '#3897f0' : '#8e8e8e'}
+            {/* ✅ Reply indicator - bật lại */}
+            {/* {replyingTo && (
+              <View style={styles.replyIndicator}>
+                <Text style={styles.replyText}>
+                  Đang trả lời <Text style={styles.replyUsername}>@{replyingToUsername}</Text>
+                </Text>
+                <TouchableOpacity onPress={handleCancelReply}>
+                  <Feather name="x" size={16} color="#8e8e8e" />
+                </TouchableOpacity>
+              </View>
+            )} */}
+            
+            {/* ✅ Input row - sửa lại flexDirection */}
+            <View style={styles.inputRow}>
+              <Image
+                source={{
+                  uri: user.profile?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg',
+                }}
+                style={styles.commentInputProfilePic}
               />
-            </TouchableOpacity>
+              <TextInput
+                ref={commentInputRef}
+                style={styles.commentInput}
+                placeholder={replyingTo ? `Trả lời ${replyingToUsername}...` : "Thêm bình luận..."}
+                value={newComment}
+                onChangeText={handleInputChange}
+                maxLength={500}
+                returnKeyType="send"
+                onSubmitEditing={handleAddComment}
+                enablesReturnKeyAutomatically={true}
+                multiline
+                blurOnSubmit={false}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.commentSendButton,
+                  newComment.trim() && !loadingComment ? styles.commentSendButtonActive : {}
+                ]}
+                onPress={handleAddComment}
+                disabled={!newComment.trim() || loadingComment}
+              >
+                {loadingComment ? (
+                  <ActivityIndicator size="small" color="#3897f0" />
+                ) : (
+                  <Feather
+                    name="send"
+                    size={20}
+                    color={newComment.trim() ? '#3897f0' : '#8e8e8e'}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+            
+            {/* ✅ Typing Indicator */}
+            {/* <TypingIndicator isVisible={isTyping} /> */}
           </View>
         </View>
       </Modal>
@@ -952,6 +1233,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
+  commentItemContainer: {
+    marginBottom: 16,
+  },
   commentItem: {
     flexDirection: 'row',
     paddingVertical: 12,
@@ -1014,8 +1298,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
@@ -1026,26 +1308,151 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    marginRight: 12,
+    marginRight: 8, // ✅ Giảm margin
   },
   commentInput: {
-    flex: 1,
+    flex: 1, // ✅ Đảm bảo input chiếm hết không gian còn lại
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     maxHeight: 80,
+    minHeight: 36, // ✅ Thêm minHeight
     fontSize: 14,
     backgroundColor: '#f8f8f8',
+    marginRight: 8, // ✅ Thêm margin right
   },
   commentSendButton: {
-    marginLeft: 12,
     padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // ✅ Bỏ marginLeft
   },
   commentSendButtonActive: {
     backgroundColor: 'rgba(56, 151, 240, 0.1)',
     borderRadius: 16,
+  },
+  loadingCommentsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  loadingCommentsText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyCommentsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  emptyCommentsText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  optimisticText: {
+    opacity: 0.6,
+    fontStyle: 'italic',
+  },
+  replyIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3897f0',
+  },
+  replyText: {
+    fontSize: 12,
+    color: '#1976d2',
+  },
+  replyUsername: {
+    fontWeight: '600',
+    color: '#3897f0',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    // ✅ Bỏ flex: 1 ở đây
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  typingProfilePic: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  typingBubble: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typingDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#666',
+    marginHorizontal: 1,
+  },
+  repliesContainer: {
+    marginLeft: 44, // Indent replies (32px avatar + 12px margin)
+    marginTop: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: '#f0f0f0',
+    paddingLeft: 12,
+  },
+  replyItem: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    position: 'relative',
+  },
+  replyLine: {
+    position: 'absolute',
+    left: -14,
+    top: 0,
+    bottom: '50%',
+    width: 2,
+    backgroundColor: '#e0e0e0',
+  },
+  replyProfilePic: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  replyContent: {
+    flex: 1,
+  },
+  replyingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 44,
+    marginTop: 4,
+    paddingVertical: 4,
+    paddingLeft: 12,
+  },
+  replyingText: {
+    fontSize: 12,
+    color: '#3897f0',
+    fontStyle: 'italic',
+    marginLeft: 8,
   },
 });
 

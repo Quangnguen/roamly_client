@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp } from '@react-navigation/native'; // ✅ Bỏ NavigationContainer import
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome } from '@expo/vector-icons';
 import { View, Text, StyleSheet } from 'react-native';
@@ -92,17 +92,18 @@ const NotificationTabIcon = ({ focused, color, size }: { focused: boolean; color
 const AuthNavigator = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND }}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-        initialRouteName="Login"
-      >
-        <Stack.Screen name="Login" component={LoginPage} />
-        <Stack.Screen name="Register" component={RegisterPage} />
-      </Stack.Navigator>
-    </SafeAreaView>
-  );
+      <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND }}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+          initialRouteName="Login"
+        >
+          <Stack.Screen name="Login" component={LoginPage} />
+          <Stack.Screen name="Register" component={RegisterPage} />
+        </Stack.Navigator>
+      </SafeAreaView>
+      );
 };
 
 // Tab Navigator Component
@@ -110,156 +111,156 @@ const TabNavigator = () => {
   const dispatch = useDispatch<AppDispatch>();
   const unreadCount = useSelector((state: RootState) => state.auth.profile?.unreadNotifications) || 0;
 
-  return (
-    <Tab.Navigator
-      initialRouteName="Home"
-      screenOptions={({ route }: { route: RouteProp<TabParamList, keyof TabParamList> }) => ({
-        tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
-          let iconName: keyof typeof FontAwesome.glyphMap;
-          if (route.name === 'Home') {
-            iconName = 'home';
-          } else if (route.name === 'Search') {
-            iconName = 'search';
-          } else if (route.name === 'Post') {
-            iconName = 'plus-square';
-          } else if (route.name === 'Notify') {
-            // Sử dụng component riêng cho notification với badge
-            return <NotificationTabIcon focused={focused} color={color} size={size} />;
-          } else {
-            iconName = 'user';
-          }
-          return <FontAwesome name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: 'tomato',
-        tabBarInactiveTintColor: 'gray',
-        headerShown: false,
-        tabBarHideOnKeyboard: true,
-        tabBarStyle: {
-          borderTopColor: "#000",
-          borderTopWidth: 1,
-          elevation: 0,
-          backgroundColor: BACKGROUND,
-          height: 60,
-          paddingBottom: 5,
-          paddingTop: 5,
-        },
-      })}
-      screenListeners={{
-        tabPress: (e) => {
-          // Reset unread count khi ấn vào tab Notify
-          if (e.target?.includes('Notify') && unreadCount > 0) {
-            // Reset toàn bộ unread count về 0
-            dispatch(resetUnreadNotifications());
-          }
-        },
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomePage}
-        options={{ title: 'Trang chủ' }}
-      />
-      <Tab.Screen
-        name="Search"
-        component={SearchPage}
-        options={{ title: 'Tìm kiếm' }}
-      />
-      <Tab.Screen
-        name="Post"
-        component={CreatePostPage}
-        options={{
-          tabBarStyle: { display: 'none' },
-          headerShown: false,
-          title: 'Đăng bài'
-        }}
-      />
-      <Tab.Screen
-        name="Notify"
-        component={NotifyPage}
-        options={{ title: 'Thông báo' }}
-      />
-      <Tab.Screen
-        name="Account"
-        component={AccountPage}
-        options={{ title: 'Tài khoản' }}
-      />
-    </Tab.Navigator>
-  );
+        return (
+        <Tab.Navigator
+          initialRouteName="Home"
+          screenOptions={({ route }: { route: RouteProp<TabParamList, keyof TabParamList> }) => ({
+            tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
+              let iconName: keyof typeof FontAwesome.glyphMap;
+              if (route.name === 'Home') {
+                iconName = 'home';
+              } else if (route.name === 'Search') {
+                iconName = 'search';
+              } else if (route.name === 'Post') {
+                iconName = 'plus-square';
+              } else if (route.name === 'Notify') {
+                // Sử dụng component riêng cho notification với badge
+                return <NotificationTabIcon focused={focused} color={color} size={size} />;
+              } else {
+                iconName = 'user';
+              }
+              return <FontAwesome name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: 'tomato',
+            tabBarInactiveTintColor: 'gray',
+            headerShown: false,
+            tabBarHideOnKeyboard: true,
+            tabBarStyle: {
+              borderTopColor: "#000",
+              borderTopWidth: 1,
+              elevation: 0,
+              backgroundColor: BACKGROUND,
+              height: 60,
+              paddingBottom: 5,
+              paddingTop: 5,
+            },
+          })}
+          screenListeners={{
+            tabPress: (e) => {
+              // Reset unread count khi ấn vào tab Notify
+              if (e.target?.includes('Notify') && unreadCount > 0) {
+                // Reset toàn bộ unread count về 0
+                dispatch(resetUnreadNotifications());
+              }
+            },
+          }}
+        >
+          <Tab.Screen
+            name="Home"
+            component={HomePage}
+            options={{ title: 'Trang chủ' }}
+          />
+          <Tab.Screen
+            name="Search"
+            component={SearchPage}
+            options={{ title: 'Tìm kiếm' }}
+          />
+          <Tab.Screen
+            name="Post"
+            component={CreatePostPage}
+            options={{
+              tabBarStyle: { display: 'none' },
+              headerShown: false,
+              title: 'Đăng bài'
+            }}
+          />
+          <Tab.Screen
+            name="Notify"
+            component={NotifyPage}
+            options={{ title: 'Thông báo' }}
+          />
+          <Tab.Screen
+            name="Account"
+            component={AccountPage}
+            options={{ title: 'Tài khoản' }}
+          />
+        </Tab.Navigator>
+        );
 };
 
 // In-App Navigator Component
 const InAppNavigator = () => {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND }}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-          gestureDirection: 'horizontal',
-        }}
-      >
-        <Stack.Screen name="InApp" component={TabNavigator} />
-        <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
-        <Stack.Screen name="ChatPage" component={ChatPage} />
-        <Stack.Screen name="ChatDetailPage" component={ChatDetailPage} />
-        <Stack.Screen name="WeatherPage" component={WeatherPage} />
-        <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
-        <Stack.Screen name="InfoAccPage" component={InfoAccPage} />
-        <Stack.Screen name="AddressDetailPage" component={AddressDetailPage} />
-        <Stack.Screen name="TravelPlaceDetailPage" component={TravelPlaceDetailPage} />
-      </Stack.Navigator>
-    </SafeAreaView>
-  );
+        <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND }}>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          >
+            <Stack.Screen name="InApp" component={TabNavigator} />
+            <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
+            <Stack.Screen name="ChatPage" component={ChatPage} />
+            <Stack.Screen name="ChatDetailPage" component={ChatDetailPage} />
+            <Stack.Screen name="WeatherPage" component={WeatherPage} />
+            <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
+            <Stack.Screen name="InfoAccPage" component={InfoAccPage} />
+            <Stack.Screen name="AddressDetailPage" component={AddressDetailPage} />
+            <Stack.Screen name="TravelPlaceDetailPage" component={TravelPlaceDetailPage} />
+          </Stack.Navigator>
+        </SafeAreaView>
+        );
 };
 
 // Main App Navigator Component
 const AppNavigator: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
-  console.log('🔐 Navigation - Is authenticated:', isAuthenticated);
+        console.log('🔐 Navigation - Is authenticated:', isAuthenticated);
 
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-          gestureDirection: 'horizontal',
-        }}
-      >
-        {isAuthenticated ? (
-          <Stack.Screen name="InApp" component={InAppNavigator} />
-        ) : (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        )}
-      </Stack.Navigator>
-    </SafeAreaView>
-  );
+        return (
+        <SafeAreaView style={{ flex: 1 }}>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          >
+            {isAuthenticated ? (
+              <Stack.Screen name="InApp" component={InAppNavigator} />
+            ) : (
+              <Stack.Screen name="Auth" component={AuthNavigator} />
+            )}
+          </Stack.Navigator>
+        </SafeAreaView>
+        );
 };
 
-const styles = StyleSheet.create({
-  notificationIconContainer: {
-    position: 'relative',
+        const styles = StyleSheet.create({
+          notificationIconContainer: {
+          position: 'relative',
   },
-  badge: {
-    position: 'absolute',
-    top: -5,
-    right: -8,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+        badge: {
+          position: 'absolute',
+        top: -5,
+        right: -8,
+        backgroundColor: '#FF3B30',
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
   },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
+        badgeText: {
+          color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: 'bold',
+        textAlign: 'center',
   },
 });
 
-export default AppNavigator;
+        export default AppNavigator;

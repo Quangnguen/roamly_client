@@ -2,6 +2,8 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { dependencies } from "../../../dependencies/dependencies";
 import { clearTokens } from "../../../utils/tokenStorage";
 import { socketService } from "../../../services/socketService";
+import { clearTokens } from "../../../utils/tokenStorage";
+import { socketService } from "../../../services/socketService";
 
 // Define the shape of the nested user data
 interface User {
@@ -81,36 +83,37 @@ export const register = createAsyncThunk(
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { dispatch }) => {
-    try {
-      console.log('🔄 Logging out user...');
-
-      // 1. Call API logout if available
+    async (_, { dispatch }) => {
       try {
-        await dependencies.loginUseCase.logout();
-      } catch (apiError) {
-        console.warn('API logout failed, continuing with local logout:', apiError);
+        console.log('🔄 Logging out user...');
+
+        // 1. Call API logout if available
+        try {
+          await dependencies.loginUseCase.logout();
+        } catch (apiError) {
+          console.warn('API logout failed, continuing with local logout:', apiError);
+        }
+
+        // 2. Clear tokens
+        await clearTokens();
+
+        // 3. Disconnect socket
+        if (socketService) {
+          socketService.disconnect();
+        }
+
+        // 4. Clear any other app data
+        dispatch({ type: 'comment/clearComments' });
+        dispatch({ type: 'post/clearPosts' });
+
+        console.log('✅ Logout completed');
+
+        return true;
+      } catch (error) {
+        console.error('❌ Error during logout:', error);
+        throw error;
       }
-
-      // 2. Clear tokens
-      await clearTokens();
-
-      // 3. Disconnect socket
-      if (socketService) {
-        socketService.disconnect();
-      }
-
-      // 4. Clear any other app data
-      dispatch({ type: 'comment/clearComments' });
-      dispatch({ type: 'post/clearPosts' });
-
-      console.log('✅ Logout completed');
-
-      return true;
-    } catch (error) {
-      console.error('❌ Error during logout:', error);
-      throw error;
     }
-  }
 );
 
 // Auth slice
@@ -202,6 +205,7 @@ const authSlice = createSlice({
       })
       .addCase(logout.fulfilled, (state) => {
         state.loading = false;
+        state.isAuthenticated = false;
         state.isAuthenticated = false;
         state.profile = null;
         state.access_token = null;

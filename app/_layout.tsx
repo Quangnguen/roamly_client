@@ -176,7 +176,7 @@ function AppContent() {
 
   return (
     <>
-      <AppNavigator />
+        <AppNavigator />
       <Toast config={toastConfig} position="top" />
     </>
   );
