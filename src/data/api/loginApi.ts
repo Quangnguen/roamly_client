@@ -41,6 +41,7 @@ export const loginApi = async (email: string, password: string) => {
         verified: data.user.verified,
         role: data.user.role,
         bio: data.user.bio,
+        unreadNotifications: data.user.unreadNotifications,
       },
     };
   } catch (error) {

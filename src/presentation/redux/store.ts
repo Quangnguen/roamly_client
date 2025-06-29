@@ -6,7 +6,8 @@ import postReducer from './slices/postSlice'
 import MemoryReducer from './slices/memorySlice'
 import likeReducer from './slices/likeSlice'
 import notificationReducer from './slices/notificationSlice'
-import commentReuducer from './slices/commentSlice' // Ensure you have a comment reducer defined
+import chatReducer from './slices/chatSlice'
+import commentReducer from './slices/commentSlice' // Thêm comment reducer
 
 export const store = configureStore({
   reducer: {
@@ -17,7 +18,8 @@ export const store = configureStore({
     memory: MemoryReducer,
     like: likeReducer,
     notification: notificationReducer,
-    comment: commentReuducer, // Ensure you have a comment reducer defined
+    chat: chatReducer,
+    comment: commentReducer, // Thêm comment reducer vào store
   },
 })
 

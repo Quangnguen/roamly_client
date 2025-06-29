@@ -12,6 +12,55 @@ interface PostsApiResponse extends ResponseInterface<Post[]> { }
 // Khởi tạo PostUseCase với PostRepositoryImpl
 const postUseCase = new PostUseCase(new PostRepositoryImpl());
 
+// ✅ THÊM: Helper function chung để cập nhật like count và trạng thái isLike
+const updatePostLikeCount = (state: any, postId: string, countChange: number, isLikeValue: boolean | null) => {
+    // Bỏ qua optimistic posts
+    if (postId.startsWith('temp-')) {
+        return;
+    }
+
+    // Helper function để cập nhật một post
+    const updateSinglePost = (post: Post, location: string) => {
+        // Cập nhật count
+        if (post._count) {
+            const newCount = Math.max(0, post._count.likes + countChange);
+            post._count.likes = newCount;
+        } else if (post.likeCount !== undefined) {
+            const newCount = Math.max(0, post.likeCount + countChange);
+            post.likeCount = newCount;
+        }
+
+        // Cập nhật isLike nếu được chỉ định
+        if (isLikeValue !== null) {
+            post.isLike = isLikeValue;
+        }
+    };
+
+    // Cập nhật trong feedPosts
+    const feedPost = state.feedPosts.find((post: Post) => post.id === postId && !post.isOptimistic);
+    if (feedPost) {
+        updateSinglePost(feedPost, 'feedPost');
+    }
+
+    // Cập nhật trong posts
+    const post = state.posts.find((post: Post) => post.id === postId && !post.isOptimistic);
+    if (post) {
+        updateSinglePost(post, 'post');
+    }
+
+    // Cập nhật trong myPosts
+    const myPost = state.myPosts.find((post: Post) => post.id === postId && !post.isOptimistic);
+    if (myPost) {
+        updateSinglePost(myPost, 'myPost');
+    }
+
+    // Cập nhật trong postsByUserId
+    const userPost = state.postsByUserId.find((post: Post) => post.id === postId && !post.isOptimistic);
+    if (userPost) {
+        updateSinglePost(userPost, 'userPost');
+    }
+};
+
 export const createPost = createAsyncThunk<PostApiResponse, { images: FormData, caption: string, location?: string | null }>(
     'post/createPost',
     async (data: { images: FormData, caption: string, location?: string | null }, { rejectWithValue }) => {
@@ -193,10 +242,22 @@ const postSlice = createSlice({
                 }
             }
         },
+        incrementLikeFromSocket: (state, action) => {
+            const { postId } = action.payload;
+
+            // Sử dụng helper function chung
+            updatePostLikeCount(state, postId, 1, null); // null = không thay đổi isLike
+        },
+        decrementLikeFromSocket: (state, action) => {
+            const { postId } = action.payload;
+
+            // Sử dụng helper function chung
+            updatePostLikeCount(state, postId, -1, null); // null = không thay đổi isLike
+        },
         // ✅ Update comment count real-time
         updateCommentCount: (state, action: PayloadAction<{ postId: string, commentCount: number }>) => {
             const { postId, commentCount } = action.payload;
-            
+
             // Update trong feedPosts
             const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId);
             if (feedPostIndex !== -1) {
@@ -378,79 +439,15 @@ const postSlice = createSlice({
             .addCase(likePost.fulfilled, (state, action) => {
                 const postId = action.meta.arg; // postId được truyền vào action
 
-                // Bỏ qua optimistic posts
-                if (postId.startsWith('temp-')) {
-                    return;
-                }
-
-                // Cập nhật trong posts
-                const postIndex = state.posts.findIndex(post => post.id === postId && !post.isOptimistic);
-                if (postIndex !== -1) {
-                    if (state.posts[postIndex]._count) {
-                        state.posts[postIndex]._count.likes += 1;
-                    }
-                    state.posts[postIndex].isLike = true;
-                }
-
-                // Cập nhật trong feedPosts
-                const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId && !post.isOptimistic);
-                if (feedPostIndex !== -1) {
-                    if (state.feedPosts[feedPostIndex]._count) {
-                        state.feedPosts[feedPostIndex]._count.likes += 1;
-                    }
-                    state.feedPosts[feedPostIndex].isLike = true;
-                }
-
-                // Cập nhật trong myPosts nếu có
-                const myPostIndex = state.myPosts.findIndex(post => post.id === postId && !post.isOptimistic);
-                if (myPostIndex !== -1) {
-                    if (state.myPosts[myPostIndex]._count) {
-                        state.myPosts[myPostIndex]._count.likes += 1;
-                    } else if (state.myPosts[myPostIndex].likeCount !== undefined) {
-                        // Fallback cho legacy likeCount
-                        state.myPosts[myPostIndex].likeCount += 1;
-                    }
-                    state.myPosts[myPostIndex].isLike = true;
-                }
+                // Sử dụng helper function chung: +1 like và set isLike = true
+                updatePostLikeCount(state, postId, 1, true);
             })
             // Unlike Post - cập nhật likeCount khi unlike thành công
             .addCase(unlikePost.fulfilled, (state, action) => {
                 const postId = action.meta.arg; // postId được truyền vào action
 
-                // Bỏ qua optimistic posts
-                if (postId.startsWith('temp-')) {
-                    return;
-                }
-
-                // Cập nhật trong posts
-                const postIndex = state.posts.findIndex(post => post.id === postId && !post.isOptimistic);
-                if (postIndex !== -1) {
-                    if (state.posts[postIndex]._count && state.posts[postIndex]._count.likes > 0) {
-                        state.posts[postIndex]._count.likes -= 1;
-                    }
-                    state.posts[postIndex].isLike = false;
-                }
-
-                // Cập nhật trong feedPosts
-                const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId && !post.isOptimistic);
-                if (feedPostIndex !== -1) {
-                    if (state.feedPosts[feedPostIndex]._count && state.feedPosts[feedPostIndex]._count.likes > 0) {
-                        state.feedPosts[feedPostIndex]._count.likes -= 1;
-                    }
-                    state.feedPosts[feedPostIndex].isLike = false;
-                }
-
-                // Cập nhật trong myPosts nếu có
-                const myPostIndex = state.myPosts.findIndex(post => post.id === postId && !post.isOptimistic);
-                if (myPostIndex !== -1) {
-                    if (state.myPosts[myPostIndex]._count && state.myPosts[myPostIndex]._count.likes > 0) {
-                        state.myPosts[myPostIndex]._count.likes -= 1;
-                    } else if (state.myPosts[myPostIndex].likeCount !== undefined && state.myPosts[myPostIndex].likeCount > 0) {
-                        // Fallback cho legacy likeCount
-                        state.myPosts[myPostIndex].likeCount -= 1;
-                    }
-                    state.myPosts[myPostIndex].isLike = false;
-                }
+                // Sử dụng helper function chung: -1 like và set isLike = false
+                updatePostLikeCount(state, postId, -1, false);
             })
             // Update Post
             .addCase(updatePost.pending, (state) => {
@@ -520,5 +517,13 @@ const postSlice = createSlice({
     },
 });
 
-export const { clearMessage, addOptimisticPost, updateOptimisticPost, updateCommentCount } = postSlice.actions;
+export const {
+    clearMessage,
+    addOptimisticPost,
+    updateOptimisticPost,
+    incrementLikeFromSocket,
+    decrementLikeFromSocket,
+    updateCommentCount
+} = postSlice.actions;
+
 export default postSlice.reducer;

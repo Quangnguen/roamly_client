@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { dependencies } from "../../../dependencies/dependencies";
-import { clearTokens } from "../../../utils/tokenStorage";
-import { socketService } from "../../../services/socketService";
+import { clearTokens } from "@/src/utils/tokenStorage";
+import { socketService } from "@/src/services/socketService";
 
 // Define the shape of the nested user data
 interface User {
@@ -18,6 +18,7 @@ interface User {
   verified: boolean;
   role: string;
   bio: string;
+  unreadNotifications: number;
 }
 
 // Define the state shape
@@ -76,27 +77,34 @@ export const register = createAsyncThunk(
   }
 );
 
-// ✅ Logout thunk với navigation
+// Logout thunk với navigation và cleanup
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { dispatch }) => {
     try {
       console.log('🔄 Logging out user...');
-      
-      // 1. Clear tokens
+
+      // 1. Call API logout if available
+      try {
+        await dependencies.loginUseCase.logout();
+      } catch (apiError) {
+        console.warn('API logout failed, continuing with local logout:', apiError);
+      }
+
+      // 2. Clear tokens
       await clearTokens();
-      
-      // 2. Disconnect socket
+
+      // 3. Disconnect socket
       if (socketService) {
         socketService.disconnect();
       }
-      
-      // 3. Clear any other app data
+
+      // 4. Clear any other app data
       dispatch({ type: 'comment/clearComments' });
       dispatch({ type: 'post/clearPosts' });
-      
+
       console.log('✅ Logout completed');
-      
+
       return true;
     } catch (error) {
       console.error('❌ Error during logout:', error);
@@ -121,10 +129,33 @@ const authSlice = createSlice({
       state.isAuthenticated = action.payload;
     },
 
-    // ✅ Immediate logout (không cần async)
+    // Thêm reducer để tăng số thông báo chưa đọc
+    incrementUnreadNotifications: (state) => {
+      if (state.profile) {
+        state.profile.unreadNotifications = (state.profile.unreadNotifications || 0) + 1;
+      }
+    },
+
+    // Thêm reducer để giảm số thông báo chưa đọc
+    decrementUnreadNotifications: (state) => {
+      if (state.profile && state.profile.unreadNotifications > 0) {
+        state.profile.unreadNotifications = state.profile.unreadNotifications - 1;
+      }
+    },
+
+    // Thêm reducer để reset số thông báo chưa đọc về 0
+    resetUnreadNotifications: (state) => {
+      if (state.profile) {
+        state.profile.unreadNotifications = 0;
+      }
+    },
+
+    // Immediate logout (không cần async)
     logoutImmediate: (state) => {
       state.isAuthenticated = false;
       state.profile = null;
+      state.access_token = null;
+      state.refreshToken = null;
       state.loading = false;
       state.error = null;
     },
@@ -173,6 +204,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = false;
         state.profile = null;
+        state.access_token = null;
+        state.refreshToken = null;
         state.error = null;
       })
       .addCase(logout.rejected, (state, action) => {
@@ -181,12 +214,21 @@ const authSlice = createSlice({
         // Vẫn logout dù có lỗi
         state.isAuthenticated = false;
         state.profile = null;
+        state.access_token = null;
+        state.refreshToken = null;
       });
   },
 });
 
 // Export actions
-export const { updateAuthProfile, logoutImmediate } = authSlice.actions;
+export const {
+  updateAuthProfile,
+  setIsAuthenticated,
+  incrementUnreadNotifications,
+  decrementUnreadNotifications,
+  resetUnreadNotifications,
+  logoutImmediate
+} = authSlice.actions;
 
 // Export reducer
 export default authSlice.reducer;

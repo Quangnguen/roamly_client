@@ -14,18 +14,21 @@ import { LikeRepositoryImpl } from "../data/implements/likeRepositoryImpl";
 import { LikeUsecase } from "../domain/usecases/likeUsecase";
 import { NotificationRepositoryImpl } from "../data/implements/notificationRepositoryImpl";
 import { NotificationUsecase } from "../domain/usecases/notificationUsecase";
+import { ChatUsecase } from "../domain/usecases/chatUsecase";
+import { ChatRepositoryImpl } from "../data/implements/chatRepositoryImpl";
 import { CommentRepositoryImpl } from "../data/implements/commentRepositoryImpl";
 import { CommentUsecase } from "../domain/usecases/commentUsecase";
+
 const authRepository = new LoginRepositoryImpl();
 const RegisterRepository = new RegisterRepositoryImpl();
 const postRepository = new PostRepositoryImpl();
 const userRepository = new UserRepositoryImpl();
 const followRepository = new followRepositoryImpl();
-const memoryRepository = new MemoryRepositoryImpl(); // Assuming you have a memory repository implementation
+const memoryRepository = new MemoryRepositoryImpl();
 const likeRepository = new LikeRepositoryImpl();
 const notificationRepository = new NotificationRepositoryImpl();
-const commentRepository = new CommentRepositoryImpl(); // Assuming you have a comment repository implementation
-
+const chatRepository = new ChatRepositoryImpl();
+const commentRepository = new CommentRepositoryImpl();
 
 export const dependencies = {
   loginUseCase: new LoginUseCase(authRepository),
@@ -36,5 +39,6 @@ export const dependencies = {
   MemoryUseCase: new MemoryUseCase(memoryRepository),
   likeUsecase: new LikeUsecase(likeRepository),
   notificationUsecase: new NotificationUsecase(notificationRepository),
+  chatUsecase: new ChatUsecase(chatRepository),
   commentUsecase: new CommentUsecase(commentRepository),
 };
