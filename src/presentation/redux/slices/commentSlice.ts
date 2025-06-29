@@ -89,12 +89,26 @@ export const commentSlice = createSlice({
         clearCurrentComment: (state) => {
             state.currentComment = null;
         },
+         updateCommentCount: (state, action) => {
+            state.countComments = action.payload;
+            console.log('✅ Updated comment count in commentSlice:', action.payload);
+        },
         addOptimisticComment: (state, action: PayloadAction<any>) => {
             state.comments?.unshift(action.payload);
             console.log('✅ Added optimistic comment:', action.payload);
         },
         removeOptimisticComment: (state, action: PayloadAction<string>) => {
             state.comments = state.comments?.filter(comment => comment.id !== action.payload) || [];
+        },
+         clearCommentsOnly: (state) => {
+            state.comments = [];
+            // Không reset countComments
+            console.log('🧹 Cleared comments but kept count:', state.countComments);
+        },
+        clearAll: (state) => {
+            state.comments = [];
+            state.countComments = 0;
+            console.log('🧹 Cleared all comments and count');
         },
         // ✅ Thêm real-time comment từ socket
         addRealTimeComment: (state, action: PayloadAction<any>) => {
