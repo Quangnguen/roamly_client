@@ -14,6 +14,8 @@ import { LikeRepositoryImpl } from "../data/implements/likeRepositoryImpl";
 import { LikeUsecase } from "../domain/usecases/likeUsecase";
 import { NotificationRepositoryImpl } from "../data/implements/notificationRepositoryImpl";
 import { NotificationUsecase } from "../domain/usecases/notificationUsecase";
+import { CommentRepositoryImpl } from "../data/implements/commentRepositoryImpl";
+import { CommentUsecase } from "../domain/usecases/commentUsecase";
 const authRepository = new LoginRepositoryImpl();
 const RegisterRepository = new RegisterRepositoryImpl();
 const postRepository = new PostRepositoryImpl();
@@ -22,6 +24,8 @@ const followRepository = new followRepositoryImpl();
 const memoryRepository = new MemoryRepositoryImpl(); // Assuming you have a memory repository implementation
 const likeRepository = new LikeRepositoryImpl();
 const notificationRepository = new NotificationRepositoryImpl();
+const commentRepository = new CommentRepositoryImpl(); // Assuming you have a comment repository implementation
+
 
 export const dependencies = {
   loginUseCase: new LoginUseCase(authRepository),
@@ -32,4 +36,5 @@ export const dependencies = {
   MemoryUseCase: new MemoryUseCase(memoryRepository),
   likeUsecase: new LikeUsecase(likeRepository),
   notificationUsecase: new NotificationUsecase(notificationRepository),
+  commentUsecase: new CommentUsecase(commentRepository),
 };

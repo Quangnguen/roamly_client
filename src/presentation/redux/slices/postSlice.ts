@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { PostUseCase } from '@/src/domain/usecases/postUsecase';
 import { Post } from '@/src/domain/models/Post';
 import { PostRepositoryImpl } from '@/src/data/implements/postRepositoryImpl';
@@ -122,21 +122,23 @@ export const getPostsFeed = createAsyncThunk<PostsApiResponse, { page: number, l
     }
 );
 
+const initialState = {
+    posts: [] as Post[],
+    postsByUserId: [] as Post[],
+    myPosts: [] as Post[],
+    feedPosts: [] as Post[], // Thêm state cho feed posts
+    loading: false, // Loading cho getPosts, getPostsByUserId, getMyPosts
+    feedLoading: false, // Loading riêng cho getPostsFeed
+    createLoading: false, // Loading riêng cho createPost
+    error: null as string | null,
+    message: null as string | null,
+    status: null as 'success' | 'error' | null,
+    currentPost: null as Post | null,
+};
+
 const postSlice = createSlice({
     name: 'post',
-    initialState: {
-        posts: [] as Post[],
-        postsByUserId: [] as Post[],
-        myPosts: [] as Post[],
-        feedPosts: [] as Post[], // Thêm state cho feed posts
-        loading: false, // Loading cho getPosts, getPostsByUserId, getMyPosts
-        feedLoading: false, // Loading riêng cho getPostsFeed
-        createLoading: false, // Loading riêng cho createPost
-        error: null as string | null,
-        message: null as string | null,
-        status: null as 'success' | 'error' | null,
-        currentPost: null as Post | null,
-    },
+    initialState,
     reducers: {
         clearMessage: (state) => {
             state.message = null;
@@ -188,6 +190,40 @@ const postSlice = createSlice({
                 } else {
                     // Xóa post tạm thời nếu thất bại
                     state.posts.splice(tempIndex, 1);
+                }
+            }
+        },
+        // ✅ Update comment count real-time
+        updateCommentCount: (state, action: PayloadAction<{ postId: string, commentCount: number }>) => {
+            const { postId, commentCount } = action.payload;
+            
+            // Update trong feedPosts
+            const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId);
+            if (feedPostIndex !== -1) {
+                if (state.feedPosts[feedPostIndex]._count) {
+                    state.feedPosts[feedPostIndex]._count.comments = commentCount;
+                } else {
+                    state.feedPosts[feedPostIndex].commentCount = commentCount;
+                }
+            }
+
+            // Update trong posts
+            const postIndex = state.posts.findIndex(post => post.id === postId);
+            if (postIndex !== -1) {
+                if (state.posts[postIndex]._count) {
+                    state.posts[postIndex]._count.comments = commentCount;
+                } else {
+                    state.posts[postIndex].commentCount = commentCount;
+                }
+            }
+
+            // Update trong myPosts
+            const myPostIndex = state.myPosts.findIndex(post => post.id === postId);
+            if (myPostIndex !== -1) {
+                if (state.myPosts[myPostIndex]._count) {
+                    state.myPosts[myPostIndex]._count.comments = commentCount;
+                } else {
+                    state.myPosts[myPostIndex].commentCount = commentCount;
                 }
             }
         },
@@ -484,5 +520,5 @@ const postSlice = createSlice({
     },
 });
 
-export const { clearMessage, addOptimisticPost, updateOptimisticPost } = postSlice.actions;
+export const { clearMessage, addOptimisticPost, updateOptimisticPost, updateCommentCount } = postSlice.actions;
 export default postSlice.reducer;

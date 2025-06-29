@@ -297,7 +297,7 @@ class SocialNetworkNotificationService {
       priority: 'low' as const,
       title: '❤️ Bài viết được thích',
       bodyTemplate: (data: any) => {
-        const likerName = data.likerName || data.user?.name || 'Ai đó';
+        const likerName = data.likerName || data.username || 'Ai đó';
         const postTitle = data.postTitle || data.post?.title || 'bài viết của bạn';
         const count = data.count || 1;
         

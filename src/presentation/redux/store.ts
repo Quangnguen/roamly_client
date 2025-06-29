@@ -6,6 +6,7 @@ import postReducer from './slices/postSlice'
 import MemoryReducer from './slices/memorySlice'
 import likeReducer from './slices/likeSlice'
 import notificationReducer from './slices/notificationSlice'
+import commentReuducer from './slices/commentSlice' // Ensure you have a comment reducer defined
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     memory: MemoryReducer,
     like: likeReducer,
     notification: notificationReducer,
+    comment: commentReuducer, // Ensure you have a comment reducer defined
   },
 })
 

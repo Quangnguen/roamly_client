@@ -8,8 +8,6 @@ export const authorizedRequest = async (url: string, options: RequestInit = {}) 
       throw new Error('No access token available');
     }
 
-    console.log('Making authorized request to:', url);
-
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -18,7 +16,6 @@ export const authorizedRequest = async (url: string, options: RequestInit = {}) 
       },
     });
 
-    console.log('Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();

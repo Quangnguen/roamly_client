@@ -18,7 +18,6 @@ export const likePost = createAsyncThunk(
     async (postId: string, { rejectWithValue }) => {
         try {
             const response = await likeApi(postId, 'post');
-            console.log('✅ [LIKE_SLICE] Like API call successful for postId:', postId);
             console.log('✅ [LIKE_SLICE] Like response:', response);
             return { postId, response };
         } catch (error: any) {
@@ -34,8 +33,6 @@ export const unlikePost = createAsyncThunk(
         try {
             console.log(`🔥 [LIKE_SLICE] Starting unlike request for postId: ${postId}`);
             const response = await unlikeApi(postId, 'post');
-            console.log('✅ [LIKE_SLICE] Unlike API call successful for postId:', postId);
-            console.log('✅ [LIKE_SLICE] Unlike response:', response);
             return { postId, response };
         } catch (error: any) {
             console.error('❌ [LIKE_SLICE] Unlike API call failed:', error);
@@ -61,7 +58,6 @@ const likeSlice = createSlice({
         handleSocketPostLiked: (state, action) => {
             const { postId, userId } = action.payload;
             console.log(`📱 [LIKE_SLICE] Socket: Post ${postId} được like bởi user ${userId}`);
-            console.log(`📱 [LIKE_SLICE] Current likedPosts before:`, state.likedPosts);
             
             if (!state.likedPosts.includes(postId)) {
                 state.likedPosts.push(postId);

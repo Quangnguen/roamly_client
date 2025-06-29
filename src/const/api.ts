@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://192.168.100.236:3000'; // ip cua Quang
+export const API_BASE_URL = 'http://192.168.222.1:3000'; // ip cua Quang
 // export const API_BASE_URL = 'http://192.168.1.20:3000'; // ip cua Nam
 
 // export const API_BASE_URL = "https://0c46-1-52-222-132.ngrok-free.app"
