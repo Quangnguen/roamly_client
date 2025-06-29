@@ -1,3 +1,4 @@
+import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -6,6 +7,10 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
 import { resetUnreadNotifications } from '../redux/slices/authSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BACKGROUND } from '../../const/constants';
+
+// Import pages
 import LoginPage from '../pages/LoginPage';
 import HomePage from '../pages/HomePage';
 import RegisterPage from '../pages/RegisterPage';
@@ -18,8 +23,6 @@ import ChatPage from '../pages/ChatPage';
 import ChatDetailPage from '../pages/ChatDetailPage';
 import WeatherPage from '../pages/WeatherPage';
 import HomeStayDetailPage from '../pages/HomeStayDetailPage';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { BACKGROUND } from '@/src/const/constants';
 import InfoAccPage from '../pages/InfoAccPage';
 import AddressDetailPage from '../pages/AddressDetailPage';
 import TravelPlaceDetailPage from '../pages/TravelPlaceDetailPage';
@@ -85,45 +88,25 @@ const NotificationTabIcon = ({ focused, color, size }: { focused: boolean; color
   );
 };
 
-export default function AppNavigator() {
+// Auth Navigator Component
+const AuthNavigator = () => {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND }}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          gestureEnabled: true,
-          gestureDirection: 'horizontal',
         }}
+        initialRouteName="Login"
       >
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-        <Stack.Screen name="InApp" component={InAppNavigator} />
-        <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
-        <Stack.Screen name="ChatPage" component={ChatPage} />
-        <Stack.Screen name="ChatDetailPage" component={ChatDetailPage} />
-        <Stack.Screen name="WeatherPage" component={WeatherPage} />
-        <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
-        <Stack.Screen name="InfoAccPage" component={InfoAccPage} />
-        <Stack.Screen name="AddressDetailPage" component={AddressDetailPage} />
-        <Stack.Screen name="TravelPlaceDetailPage" component={TravelPlaceDetailPage} />
+        <Stack.Screen name="Login" component={LoginPage} />
+        <Stack.Screen name="Register" component={RegisterPage} />
       </Stack.Navigator>
     </SafeAreaView>
   );
-}
-
-const AuthNavigator = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Login" component={LoginPage} />
-      <Stack.Screen name="Register" component={RegisterPage} />
-    </Stack.Navigator>
-  );
 };
 
-const InAppNavigator = () => {
+// Tab Navigator Component
+const TabNavigator = () => {
   const dispatch = useDispatch<AppDispatch>();
   const unreadCount = useSelector((state: RootState) => state.auth.profile?.unreadNotifications) || 0;
 
@@ -204,6 +187,56 @@ const InAppNavigator = () => {
   );
 };
 
+// In-App Navigator Component
+const InAppNavigator = () => {
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+        }}
+      >
+        <Stack.Screen name="InApp" component={TabNavigator} />
+        <Stack.Screen name="EditProfilePage" component={EditProfilePage} />
+        <Stack.Screen name="ChatPage" component={ChatPage} />
+        <Stack.Screen name="ChatDetailPage" component={ChatDetailPage} />
+        <Stack.Screen name="WeatherPage" component={WeatherPage} />
+        <Stack.Screen name="HomeStayDetailPage" component={HomeStayDetailPage} />
+        <Stack.Screen name="InfoAccPage" component={InfoAccPage} />
+        <Stack.Screen name="AddressDetailPage" component={AddressDetailPage} />
+        <Stack.Screen name="TravelPlaceDetailPage" component={TravelPlaceDetailPage} />
+      </Stack.Navigator>
+    </SafeAreaView>
+  );
+};
+
+// Main App Navigator Component
+const AppNavigator: React.FC = () => {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  console.log('🔐 Navigation - Is authenticated:', isAuthenticated);
+
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+        }}
+      >
+        {isAuthenticated ? (
+          <Stack.Screen name="InApp" component={InAppNavigator} />
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
+    </SafeAreaView>
+  );
+};
+
 const styles = StyleSheet.create({
   notificationIconContainer: {
     position: 'relative',
@@ -228,3 +261,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default AppNavigator;

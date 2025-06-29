@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { PostUseCase } from '@/src/domain/usecases/postUsecase';
 import { Post } from '@/src/domain/models/Post';
 import { PostRepositoryImpl } from '@/src/data/implements/postRepositoryImpl';
@@ -252,6 +252,40 @@ const postSlice = createSlice({
             // Sử dụng helper function chung
             updatePostLikeCount(state, postId, -1, null); // null = không thay đổi isLike
         },
+        // ✅ Update comment count real-time
+        updateCommentCount: (state, action: PayloadAction<{ postId: string, commentCount: number }>) => {
+            const { postId, commentCount } = action.payload;
+
+            // Update trong feedPosts
+            const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId);
+            if (feedPostIndex !== -1) {
+                if (state.feedPosts[feedPostIndex]._count) {
+                    state.feedPosts[feedPostIndex]._count.comments = commentCount;
+                } else {
+                    state.feedPosts[feedPostIndex].commentCount = commentCount;
+                }
+            }
+
+            // Update trong posts
+            const postIndex = state.posts.findIndex(post => post.id === postId);
+            if (postIndex !== -1) {
+                if (state.posts[postIndex]._count) {
+                    state.posts[postIndex]._count.comments = commentCount;
+                } else {
+                    state.posts[postIndex].commentCount = commentCount;
+                }
+            }
+
+            // Update trong myPosts
+            const myPostIndex = state.myPosts.findIndex(post => post.id === postId);
+            if (myPostIndex !== -1) {
+                if (state.myPosts[myPostIndex]._count) {
+                    state.myPosts[myPostIndex]._count.comments = commentCount;
+                } else {
+                    state.myPosts[myPostIndex].commentCount = commentCount;
+                }
+            }
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -481,5 +515,13 @@ const postSlice = createSlice({
     },
 });
 
-export const { clearMessage, addOptimisticPost, updateOptimisticPost, incrementLikeFromSocket, decrementLikeFromSocket } = postSlice.actions;
+export const {
+    clearMessage,
+    addOptimisticPost,
+    updateOptimisticPost,
+    incrementLikeFromSocket,
+    decrementLikeFromSocket,
+    updateCommentCount
+} = postSlice.actions;
+
 export default postSlice.reducer;
