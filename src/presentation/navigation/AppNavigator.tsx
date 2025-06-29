@@ -2,6 +2,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../redux/store';
+import { resetUnreadNotifications } from '../redux/slices/authSlice';
 import LoginPage from '../pages/LoginPage';
 import HomePage from '../pages/HomePage';
 import RegisterPage from '../pages/RegisterPage';
@@ -63,6 +67,24 @@ type TabParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
+// Component để hiển thị icon notification với badge
+const NotificationTabIcon = ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
+  const unreadCount = useSelector((state: RootState) => state.auth.profile?.unreadNotifications) || 0;
+
+  return (
+    <View style={styles.notificationIconContainer}>
+      <FontAwesome name="bell" size={size} color={color} />
+      {unreadCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>
+            {unreadCount > 99 ? '99+' : unreadCount.toString()}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
 export default function AppNavigator() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -102,6 +124,9 @@ const AuthNavigator = () => {
 };
 
 const InAppNavigator = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const unreadCount = useSelector((state: RootState) => state.auth.profile?.unreadNotifications) || 0;
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -115,7 +140,8 @@ const InAppNavigator = () => {
           } else if (route.name === 'Post') {
             iconName = 'plus-square';
           } else if (route.name === 'Notify') {
-            iconName = 'heart';
+            // Sử dụng component riêng cho notification với badge
+            return <NotificationTabIcon focused={focused} color={color} size={size} />;
           } else {
             iconName = 'user';
           }
@@ -135,6 +161,15 @@ const InAppNavigator = () => {
           paddingTop: 5,
         },
       })}
+      screenListeners={{
+        tabPress: (e) => {
+          // Reset unread count khi ấn vào tab Notify
+          if (e.target?.includes('Notify') && unreadCount > 0) {
+            // Reset toàn bộ unread count về 0
+            dispatch(resetUnreadNotifications());
+          }
+        },
+      }}
     >
       <Tab.Screen
         name="Home"
@@ -168,3 +203,28 @@ const InAppNavigator = () => {
     </Tab.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  notificationIconContainer: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -8,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+});

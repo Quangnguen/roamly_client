@@ -22,12 +22,12 @@ class SocialNetworkNotificationService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private isSettingUpListeners = false;
-  
+
   // ✅ Smart batching properties
   private notificationBatches: Map<string, NotificationConfig[]> = new Map();
   private batchTimers: Map<string, NodeJS.Timeout> = new Map();
   private lastNotificationTimes: Map<string, number> = new Map();
-  
+
   // ✅ User preferences
   private userPreferences = {
     maxNotificationsPerMinute: 5,
@@ -59,12 +59,12 @@ class SocialNetworkNotificationService {
       }
 
       let accessToken = providedToken;
-      
+
       if (!accessToken) {
         console.log('🔍 No token provided, getting from storage...');
         const tokenFromStorage = await getAccessToken();
         accessToken = tokenFromStorage === null ? undefined : tokenFromStorage;
-        
+
         if (!accessToken) {
           const { accessToken: token } = await getTokens();
           accessToken = token === null ? undefined : token;
@@ -78,7 +78,7 @@ class SocialNetworkNotificationService {
       }
 
       console.log('🔑 Token preview:', accessToken.substring(0, 20) + '...');
-      
+
       this.socket = io(API_BASE_URL, {
         auth: {
           token: accessToken,
@@ -88,7 +88,7 @@ class SocialNetworkNotificationService {
       });
 
       this.setupEventListeners();
-      
+
       return this.socket;
     } catch (error) {
       console.error('❌ Socket connection failed:', error);
@@ -140,13 +140,13 @@ class SocialNetworkNotificationService {
   disconnect() {
     if (this.socket) {
       console.log('🔌 Disconnecting socket...');
-      
+
       // ✅ Clear notification queues
       this.notificationBatches.clear();
       this.batchTimers.forEach(timer => clearTimeout(timer));
       this.batchTimers.clear();
       this.lastNotificationTimes.clear();
-      
+
       this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
@@ -158,7 +158,7 @@ class SocialNetworkNotificationService {
   async requestNotificationPermissions() {
     try {
       console.log('🔔 Requesting LOCAL notification permissions...');
-      
+
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
           name: 'Roamly Notifications',
@@ -211,14 +211,14 @@ class SocialNetworkNotificationService {
       bodyTemplate: (data: any) => {
         const senderName = data.senderName || data.sender?.name || data.user?.name || 'Ai đó';
         const messageText = data.message || data.content || '';
-        
+
         if (messageText.length > 50) {
           return `${senderName}: ${messageText.substring(0, 50)}...`;
         }
         return `${senderName}: ${messageText}`;
       }
     },
-    
+
     // 📞 Mentions - Urgent priority  
     'mention': {
       priority: 'urgent' as const,
@@ -238,7 +238,7 @@ class SocialNetworkNotificationService {
         const commenterName = data.commenterName || data.user?.name || 'Ai đó';
         const commentText = data.commentText || data.content || '';
         const postTitle = data.postTitle || data.post?.title || 'bài viết của bạn';
-        
+
         if (commentText && commentText.length > 0) {
           if (commentText.length > 60) {
             return `${commenterName}: "${commentText.substring(0, 60)}..."`;
@@ -256,7 +256,7 @@ class SocialNetworkNotificationService {
       bodyTemplate: (data: any) => {
         const replierName = data.replierName || data.user?.name || 'Ai đó';
         const replyText = data.replyText || data.content || '';
-        
+
         if (replyText && replyText.length > 0) {
           if (replyText.length > 60) {
             return `${replierName} phản hồi: "${replyText.substring(0, 60)}..."`;
@@ -274,7 +274,7 @@ class SocialNetworkNotificationService {
       bodyTemplate: (data: any) => {
         const followerName = data.followerName || data.follower?.name || data.user?.name || 'Ai đó';
         const followerUsername = data.followerUsername || data.follower?.username || '';
-        
+
         if (followerUsername) {
           return `${followerName} (@${followerUsername}) đã bắt đầu theo dõi bạn`;
         }
@@ -297,10 +297,10 @@ class SocialNetworkNotificationService {
       priority: 'low' as const,
       title: '❤️ Bài viết được thích',
       bodyTemplate: (data: any) => {
-        const likerName = data.likerName || data.user?.name || 'Ai đó';
+        const likerName = data.likerName || data.username || 'Ai đó';
         const postTitle = data.postTitle || data.post?.title || 'bài viết của bạn';
         const count = data.count || 1;
-        
+
         if (count > 1) {
           if (count <= 3) {
             // Show individual names for small groups
@@ -314,7 +314,7 @@ class SocialNetworkNotificationService {
           // Show count for larger groups
           return `${count} người đã thích ${postTitle}`;
         }
-        
+
         return `${likerName} đã thích ${postTitle}`;
       }
     },
@@ -327,7 +327,7 @@ class SocialNetworkNotificationService {
         const sharerName = data.sharerName || data.user?.name || 'Ai đó';
         const postTitle = data.postTitle || data.post?.title || 'bài viết của bạn';
         const count = data.count || 1;
-        
+
         if (count > 1) {
           return `${count} người đã chia sẻ ${postTitle}`;
         }
@@ -335,7 +335,7 @@ class SocialNetworkNotificationService {
       }
     },
 
-   
+
 
     // 🔔 System notifications - Medium priority
     'system': {
@@ -363,7 +363,7 @@ class SocialNetworkNotificationService {
       bodyTemplate: (data: any) => {
         const taggerName = data.taggerName || data.user?.name || 'Ai đó';
         const photoCount = data.photoCount || 1;
-        
+
         if (photoCount > 1) {
           return `${taggerName} đã gắn thẻ bạn trong ${photoCount} ảnh`;
         }
@@ -408,7 +408,7 @@ class SocialNetworkNotificationService {
     if (this.socket) {
       this.socket.on('new_notification', async (data: any) => {
         console.log('📢 NEW NOTIFICATION RECEIVED:', data);
-        
+
         if (callback) {
           callback(data);
         }
@@ -416,13 +416,13 @@ class SocialNetworkNotificationService {
         // ✅ STEP 1: Normalize type
         const rawType = data.type || 'notification';
         const normalizedType = this.normalizeNotificationType(rawType);
-        
+
         // ✅ STEP 2: Get template with fallback
         const hasTemplate = normalizedType in this.NOTIFICATION_TEMPLATES;
-        const template = hasTemplate 
+        const template = hasTemplate
           ? this.NOTIFICATION_TEMPLATES[normalizedType as keyof typeof this.NOTIFICATION_TEMPLATES]
           : this.NOTIFICATION_TEMPLATES['notification'];
-        
+
         // ✅ STEP 3: Debug logging
         console.log('🔍 Type processing:', {
           raw: rawType,
@@ -430,7 +430,7 @@ class SocialNetworkNotificationService {
           hasTemplate,
           selectedTemplate: template.title
         });
-        
+
         // ✅ STEP 4: Generate notification
         const notification: NotificationConfig = {
           id: `notification_${Date.now()}`,
@@ -443,7 +443,7 @@ class SocialNetworkNotificationService {
           postId: data.postId,
           userId: data.userId || data.actorId
         };
-        
+
         await this.handleNotification(notification);
       });
     }
@@ -453,15 +453,13 @@ class SocialNetworkNotificationService {
   onPostLiked(callback?: (data: any) => void) {
     if (this.socket) {
       this.socket.on('post_liked', async (data: any) => {
-        console.log('❤️ POST LIKED EVENT RECEIVED:', data);
-        
         if (callback) {
           callback(data);
         }
-        
+
         // ✅ Use template for consistency
         const template = this.NOTIFICATION_TEMPLATES['like'];
-        
+
         await this.handleNotification({
           id: `like_${data.postId}_${Date.now()}`,
           type: 'like',
@@ -477,18 +475,29 @@ class SocialNetworkNotificationService {
     }
   }
 
+  // ✅ THÊM: Method để lắng nghe event post_unliked
+  onPostUnliked(callback?: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on('post_unliked', async (data: any) => {
+        if (callback) {
+          callback(data);
+        }
+      });
+    }
+  }
+
   onNewComment(callback?: (data: any) => void) {
     if (this.socket) {
       this.socket.on('new_comment', async (data: any) => {
         console.log('💬 NEW COMMENT RECEIVED:', data);
-        
+
         if (callback) {
           callback(data);
         }
-        
+
         // ✅ Use template
         const template = this.NOTIFICATION_TEMPLATES['comment'];
-        
+
         await this.handleNotification({
           id: `comment_${data.postId}_${Date.now()}`,
           type: 'comment',
@@ -508,14 +517,14 @@ class SocialNetworkNotificationService {
     if (this.socket) {
       this.socket.on('new_follower', async (data: any) => {
         console.log('👥 NEW FOLLOWER RECEIVED:', data);
-        
+
         if (callback) {
           callback(data);
         }
-        
+
         // ✅ Use template
         const template = this.NOTIFICATION_TEMPLATES['follow'];
-        
+
         await this.handleNotification({
           id: `follow_${Date.now()}`,
           type: 'follow',
@@ -594,7 +603,7 @@ class SocialNetworkNotificationService {
   private async showLocalNotification(notification: NotificationConfig) {
     try {
       console.log('📱 Showing notification:', notification.title);
-      
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title: notification.title,
@@ -611,7 +620,7 @@ class SocialNetworkNotificationService {
       });
 
       console.log('✅ Notification sent:', notification.title);
-      
+
     } catch (error) {
       console.error('❌ Failed to show notification:', error);
     }
@@ -622,7 +631,7 @@ class SocialNetworkNotificationService {
     const now = new Date();
     const hour = now.getHours();
     const { start, end } = this.userPreferences.quietHours;
-    
+
     if (start < end) {
       return hour >= start && hour < end;
     } else {
@@ -672,7 +681,7 @@ class SocialNetworkNotificationService {
   // ✅ ADD: Helper method
   private normalizeNotificationType(type: string): string {
     const lowercase = type.toLowerCase().trim();
-    
+
     // Map common variations
     const typeMapping: Record<string, string> = {
       'post_liked': 'like',
@@ -681,7 +690,7 @@ class SocialNetworkNotificationService {
       'user_liked': 'like',
       'like_post': 'like'
     };
-    
+
     return typeMapping[lowercase] || lowercase;
   }
 }

@@ -17,6 +17,7 @@ interface User {
   verified: boolean;
   role: string;
   bio: string;
+  unreadNotifications: number;
 }
 
 
@@ -102,7 +103,28 @@ const authSlice = createSlice({
     // Thêm reducer để cập nhật trạng thái isAuthenticated
     setIsAuthenticated: (state, action) => {
       state.isAuthenticated = action.payload;
-    } 
+    },
+
+    // Thêm reducer để tăng số thông báo chưa đọc
+    incrementUnreadNotifications: (state) => {
+      if (state.profile) {
+        state.profile.unreadNotifications = (state.profile.unreadNotifications || 0) + 1;
+      }
+    },
+
+    // Thêm reducer để giảm số thông báo chưa đọc
+    decrementUnreadNotifications: (state) => {
+      if (state.profile && state.profile.unreadNotifications > 0) {
+        state.profile.unreadNotifications = state.profile.unreadNotifications - 1;
+      }
+    },
+
+    // Thêm reducer để reset số thông báo chưa đọc về 0
+    resetUnreadNotifications: (state) => {
+      if (state.profile) {
+        state.profile.unreadNotifications = 0;
+      }
+    }
   },
   extraReducers: (builder) => {
     // Login cases
@@ -159,7 +181,7 @@ const authSlice = createSlice({
 });
 
 // Export actions
-export const { updateAuthProfile } = authSlice.actions;
+export const { updateAuthProfile, setIsAuthenticated, incrementUnreadNotifications, decrementUnreadNotifications, resetUnreadNotifications } = authSlice.actions;
 
 // Export reducer
 export default authSlice.reducer;

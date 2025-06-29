@@ -632,10 +632,10 @@ const Post: React.FC<PostProps> = ({
               } else {
                 await dispatch(likePost(postId)).unwrap();
               }
-              
+
               // ✅ Backend sẽ tự động emit socket events
               // Client chỉ cần lắng nghe và cập nhật UI
-              
+
             } catch (error) {
               console.error('❌ Like/Unlike error:', error);
               Toast.show({
