@@ -1,5 +1,6 @@
 import { PostRepository } from "@/src/data/repositories/postRepository"
 import { Post } from "../models/Post"
+import { PostSearchResponseInterface, SearchPostParams } from "@/src/types/responses/PostSearchResponseInterface"
 
 export class PostUseCase {
   constructor(private repo: PostRepository) { }
@@ -34,5 +35,9 @@ export class PostUseCase {
 
   async getPostsFeed(page: number, limit: number): Promise<Post[]> {
     return await this.repo.getPostsFeed(page, limit)
+  }
+
+  async searchPosts(params: SearchPostParams): Promise<PostSearchResponseInterface> {
+    return await this.repo.searchPosts(params)
   }
 }

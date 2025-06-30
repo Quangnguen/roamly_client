@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "@/src/const/api";
 import { Post } from "@/src/domain/models/Post"
 import { authorizedRequest } from "@/src/utils/authorizedRequest";
+import { PostSearchResponseInterface, SearchPostParams } from "@/src/types/responses/PostSearchResponseInterface";
 
 // Tạo bài post mới
 export const createPostApi = async (formData: FormData) => {
@@ -50,6 +51,20 @@ export const updatePostApi = async (postId: string, formData: FormData) => {
 
 export const getPostsFeedApi = async (page: number, limit: number) => {
     return await authorizedRequest(`${API_BASE_URL}/posts/feed?page=${page}&limit=${limit}`, {
+        method: 'GET',
+    });
+};
+
+// Search posts
+export const searchPostsApi = async (params: SearchPostParams): Promise<PostSearchResponseInterface> => {
+    const { q, limit = 10, page = 1 } = params;
+    const queryParams = new URLSearchParams({
+        q,
+        limit: limit.toString(),
+        page: page.toString()
+    });
+
+    return await authorizedRequest(`${API_BASE_URL}/posts/search?${queryParams}`, {
         method: 'GET',
     });
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../redux/store';
 import { getUsers } from '../redux/slices/userSlice';
 import { getFollowing } from '../redux/slices/followSlice';
-import { getPosts } from '../redux/slices/postSlice';
+import { getPosts, searchPosts, clearSearchResults } from '../redux/slices/postSlice';
 import PostTab from '../components/search/PostTab';
 import AddressTab from '../components/search/AddressTab';
 import HomeStayTab from '../components/search/HomeStayTab';
@@ -40,24 +40,49 @@ const SearchPage: React.FC = () => {
   const [searchText, setSearchText] = useState<string>('');
   const dispatch = useDispatch<AppDispatch>();
 
+  // Load initial data
   useEffect(() => {
     if (activeTab === 'Người dùng') {
       dispatch(getUsers({ page: 1, limit: 5 }));
       dispatch(getFollowing());
     }
-    if (activeTab === 'Bài viết') {
+    if (activeTab === 'Bài viết' && !searchText.trim()) {
+      // Chỉ load tất cả posts khi không có search text
       dispatch(getPosts());
     }
-  }, [dispatch, activeTab]);
+  }, [dispatch, activeTab, searchText]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchText.trim() && activeTab === 'Bài viết') {
+        // Thực hiện search posts
+        dispatch(searchPosts({
+          q: searchText.trim(),
+          page: 1,
+          limit: 20
+        }));
+      } else if (!searchText.trim() && activeTab === 'Bài viết') {
+        // Clear search results và load lại posts
+        dispatch(clearSearchResults());
+        dispatch(getPosts());
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [searchText, activeTab, dispatch]);
 
   const handleClearSearch = () => {
     setSearchText('');
+    if (activeTab === 'Bài viết') {
+      dispatch(clearSearchResults());
+    }
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Bài viết':
-        return <PostTab />;
+        return <PostTab searchText={searchText} />;
       case 'Địa điểm':
         return <AddressTab />;
       case 'Nhà nghỉ':

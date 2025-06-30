@@ -3,6 +3,7 @@ import { PostUseCase } from '@/src/domain/usecases/postUsecase';
 import { Post } from '@/src/domain/models/Post';
 import { PostRepositoryImpl } from '@/src/data/implements/postRepositoryImpl';
 import { ResponseInterface } from '@/src/types/ResponseInterface';
+import { PostSearchResponseInterface, SearchPostParams } from '@/src/types/responses/PostSearchResponseInterface';
 import { likePost, unlikePost, initializeLikeStatus } from './likeSlice';
 
 // Định nghĩa interface cho response API
@@ -171,14 +172,40 @@ export const getPostsFeed = createAsyncThunk<PostsApiResponse, { page: number, l
     }
 );
 
+export const searchPosts = createAsyncThunk<PostSearchResponseInterface, SearchPostParams>(
+    'post/searchPosts',
+    async (params: SearchPostParams, { rejectWithValue }) => {
+        try {
+            const response = await postUseCase.searchPosts(params);
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi tìm kiếm bài viết');
+        }
+    }
+);
+
+export const loadMoreSearchPosts = createAsyncThunk<PostSearchResponseInterface, SearchPostParams>(
+    'post/loadMoreSearchPosts',
+    async (params: SearchPostParams, { rejectWithValue }) => {
+        try {
+            const response = await postUseCase.searchPosts(params);
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi tải thêm kết quả');
+        }
+    }
+);
+
 const initialState = {
     posts: [] as Post[],
     postsByUserId: [] as Post[],
     myPosts: [] as Post[],
     feedPosts: [] as Post[], // Thêm state cho feed posts
+    searchResults: null as PostSearchResponseInterface | null, // Search results
     loading: false, // Loading cho getPosts, getPostsByUserId, getMyPosts
     feedLoading: false, // Loading riêng cho getPostsFeed
     createLoading: false, // Loading riêng cho createPost
+    searchLoading: false, // Loading riêng cho searchPosts
     error: null as string | null,
     message: null as string | null,
     status: null as 'success' | 'error' | null,
@@ -321,6 +348,9 @@ const postSlice = createSlice({
                     state.myPosts[myPostIndex].commentCount = (state.myPosts[myPostIndex].commentCount || 0) + 1;
                 }
             }
+        },
+        clearSearchResults: (state) => {
+            state.searchResults = null;
         },
     },
     extraReducers: (builder) => {
@@ -548,6 +578,48 @@ const postSlice = createSlice({
                 state.message = action.payload as string;
                 state.status = 'error';
             })
+            // Search Posts
+            .addCase(searchPosts.pending, (state) => {
+                state.searchLoading = true;
+                state.error = null;
+            })
+            .addCase(searchPosts.fulfilled, (state, action) => {
+                state.searchLoading = false;
+                state.searchResults = action.payload;
+                state.error = null;
+            })
+            .addCase(searchPosts.rejected, (state, action) => {
+                state.searchLoading = false;
+                state.error = action.payload as string;
+                state.message = action.payload as string;
+                state.status = 'error';
+            })
+            // Load More Search Posts
+            .addCase(loadMoreSearchPosts.pending, (state) => {
+                // Không set searchLoading = true để không hiển thị loading toàn màn hình
+            })
+            .addCase(loadMoreSearchPosts.fulfilled, (state, action) => {
+                if (state.searchResults) {
+                    // Append new results to existing ones
+                    const newResults = action.payload.data.results;
+                    const existingIds = new Set(state.searchResults.data.results.map(post => post.id));
+                    const uniqueNewResults = newResults.filter(post => !existingIds.has(post.id));
+
+                    state.searchResults.data.results = [
+                        ...state.searchResults.data.results,
+                        ...uniqueNewResults
+                    ];
+                    state.searchResults.data.currentPage = action.payload.data.currentPage;
+                    state.searchResults.data.totalPages = action.payload.data.totalPages;
+                    state.searchResults.data.total = action.payload.data.total;
+                }
+                state.error = null;
+            })
+            .addCase(loadMoreSearchPosts.rejected, (state, action) => {
+                state.error = action.payload as string;
+                state.message = action.payload as string;
+                state.status = 'error';
+            })
     },
 });
 
@@ -558,7 +630,8 @@ export const {
     incrementLikeFromSocket,
     decrementLikeFromSocket,
     updateCommentCount,
-    incrementCommentCount
+    incrementCommentCount,
+    clearSearchResults
 } = postSlice.actions;
 
 export default postSlice.reducer;

@@ -1,5 +1,6 @@
 import { Post } from "@/src/domain/models/Post"
 import { PostRepository } from "../repositories/postRepository"
+import { PostSearchResponseInterface, SearchPostParams } from "@/src/types/responses/PostSearchResponseInterface"
 import * as postApi from "../api/postApi"
 
 export class PostRepositoryImpl implements PostRepository {
@@ -40,6 +41,11 @@ export class PostRepositoryImpl implements PostRepository {
 
     async getPostsFeed(page: number, limit: number): Promise<Post[]> {
         const response = await postApi.getPostsFeedApi(page, limit);
+        return response;
+    }
+
+    async searchPosts(params: SearchPostParams): Promise<PostSearchResponseInterface> {
+        const response = await postApi.searchPostsApi(params);
         return response;
     }
 }
