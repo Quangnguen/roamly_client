@@ -122,7 +122,7 @@ const Post: React.FC<PostProps> = ({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyingToUsername, setReplyingToUsername] = useState<string>('');
   const [isTyping, setIsTyping] = useState(false);
-  
+
   const flatListRef = useRef<FlatList>(null);
   const commentInputRef = useRef<TextInput>(null);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -309,11 +309,11 @@ const Post: React.FC<PostProps> = ({
   const handleCommentsPress = useCallback(() => {
     setIsCommentsModalVisible(true);
     if (postId) {
-    console.log('📋 Fetching comments for post:', postId);
-    dispatch(getComments(postId));
-    console.log('✅ Comments fetched successfully', reduxComments);
-  }
-}, [postId, dispatch]);
+      console.log('📋 Fetching comments for post:', postId);
+      dispatch(getComments(postId));
+      console.log('✅ Comments fetched successfully', reduxComments);
+    }
+  }, [postId, dispatch]);
 
   const handleCloseCommentsModal = useCallback(() => {
     setIsCommentsModalVisible(false);
@@ -352,11 +352,11 @@ const Post: React.FC<PostProps> = ({
     const handleNewComment = (data: { postId: string, comment: any, commentCount: number }) => {
       console.log('🔥 Real-time new comment received:', data);
       console.log('🔍 Current postId:', postId, 'Received postId:', data.postId);
-      
+
       // Chỉ update nếu comment thuộc về post hiện tại
       if (data.postId === postId) {
         console.log('✅ PostId matches, updating UI');
-        
+
         // ✅ Thêm comment vào Redux store (bao gồm cả parent và reply)
         dispatch({
           type: 'comment/addRealTimeComment',
@@ -417,7 +417,7 @@ const Post: React.FC<PostProps> = ({
     if (newComment.trim() && postId) {
       const commentText = newComment.trim();
       const parentId = replyingTo; // Use replyingTo as parentId
-    
+
       // ✅ Tạo optimistic comment/reply
       const optimisticItem = {
         id: `temp-${Date.now()}`,
@@ -439,7 +439,7 @@ const Post: React.FC<PostProps> = ({
       };
 
       try {
-        // // ✅ Thêm optimistic comment ngay lập tức
+        // // ✅ Thêm optimistic comment ngay lập tức (DISABLED)
         // dispatch({
         //   type: 'comment/addOptimisticComment',
         //   payload: optimisticItem
@@ -448,7 +448,7 @@ const Post: React.FC<PostProps> = ({
         setNewComment('');
         setIsTyping(false);
         commentInputRef.current?.blur();
-        
+
         // Clear reply state
         setReplyingTo(null);
         setReplyingToUsername('');
@@ -462,27 +462,15 @@ const Post: React.FC<PostProps> = ({
 
         console.log('✅ Comment/Reply created successfully:', result);
 
-        // ✅ Remove optimistic comment
-        dispatch({
-          type: 'comment/removeOptimisticComment',
-          payload: optimisticItem.id
-        });
-
       } catch (error: any) {
-        // ✅ Remove optimistic comment nếu thất bại
-        dispatch({
-          type: 'comment/removeOptimisticComment',
-          payload: optimisticItem.id
-        });
-
         setNewComment(commentText);
-        
+
         // Restore reply state if was replying
         if (parentId) {
           setReplyingTo(parentId);
           setReplyingToUsername(replyingToUsername);
         }
-        
+
         Toast.show({
           type: 'error',
           text1: 'Không thể thêm bình luận',
@@ -516,11 +504,11 @@ const Post: React.FC<PostProps> = ({
     return (
       <View style={styles.replyItem}>
         <View style={styles.replyLine} />
-        <Image 
-          source={{ 
-            uri: reply.author.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg' 
-          }} 
-          style={styles.replyProfilePic} 
+        <Image
+          source={{
+            uri: reply.author.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg'
+          }}
+          style={styles.replyProfilePic}
         />
         <View style={styles.replyContent}>
           <View style={styles.commentHeader}>
@@ -548,7 +536,7 @@ const Post: React.FC<PostProps> = ({
                 {reply.likeCount || 0}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.commentReplyButton}
               onPress={() => handleReplyPress(reply.parentId, reply.author.username)}
             >
@@ -573,7 +561,7 @@ const Post: React.FC<PostProps> = ({
     }
 
     // ✅ Tìm tất cả replies cho comment này
-    const replies = reduxComments?.filter(comment => 
+    const replies = reduxComments?.filter(comment =>
       comment.parentId === item.id
     ) || [];
 
@@ -581,11 +569,11 @@ const Post: React.FC<PostProps> = ({
       <View style={styles.commentItemContainer}>
         {/* Parent Comment */}
         <View style={styles.commentItem}>
-          <Image 
-            source={{ 
-              uri: item.author.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg' 
-            }} 
-            style={styles.commentProfilePic} 
+          <Image
+            source={{
+              uri: item.author.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg'
+            }}
+            style={styles.commentProfilePic}
           />
           <View style={styles.commentContent}>
             <View style={styles.commentHeader}>
@@ -617,7 +605,7 @@ const Post: React.FC<PostProps> = ({
                     {item.likeCount || 0}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.commentReplyButton}
                   onPress={() => handleReplyPress(item.id, item.author.username)}
                 >
@@ -659,15 +647,15 @@ const Post: React.FC<PostProps> = ({
 
   const handleInputChange = useCallback((text: string) => {
     setNewComment(text);
-    
+
     // ✅ Show typing animation
     setIsTyping(true);
-    
+
     // ✅ Hide typing animation after 1 second of no typing
     const timer = setTimeout(() => {
       setIsTyping(false);
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -918,29 +906,29 @@ const Post: React.FC<PostProps> = ({
               <Text style={styles.loadingCommentsText}>Đang tải bình luận...</Text>
             </View>
           ) : ( */}
-            <FlatList
-              data={reduxComments || []}
-              renderItem={renderCommentItem}
-              keyExtractor={(item, index) => {
-                // ✅ Đảm bảo key luôn unique và valid
-                if (item?.id) {
-                  return item.id.toString();
-                }
-                // Fallback cho các comment không có id
-                return `comment-${index}-${Date.now()}`;
-              }}
-              style={styles.commentsList}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.emptyCommentsContainer}>
-                  <Text style={styles.emptyCommentsText}>Chưa có bình luận nào</Text>
-                </View>
+          <FlatList
+            data={reduxComments || []}
+            renderItem={renderCommentItem}
+            keyExtractor={(item, index) => {
+              // ✅ Đảm bảo key luôn unique và valid
+              if (item?.id) {
+                return item.id.toString();
               }
-              removeClippedSubviews={false} // ✅ Tắt để tránh lỗi render
-              initialNumToRender={10}
-              maxToRenderPerBatch={5}
-              windowSize={10}
-            />
+              // Fallback cho các comment không có id
+              return `comment-${index}-${Date.now()}`;
+            }}
+            style={styles.commentsList}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyCommentsContainer}>
+                <Text style={styles.emptyCommentsText}>Chưa có bình luận nào</Text>
+              </View>
+            }
+            removeClippedSubviews={false} // ✅ Tắt để tránh lỗi render
+            initialNumToRender={10}
+            maxToRenderPerBatch={5}
+            windowSize={10}
+          />
           {/* )} */}
 
           <View style={styles.commentInputContainer}>
@@ -955,7 +943,7 @@ const Post: React.FC<PostProps> = ({
                 </TouchableOpacity>
               </View>
             )} */}
-            
+
             {/* ✅ Input row - sửa lại flexDirection */}
             <View style={styles.inputRow}>
               <Image
@@ -975,7 +963,7 @@ const Post: React.FC<PostProps> = ({
                 onSubmitEditing={handleAddComment}
                 enablesReturnKeyAutomatically={true}
                 multiline
-                // blurOnSubmit is not needed because multiline is always true
+              // blurOnSubmit is not needed because multiline is always true
               />
               <TouchableOpacity
                 style={[
@@ -996,7 +984,7 @@ const Post: React.FC<PostProps> = ({
                 )}
               </TouchableOpacity>
             </View>
-            
+
             {/* ✅ Typing Indicator */}
             {/* <TypingIndicator isVisible={isTyping} /> */}
           </View>

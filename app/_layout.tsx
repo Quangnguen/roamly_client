@@ -56,7 +56,7 @@ function AppContent() {
         socketService.off('new_comment');
         socketService.off('new_follower');
         socketService.off('new_message');
-        
+
       }
 
       // ✅ UNIFIED: Single handler cho tất cả notifications
@@ -65,8 +65,8 @@ function AppContent() {
         const template = socketService.getNotificationTemplate(type);
         const formattedTitle = data.title || template.title;
         var formattedBody = data.message || data.content || template.bodyTemplate(data);
-        
-        if(type === 'message') {
+
+        if (type === 'message') {
           formattedBody = `${data.username || 'Ai đó'}: ${formattedBody}`;
         }
 
@@ -100,7 +100,7 @@ function AppContent() {
         });
       }
 
-  
+
 
       if (socketService && typeof socketService.onPostLiked === 'function') {
         socketService.onPostLiked((data: any) => {
@@ -137,7 +137,29 @@ function AppContent() {
 
       if (socketService && typeof socketService.onNewComment === 'function') {
         socketService.onNewComment((data: any) => {
-          showNotificationToast(data, 'comment');
+          // ✅ Cập nhật Redux state để comment hiện trên UI
+          if (data.comment) {
+            dispatch({
+              type: 'comment/addRealTimeComment',
+              payload: data.comment
+            });
+
+            // ✅ Update comment count trong post
+            if (data.postId && data.commentCount) {
+              dispatch({
+                type: 'post/updateCommentCount',
+                payload: {
+                  postId: data.postId,
+                  commentCount: data.commentCount
+                }
+              });
+            }
+          }
+
+          // ✅ Hiện toast notification cho người khác (không phải chính mình)
+          if (data.comment && data.comment.authorId !== user.profile?.id) {
+            showNotificationToast(data, 'comment');
+          }
         });
       }
 
@@ -151,14 +173,14 @@ function AppContent() {
       if (socketService && typeof socketService.onNewMessage === 'function') {
         socketService.onNewMessage((data: any) => {
           console.log('💌 New message received:', data);
-          
+
           const navigateToChat = () => {
             console.log('🔍 Navigation function called!');
             console.log('🔍 Navigation object:', !!navigation);
-            
+
             const conversationId = data.conversationId;
             const senderName = data.username || data.sender?.username || 'Unknown';
-            
+
             if (conversationId) {
               console.log('🔄 About to navigate to ChatDetailPage:', {
                 conversationId,
@@ -169,7 +191,7 @@ function AppContent() {
                   avatar: data.sender?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg'
                 }
               });
-              
+
               try {
                 navigation.navigate('ChatDetailPage', {
                   chatId: conversationId,

@@ -89,7 +89,7 @@ export const commentSlice = createSlice({
         clearCurrentComment: (state) => {
             state.currentComment = null;
         },
-         updateCommentCount: (state, action) => {
+        updateCommentCount: (state, action) => {
             state.countComments = action.payload;
             console.log('✅ Updated comment count in commentSlice:', action.payload);
         },
@@ -100,7 +100,7 @@ export const commentSlice = createSlice({
         removeOptimisticComment: (state, action: PayloadAction<string>) => {
             state.comments = state.comments?.filter(comment => comment.id !== action.payload) || [];
         },
-         clearCommentsOnly: (state) => {
+        clearCommentsOnly: (state) => {
             state.comments = [];
             // Không reset countComments
             console.log('🧹 Cleared comments but kept count:', state.countComments);
@@ -183,14 +183,14 @@ export const commentSlice = createSlice({
     },
 });
 
-export const { 
-  clearCommentState, 
-  clearComments, 
-  clearCurrentComment,
-  addOptimisticComment, 
-  removeOptimisticComment,
-  addRealTimeComment,
-  removeComment
+export const {
+    clearCommentState,
+    clearComments,
+    clearCurrentComment,
+    addOptimisticComment,
+    removeOptimisticComment,
+    addRealTimeComment,
+    removeComment
 } = commentSlice.actions;
 
 export default commentSlice.reducer;
