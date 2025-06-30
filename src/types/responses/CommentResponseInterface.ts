@@ -6,7 +6,7 @@ export interface CommentResponseInterface {
   authorId: string;
   content: string;
   parentId?: string;
-  likesCount: number;
+  likeCount: number; // Sửa từ likesCount thành likeCount để match API
   isLiked: boolean;
   isEdited: boolean;
   createdAt: Date;

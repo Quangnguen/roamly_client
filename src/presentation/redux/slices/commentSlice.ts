@@ -144,12 +144,12 @@ export const commentSlice = createSlice({
             state.comments = state.comments?.filter(comment => comment.id !== action.payload) || [];
         },
         // ✅ Toggle like status optimistically
-        toggleCommentLike: (state, action: PayloadAction<{ commentId: string; isLiked: boolean; likesCount: number }>) => {
-            const { commentId, isLiked, likesCount } = action.payload;
+        toggleCommentLike: (state, action: PayloadAction<{ commentId: string; isLiked: boolean; likeCount: number }>) => {
+            const { commentId, isLiked, likeCount } = action.payload;
             const comment = state.comments?.find(c => c.id === commentId);
             if (comment) {
                 comment.isLiked = isLiked;
-                comment.likesCount = likesCount;
+                comment.likeCount = likeCount;
             }
         },
     },
@@ -207,40 +207,30 @@ export const commentSlice = createSlice({
                 state.error = action.payload as string;
             });
 
-        // Like comment cases
+        // Like comment cases - chỉ handle error, data sẽ được update qua refetch
         builder
             .addCase(likeComment.pending, (state) => {
                 state.error = null;
             })
             .addCase(likeComment.fulfilled, (state, action) => {
-                const commentId = action.payload.commentId;
-                const comment = state.comments?.find(c => c.id === commentId);
-                if (comment) {
-                    comment.isLiked = true;
-                    comment.likesCount = (comment.likesCount || 0) + 1;
-                }
+                // Không update state ở đây, để refetch xử lý
+                console.log('✅ Like comment API success, waiting for refetch...');
             })
             .addCase(likeComment.rejected, (state, action) => {
                 state.error = action.payload as string;
-                // Revert optimistic update if needed
             });
 
-        // Unlike comment cases
+        // Unlike comment cases - chỉ handle error, data sẽ được update qua refetch  
         builder
             .addCase(unlikeComment.pending, (state) => {
                 state.error = null;
             })
             .addCase(unlikeComment.fulfilled, (state, action) => {
-                const commentId = action.payload.commentId;
-                const comment = state.comments?.find(c => c.id === commentId);
-                if (comment) {
-                    comment.isLiked = false;
-                    comment.likesCount = Math.max((comment.likesCount || 0) - 1, 0);
-                }
+                // Không update state ở đây, để refetch xử lý
+                console.log('✅ Unlike comment API success, waiting for refetch...');
             })
             .addCase(unlikeComment.rejected, (state, action) => {
                 state.error = action.payload as string;
-                // Revert optimistic update if needed
             });
     },
 });

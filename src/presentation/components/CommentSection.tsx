@@ -20,8 +20,7 @@ import {
     createComment,
     getComments,
     likeComment,
-    unlikeComment,
-    toggleCommentLike
+    unlikeComment
 } from '../redux/slices/commentSlice';
 import { incrementCommentCount } from '../redux/slices/postSlice';
 import { socketService } from '../../services/socketService';
@@ -180,37 +179,26 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
     const handleCommentLike = useCallback(async (commentId: string, isCurrentlyLiked: boolean) => {
         try {
-            // Optimistic update
-            const currentComment = reduxComments?.find(c => c.id === commentId);
-            if (currentComment) {
-                const newLikesCount = isCurrentlyLiked
-                    ? Math.max((currentComment.likesCount || 0) - 1, 0)
-                    : (currentComment.likesCount || 0) + 1;
+            console.log(`🚀 ${isCurrentlyLiked ? 'Unlike' : 'Like'} comment:`, commentId);
 
-                dispatch(toggleCommentLike({
-                    commentId,
-                    isLiked: !isCurrentlyLiked,
-                    likesCount: newLikesCount
-                }));
-
-                // API call
-                if (isCurrentlyLiked) {
-                    await dispatch(unlikeComment(commentId)).unwrap();
-                } else {
-                    await dispatch(likeComment(commentId)).unwrap();
-                }
+            // API call - không dùng optimistic update
+            if (isCurrentlyLiked) {
+                await dispatch(unlikeComment(commentId)).unwrap();
+            } else {
+                await dispatch(likeComment(commentId)).unwrap();
             }
+
+            console.log('✅ API call completed, waiting before refetch...');
+
+            // Delay nhỏ để server kịp update database  
+            setTimeout(async () => {
+                console.log('🔄 Refetching comments...');
+                await dispatch(getComments(postId));
+                console.log('✅ Refetch completed');
+            }, 200);
+
         } catch (error) {
-            // Revert optimistic update on error
-            const currentComment = reduxComments?.find(c => c.id === commentId);
-            if (currentComment) {
-                dispatch(toggleCommentLike({
-                    commentId,
-                    isLiked: isCurrentlyLiked,
-                    likesCount: currentComment.likesCount || 0
-                }));
-            }
-
+            console.error('❌ Like/Unlike error:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Lỗi',
@@ -218,7 +206,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                 visibilityTime: 2000,
             });
         }
-    }, [dispatch, reduxComments]);
+    }, [dispatch, postId]);
 
     const renderReplyItem = useCallback(({ reply }: { reply: any }) => {
         if (!reply || !reply.id || !reply.content || !reply.author) {
@@ -257,7 +245,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                                 color={reply.isLiked ? '#e74c3c' : '#8e8e8e'}
                             />
                             <Text style={[styles.commentLikeCount, reply.isLiked && styles.commentLikeCountActive]}>
-                                {reply.likesCount || 0}
+                                {reply.likeCount || 0}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -317,7 +305,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                                     color={item.isLiked ? '#e74c3c' : '#8e8e8e'}
                                 />
                                 <Text style={[styles.commentLikeCount, item.isLiked && styles.commentLikeCountActive]}>
-                                    {item.likesCount || 0}
+                                    {item.likeCount || 0}
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
