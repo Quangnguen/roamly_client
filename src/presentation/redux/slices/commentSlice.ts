@@ -74,6 +74,32 @@ export const deleteComment = createAsyncThunk(
     }
 );
 
+// Like comment thunk
+export const likeComment = createAsyncThunk(
+    'comment/likeComment',
+    async (commentId: string, thunkAPI) => {
+        try {
+            const response = await dependencies.likeUsecase.like(commentId, 'comment');
+            return { commentId, ...response };
+        } catch (error: any) {
+            return thunkAPI.rejectWithValue(error.message || 'Không thể thích bình luận');
+        }
+    }
+);
+
+// Unlike comment thunk
+export const unlikeComment = createAsyncThunk(
+    'comment/unlikeComment',
+    async (commentId: string, thunkAPI) => {
+        try {
+            const response = await dependencies.likeUsecase.unlike(commentId, 'comment');
+            return { commentId, ...response };
+        } catch (error: any) {
+            return thunkAPI.rejectWithValue(error.message || 'Không thể bỏ thích bình luận');
+        }
+    }
+);
+
 export const commentSlice = createSlice({
     name: 'comment',
     initialState,
@@ -93,13 +119,7 @@ export const commentSlice = createSlice({
             state.countComments = action.payload;
             console.log('✅ Updated comment count in commentSlice:', action.payload);
         },
-        addOptimisticComment: (state, action: PayloadAction<any>) => {
-            state.comments?.unshift(action.payload);
-            console.log('✅ Added optimistic comment:', action.payload);
-        },
-        removeOptimisticComment: (state, action: PayloadAction<string>) => {
-            state.comments = state.comments?.filter(comment => comment.id !== action.payload) || [];
-        },
+
         clearCommentsOnly: (state) => {
             state.comments = [];
             // Không reset countComments
@@ -123,6 +143,15 @@ export const commentSlice = createSlice({
         removeComment: (state, action: PayloadAction<string>) => {
             state.comments = state.comments?.filter(comment => comment.id !== action.payload) || [];
         },
+        // ✅ Toggle like status optimistically
+        toggleCommentLike: (state, action: PayloadAction<{ commentId: string; isLiked: boolean; likesCount: number }>) => {
+            const { commentId, isLiked, likesCount } = action.payload;
+            const comment = state.comments?.find(c => c.id === commentId);
+            if (comment) {
+                comment.isLiked = isLiked;
+                comment.likesCount = likesCount;
+            }
+        },
     },
     extraReducers: (builder) => {
         // Create comment cases
@@ -134,10 +163,7 @@ export const commentSlice = createSlice({
             .addCase(createComment.fulfilled, (state, action) => {
                 state.loading = false;
                 state.currentComment = action.payload;
-                // Add new comment to comments array if it exists
-                if (state.comments) {
-                    state.comments.push(action.payload);
-                }
+                // Comment sẽ được load lại thông qua refetch getComments
             })
             .addCase(createComment.rejected, (state, action) => {
                 state.loading = false;
@@ -180,6 +206,42 @@ export const commentSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload as string;
             });
+
+        // Like comment cases
+        builder
+            .addCase(likeComment.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(likeComment.fulfilled, (state, action) => {
+                const commentId = action.payload.commentId;
+                const comment = state.comments?.find(c => c.id === commentId);
+                if (comment) {
+                    comment.isLiked = true;
+                    comment.likesCount = (comment.likesCount || 0) + 1;
+                }
+            })
+            .addCase(likeComment.rejected, (state, action) => {
+                state.error = action.payload as string;
+                // Revert optimistic update if needed
+            });
+
+        // Unlike comment cases
+        builder
+            .addCase(unlikeComment.pending, (state) => {
+                state.error = null;
+            })
+            .addCase(unlikeComment.fulfilled, (state, action) => {
+                const commentId = action.payload.commentId;
+                const comment = state.comments?.find(c => c.id === commentId);
+                if (comment) {
+                    comment.isLiked = false;
+                    comment.likesCount = Math.max((comment.likesCount || 0) - 1, 0);
+                }
+            })
+            .addCase(unlikeComment.rejected, (state, action) => {
+                state.error = action.payload as string;
+                // Revert optimistic update if needed
+            });
     },
 });
 
@@ -187,10 +249,9 @@ export const {
     clearCommentState,
     clearComments,
     clearCurrentComment,
-    addOptimisticComment,
-    removeOptimisticComment,
     addRealTimeComment,
-    removeComment
+    removeComment,
+    toggleCommentLike
 } = commentSlice.actions;
 
 export default commentSlice.reducer;

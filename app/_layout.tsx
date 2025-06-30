@@ -12,7 +12,7 @@ import { socketService } from '@/src/services/socketService'; // ✅ Named impor
 import * as Notifications from 'expo-notifications';
 import { AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { incrementLikeFromSocket, decrementLikeFromSocket } from '../src/presentation/redux/slices/postSlice';
+import { incrementLikeFromSocket, decrementLikeFromSocket, incrementCommentCount } from '../src/presentation/redux/slices/postSlice';
 import { incrementUnreadNotifications } from '../src/presentation/redux/slices/authSlice';
 import { handleSocketNewMessage } from '../src/presentation/redux/slices/chatSlice';
 import { router } from 'expo-router'; // ✅ Import Expo Router
@@ -144,15 +144,11 @@ function AppContent() {
               payload: data.comment
             });
 
-            // ✅ Update comment count trong post
-            if (data.postId && data.commentCount) {
-              dispatch({
-                type: 'post/updateCommentCount',
-                payload: {
-                  postId: data.postId,
-                  commentCount: data.commentCount
-                }
-              });
+            // ✅ Tăng comment count lên 1 khi có comment mới
+            if (data.postId || data.comment.postId) {
+              dispatch(incrementCommentCount({
+                postId: data.postId || data.comment.postId
+              }));
             }
           }
 

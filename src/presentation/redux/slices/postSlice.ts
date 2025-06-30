@@ -254,7 +254,7 @@ const postSlice = createSlice({
             // Sử dụng helper function chung
             updatePostLikeCount(state, postId, -1, null); // null = không thay đổi isLike
         },
-        // ✅ Update comment count real-time
+        // ✅ Update comment count real-time (absolute value)
         updateCommentCount: (state, action: PayloadAction<{ postId: string, commentCount: number }>) => {
             const { postId, commentCount } = action.payload;
 
@@ -285,6 +285,40 @@ const postSlice = createSlice({
                     state.myPosts[myPostIndex]._count.comments = commentCount;
                 } else {
                     state.myPosts[myPostIndex].commentCount = commentCount;
+                }
+            }
+        },
+        // ✅ Increment comment count by 1 when new comment added
+        incrementCommentCount: (state, action: PayloadAction<{ postId: string }>) => {
+            const { postId } = action.payload;
+
+            // Update trong feedPosts
+            const feedPostIndex = state.feedPosts.findIndex(post => post.id === postId);
+            if (feedPostIndex !== -1) {
+                if (state.feedPosts[feedPostIndex]._count) {
+                    state.feedPosts[feedPostIndex]._count.comments += 1;
+                } else {
+                    state.feedPosts[feedPostIndex].commentCount = (state.feedPosts[feedPostIndex].commentCount || 0) + 1;
+                }
+            }
+
+            // Update trong posts
+            const postIndex = state.posts.findIndex(post => post.id === postId);
+            if (postIndex !== -1) {
+                if (state.posts[postIndex]._count) {
+                    state.posts[postIndex]._count.comments += 1;
+                } else {
+                    state.posts[postIndex].commentCount = (state.posts[postIndex].commentCount || 0) + 1;
+                }
+            }
+
+            // Update trong myPosts
+            const myPostIndex = state.myPosts.findIndex(post => post.id === postId);
+            if (myPostIndex !== -1) {
+                if (state.myPosts[myPostIndex]._count) {
+                    state.myPosts[myPostIndex]._count.comments += 1;
+                } else {
+                    state.myPosts[myPostIndex].commentCount = (state.myPosts[myPostIndex].commentCount || 0) + 1;
                 }
             }
         },
@@ -523,7 +557,8 @@ export const {
     updateOptimisticPost,
     incrementLikeFromSocket,
     decrementLikeFromSocket,
-    updateCommentCount
+    updateCommentCount,
+    incrementCommentCount
 } = postSlice.actions;
 
 export default postSlice.reducer;

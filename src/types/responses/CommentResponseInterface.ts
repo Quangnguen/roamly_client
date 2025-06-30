@@ -11,4 +11,10 @@ export interface CommentResponseInterface {
   isEdited: boolean;
   createdAt: Date;
   updatedAt: Date;
+  isOptimistic?: boolean; // For optimistic updates
+  author?: {
+    id: string;
+    username: string;
+    profilePic: string;
+  };
 }
