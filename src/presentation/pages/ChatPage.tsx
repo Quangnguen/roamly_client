@@ -151,7 +151,7 @@ const ChatPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Convert conversations to chat items
+  // Convert conversations to chat items (remove sorting here)
   const chatData: ChatItemType[] = React.useMemo(() => {
     console.log('🔄 ChatPage: Converting conversations to chat data', {
       conversationsCount: conversations?.length || 0,
@@ -166,10 +166,11 @@ const ChatPage: React.FC = () => {
     // Use profile id if available, otherwise use fallback for development
     const currentUserId = profile?.id || 'fallback-user-id';
 
+    // Conversations are already sorted in Redux, just convert them
     return conversations.map(conversation =>
       convertConversationToChat(conversation, currentUserId)
     );
-  }, [conversations, profile?.id, currentTime]); // Thêm currentTime để update thời gian
+  }, [conversations, profile?.id, currentTime]);
 
   // Filter chat data based on search
   const filteredChatData = React.useMemo(() => {

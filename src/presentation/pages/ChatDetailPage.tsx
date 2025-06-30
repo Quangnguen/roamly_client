@@ -26,6 +26,7 @@ import { getMessages, addMessage, setSelectedConversation } from "../redux/slice
 import { MessageResponseInterface } from "../../types/messageResponseInterface";
 import Toast from "react-native-toast-message";
 import { sendMessage } from "../redux/slices/chatSlice";
+import { socketService } from '@/src/services/socketService';
 
 type ChatDetailRouteProp = RouteProp<RootStackParamList, 'ChatDetailPage'>;
 
@@ -189,10 +190,10 @@ const ChatDetailPage: React.FC = () => {
 
         if (!result.canceled && result.assets) {
             console.log("Đã chọn được", result.assets.length, "ảnh từ thư viện");
-            const newImages: GalleryImage[] = result.assets.map(asset => {
+            const newImages: GalleryImage[] = result.assets.map((asset, index) => {
                 console.log("URL ảnh được chọn:", asset.uri);
                 return {
-                    id: asset.assetId || Date.now().toString() + Math.random(),
+                    id: asset.assetId || `${asset.uri}-${index}`,
                     uri: asset.uri,
                 };
             });
@@ -218,7 +219,7 @@ const ChatDetailPage: React.FC = () => {
             console.log("Đã chụp được ảnh từ camera");
             console.log("URL ảnh từ camera:", result.assets[0].uri);
             const newImage: GalleryImage = {
-                id: result.assets[0].assetId || Date.now().toString(),
+                id: result.assets[0].assetId || `camera-${Date.now()}`,
                 uri: result.assets[0].uri,
             };
             setGalleryImages(prevImages => [newImage, ...prevImages]);
@@ -386,6 +387,150 @@ const ChatDetailPage: React.FC = () => {
         setSelectedImageUri(null);
     };
 
+    // WebSocket listener cho tin nhắn real-time
+    useEffect(() => {
+        if (!chatId || !selectedConversation?.id) return;
+
+        console.log('🔌 ChatDetailPage: Setting up WebSocket listeners for conversation:', chatId);
+
+        // Handler cho tin nhắn mới
+        const handleNewMessage = (data: any) => {
+            console.log('📨 ChatDetailPage: Received new message:', data);
+
+            // Chỉ xử lý nếu tin nhắn thuộc về conversation hiện tại
+            if (data.conversationId === chatId || data.conversationId === selectedConversation.id) {
+                console.log('📨 ChatDetailPage: Message belongs to current conversation, adding to messages');
+
+                // Thêm message vào danh sách messages hiện tại
+                if (data.message) {
+                    dispatch(addMessage(data.message));
+
+                    // Auto scroll xuống tin nhắn mới (nếu không phải tin nhắn của mình)
+                    if (data.message.senderId !== currentUser?.id) {
+                        setTimeout(() => {
+                            flatListRef.current?.scrollToEnd({ animated: true });
+                        }, 100);
+                    }
+                }
+            } else {
+                console.log('📨 ChatDetailPage: Message belongs to different conversation, ignoring');
+            }
+        };
+
+        // Handler cho typing indicator
+        const handleUserTyping = (data: any) => {
+            console.log('⌨️ ChatDetailPage: User typing:', data);
+
+            if (data.conversationId === chatId && data.userId !== currentUser?.id) {
+                // TODO: Hiển thị typing indicator
+                console.log(`${data.username || 'Ai đó'} đang gõ...`);
+            }
+        };
+
+        // Handler cho user online/offline
+        const handleUserOnline = (data: any) => {
+            console.log('🟢 ChatDetailPage: User came online:', data);
+            // TODO: Cập nhật online status
+        };
+
+        const handleUserOffline = (data: any) => {
+            console.log('🔴 ChatDetailPage: User went offline:', data);
+            // TODO: Cập nhật offline status
+        };
+
+        // Đăng ký listeners
+        if (socketService.isConnected()) {
+            console.log('✅ ChatDetailPage: Socket connected, registering listeners');
+
+            // Các event names có thể có
+            socketService.on('newMessage', handleNewMessage);
+            socketService.on('messageReceived', handleNewMessage);
+            socketService.on('new_message', handleNewMessage);
+            socketService.on('message', handleNewMessage);
+
+            // Typing events
+            socketService.on('userTyping', handleUserTyping);
+            socketService.on('user_typing', handleUserTyping);
+
+            // Online/offline events
+            socketService.on('userOnline', handleUserOnline);
+            socketService.on('userOffline', handleUserOffline);
+            socketService.on('user_online', handleUserOnline);
+            socketService.on('user_offline', handleUserOffline);
+
+            // Join conversation room (optional - nếu server support)
+            socketService.emit('joinConversation', {
+                conversationId: chatId,
+                userId: currentUser?.id
+            });
+
+        } else {
+            console.log('⚠️ ChatDetailPage: Socket not connected, trying to connect...');
+            socketService.connect().then(() => {
+                console.log('✅ ChatDetailPage: Socket connected after retry');
+                // Register listeners after connection
+                socketService.on('newMessage', handleNewMessage);
+                socketService.on('messageReceived', handleNewMessage);
+                socketService.on('new_message', handleNewMessage);
+                socketService.on('message', handleNewMessage);
+                socketService.on('userTyping', handleUserTyping);
+                socketService.on('user_typing', handleUserTyping);
+                socketService.on('userOnline', handleUserOnline);
+                socketService.on('userOffline', handleUserOffline);
+                socketService.on('user_online', handleUserOnline);
+                socketService.on('user_offline', handleUserOffline);
+
+                // Join conversation room
+                socketService.emit('joinConversation', {
+                    conversationId: chatId,
+                    userId: currentUser?.id
+                });
+            }).catch(error => {
+                console.error('❌ ChatDetailPage: Failed to connect socket:', error);
+            });
+        }
+
+        // Cleanup function
+        return () => {
+            console.log('🧹 ChatDetailPage: Cleaning up WebSocket listeners');
+
+            // Leave conversation room
+            if (socketService.isConnected()) {
+                socketService.emit('leaveConversation', {
+                    conversationId: chatId,
+                    userId: currentUser?.id
+                });
+            }
+
+            // Remove listeners
+            socketService.off('newMessage', handleNewMessage);
+            socketService.off('messageReceived', handleNewMessage);
+            socketService.off('new_message', handleNewMessage);
+            socketService.off('message', handleNewMessage);
+            socketService.off('userTyping', handleUserTyping);
+            socketService.off('user_typing', handleUserTyping);
+            socketService.off('userOnline', handleUserOnline);
+            socketService.off('userOffline', handleUserOffline);
+            socketService.off('user_online', handleUserOnline);
+            socketService.off('user_offline', handleUserOffline);
+        };
+    }, [chatId, selectedConversation?.id, currentUser?.id, dispatch]); // Dependencies
+
+    // Optional: Emit typing event khi user đang gõ
+    const handleTextChange = (text: string) => {
+        setNewMessage(text);
+
+        // Emit typing event
+        if (socketService.isConnected() && selectedConversation?.id) {
+            socketService.emit('userTyping', {
+                conversationId: selectedConversation.id,
+                userId: currentUser?.id,
+                username: currentUser?.username,
+                isTyping: text.length > 0
+            });
+        }
+    };
+
     return (
         <SafeAreaView style={styles.container} edges={[]}>
             <KeyboardAvoidingView
@@ -487,11 +632,13 @@ const ChatDetailPage: React.FC = () => {
                 <View style={styles.bottomContainer}>
                     <View style={styles.inputContainer}>
                         <TextInput
-                            style={styles.input}
-                            placeholder="Nhắn tin..."
+                            style={styles.textInput}
+                            placeholder="Nhập tin nhắn..."
+                            placeholderTextColor="#999"
                             value={newMessage}
-                            onChangeText={setNewMessage}
+                            onChangeText={handleTextChange}
                             multiline
+                            maxLength={1000}
                         />
                         <TouchableOpacity
                             style={[
@@ -690,7 +837,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0f0f0',
         borderRadius: 20,
     },
-    input: {
+    textInput: {
         flex: 1,
         backgroundColor: '#f0f0f0',
         borderRadius: 20,

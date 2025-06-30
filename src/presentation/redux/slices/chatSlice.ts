@@ -102,8 +102,12 @@ const chatSlice = createSlice({
         // Add new message to current conversation
         addMessage: (state, action: PayloadAction<MessageResponseInterface>) => {
             const newMessage = action.payload;
-            // Thêm message vào cuối danh sách (newest last)
-            state.messages.push(newMessage);
+            // Kiểm tra xem message đã tồn tại chưa
+            const existingMessageIndex = state.messages.findIndex(msg => msg.id === newMessage.id);
+            if (existingMessageIndex === -1) {
+                // Chỉ thêm message nếu chưa tồn tại
+                state.messages.push(newMessage);
+            }
         },
 
         // Socket event handlers
@@ -136,9 +140,14 @@ const chatSlice = createSlice({
             if (state.selectedConversation?.id === conversationId) {
                 console.log('📨 chatSlice: Updating selected conversation and adding message to list');
                 state.selectedConversation!.lastMessage = message.content || message.text || "Tin nhắn mới";
-                // Add message to current messages list
-                state.messages.push(message);
-                console.log('📨 chatSlice: Total messages now:', state.messages.length);
+                // Add message to current messages list chỉ nếu chưa tồn tại
+                const existingMessageIndex = state.messages.findIndex(msg => msg.id === message.id);
+                if (existingMessageIndex === -1) {
+                    state.messages.push(message);
+                    console.log('📨 chatSlice: Added new message to list. Total messages now:', state.messages.length);
+                } else {
+                    console.log('📨 chatSlice: Message already exists, skipping duplicate');
+                }
             }
 
             // Increment unread count if not current conversation
@@ -193,7 +202,42 @@ const chatSlice = createSlice({
             })
             .addCase(getConversations.fulfilled, (state, action) => {
                 state.loading = false;
-                state.conversations = action.payload;
+
+                // Sort conversations by lastMessage time (newest first)
+                const sortedConversations = [...action.payload].sort((a, b) => {
+                    // Get last message time for conversation A
+                    let aTime = '';
+                    if (a.lastMessage && typeof a.lastMessage === 'object') {
+                        aTime = a.lastMessage.createdAt || a.lastMessage.updatedAt || '';
+                    }
+                    if (!aTime) {
+                        aTime = a.updatedAt || a.createdAt || '0';
+                    }
+
+                    // Get last message time for conversation B
+                    let bTime = '';
+                    if (b.lastMessage && typeof b.lastMessage === 'object') {
+                        bTime = b.lastMessage.createdAt || b.lastMessage.updatedAt || '';
+                    }
+                    if (!bTime) {
+                        bTime = b.updatedAt || b.createdAt || '0';
+                    }
+
+                    return new Date(bTime).getTime() - new Date(aTime).getTime();
+                });
+
+                console.log('📋 chatSlice: Sorted conversations by lastMessage time', {
+                    originalCount: action.payload.length,
+                    sortedCount: sortedConversations.length,
+                    sortedOrder: sortedConversations.slice(0, 3).map(c => ({
+                        id: c.id,
+                        lastMessageTime: c.lastMessage && typeof c.lastMessage === 'object'
+                            ? c.lastMessage.createdAt
+                            : c.updatedAt
+                    }))
+                });
+
+                state.conversations = sortedConversations;
                 state.error = null;
             })
             .addCase(getConversations.rejected, (state, action) => {
