@@ -8,8 +8,9 @@ import { NavigationProp } from "@/src/utils/PropsNavigate"
 import { BACKGROUND } from "@/src/const/constants"
 import React, { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "../redux/hook"
-import { getConversations } from "../redux/slices/chatSlice"
+import { getConversations, handleSocketNewMessage } from "../redux/slices/chatSlice"
 import { ConversationResponseInterface } from "@/src/types/ConversationResponseInterface"
+import { socketService } from "@/src/services/socketService"
 
 // Helper function để convert ConversationResponseInterface sang ChatItemType
 const convertConversationToChat = (conversation: ConversationResponseInterface, currentUserId: string): ChatItemType => {
@@ -63,14 +64,101 @@ const ChatPage: React.FC = () => {
   const profile = useAppSelector(state => state.auth.profile)
 
   const [searchText, setSearchText] = React.useState("");
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+  const [socketConnected, setSocketConnected] = React.useState(false);
 
   // Load conversations on component mount
   useEffect(() => {
     dispatch(getConversations());
   }, [dispatch]);
 
+  // Setup WebSocket listeners for real-time chat updates
+  useEffect(() => {
+    console.log('🔌 ChatPage: Setting up WebSocket listeners');
+
+    // Listener cho tin nhắn mới
+    const handleNewMessage = (data: any) => {
+      console.log('📨 ChatPage: Received new message:', data);
+
+      // Dispatch action để cập nhật Redux state
+      dispatch(handleSocketNewMessage({
+        conversationId: data.conversationId,
+        message: data.message || data
+      }));
+
+      // Nếu đây là conversation mới (không có trong danh sách), reload conversations
+      const existingConversation = conversations.find(conv => conv.id === data.conversationId);
+      if (!existingConversation) {
+        console.log('📨 New conversation detected, reloading conversations...');
+        setTimeout(() => {
+          dispatch(getConversations());
+        }, 500); // Delay nhỏ để đảm bảo server đã cập nhật
+      }
+    };
+
+    // Listener cho khi user online/offline
+    const handleUserOnline = (data: any) => {
+      console.log('🟢 User came online:', data);
+      // TODO: Có thể thêm indicator online status sau
+    };
+
+    const handleUserOffline = (data: any) => {
+      console.log('🔴 User went offline:', data);
+      // TODO: Có thể thêm indicator offline status sau
+    };
+
+    // Đăng ký listeners
+    if (socketService.isConnected()) {
+      console.log('✅ ChatPage: Socket already connected');
+      setSocketConnected(true);
+      socketService.on('newMessage', handleNewMessage);
+      socketService.on('messageReceived', handleNewMessage); // Backup event name
+      socketService.on('userOnline', handleUserOnline);
+      socketService.on('userOffline', handleUserOffline);
+    } else {
+      console.log('⚠️ ChatPage: Socket not connected, trying to connect...');
+      setSocketConnected(false);
+      socketService.connect().then(() => {
+        console.log('✅ ChatPage: Socket connected successfully');
+        setSocketConnected(true);
+        socketService.on('newMessage', handleNewMessage);
+        socketService.on('messageReceived', handleNewMessage);
+        socketService.on('userOnline', handleUserOnline);
+        socketService.on('userOffline', handleUserOffline);
+      }).catch(error => {
+        console.error('❌ ChatPage: Failed to connect socket:', error);
+        setSocketConnected(false);
+      });
+    }
+
+    // Cleanup function
+    return () => {
+      console.log('🧹 ChatPage: Cleaning up WebSocket listeners');
+      setSocketConnected(false);
+      socketService.off('newMessage', handleNewMessage);
+      socketService.off('messageReceived', handleNewMessage);
+      socketService.off('userOnline', handleUserOnline);
+      socketService.off('userOffline', handleUserOffline);
+    };
+  }, [dispatch]); // Chỉ setup một lần khi component mount
+
+  // Update current time every minute for real-time "time ago" updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Convert conversations to chat items
   const chatData: ChatItemType[] = React.useMemo(() => {
+    console.log('🔄 ChatPage: Converting conversations to chat data', {
+      conversationsCount: conversations?.length || 0,
+      profileId: profile?.id,
+      currentTime: currentTime.toISOString()
+    });
+
     if (!conversations || conversations.length === 0) {
       return [];
     }
@@ -81,7 +169,7 @@ const ChatPage: React.FC = () => {
     return conversations.map(conversation =>
       convertConversationToChat(conversation, currentUserId)
     );
-  }, [conversations, profile?.id]);
+  }, [conversations, profile?.id, currentTime]); // Thêm currentTime để update thời gian
 
   // Filter chat data based on search
   const filteredChatData = React.useMemo(() => {
@@ -106,6 +194,60 @@ const ChatPage: React.FC = () => {
   const handlePressOutside = () => {
     Keyboard.dismiss()
   }
+
+  // Debug function để test WebSocket
+  const testWebSocket = () => {
+    console.log('🧪 Testing WebSocket connection...');
+    console.log('Socket connected:', socketService.isConnected());
+    console.log('Socket ID:', socketService.getSocketId());
+
+    // Test emit một event
+    if (socketService.isConnected()) {
+      socketService.emit('test_event', {
+        message: 'Test from ChatPage',
+        userId: profile?.id,
+        timestamp: new Date().toISOString()
+      });
+      console.log('✅ Test event emitted');
+    } else {
+      console.log('❌ Socket not connected');
+    }
+  }
+
+  // Test function để simulate tin nhắn mới
+  const simulateNewMessage = () => {
+    console.log('🧪 Simulating new message...');
+
+    if (conversations.length > 0) {
+      const testConversation = conversations[0];
+      const testMessage = {
+        id: Date.now().toString(),
+        conversationId: testConversation.id,
+        senderId: 'test-sender-id',
+        content: `Test message at ${new Date().toLocaleTimeString()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedForAll: false,
+        seenBy: [],
+        mediaUrls: [],
+        mediaType: null,
+        pinned: false,
+        sender: {
+          id: 'test-sender-id',
+          username: 'Test User',
+          profilePic: ''
+        }
+      };
+
+      console.log('📨 Dispatching test message:', testMessage);
+      dispatch(handleSocketNewMessage({
+        conversationId: testConversation.id,
+        message: testMessage
+      }));
+    } else {
+      console.log('❌ No conversations available for test');
+    }
+  }
   return (
 
 
@@ -119,9 +261,11 @@ const ChatPage: React.FC = () => {
           <TouchableOpacity style={styles.userContainer}>
             <Text style={styles.username}>{profile?.username}</Text>
             <Ionicons name="chevron-down" size={18} />
+            {/* Socket connection indicator */}
+            <View style={[styles.connectionDot, { backgroundColor: socketConnected ? '#34C759' : '#FF3B30' }]} />
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity onPress={simulateNewMessage}>
             <Feather name="plus" size={24} />
           </TouchableOpacity>
         </View>
@@ -196,6 +340,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 18,
     marginRight: 4,
+  },
+  connectionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginLeft: 8,
   },
   searchContainer: {
     paddingHorizontal: 16,

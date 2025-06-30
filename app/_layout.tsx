@@ -14,6 +14,7 @@ import { AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { incrementLikeFromSocket, decrementLikeFromSocket } from '../src/presentation/redux/slices/postSlice';
 import { incrementUnreadNotifications } from '../src/presentation/redux/slices/authSlice';
+import { handleSocketNewMessage } from '../src/presentation/redux/slices/chatSlice';
 
 function AppContent() {
   const { connectionState, isConnected } = useSocketWithRetry();
@@ -48,6 +49,10 @@ function AppContent() {
         socketService.off('post_unliked');
         socketService.off('new_comment');
         socketService.off('new_follower');
+        // Chat listeners cleanup
+        socketService.off('newMessage');
+        socketService.off('messageReceived');
+        socketService.off('new_message');
       }
 
       // ✅ UNIFIED: Single handler cho tất cả notifications
@@ -124,6 +129,66 @@ function AppContent() {
       if (socketService && typeof socketService.onNewFollower === 'function') {
         socketService.onNewFollower((data: any) => {
           showNotificationToast(data, 'follow');
+        });
+      }
+
+      // ✅ Chat event listeners
+      if (socketService && typeof socketService.on === 'function') {
+        console.log('🔌 _layout: Setting up chat event listeners');
+
+        // Generic listener để catch tất cả events (for debugging)
+        console.log('🔍 _layout: Socket service available, listening for all events...');
+
+        // Listener cho tin nhắn mới
+        socketService.on('newMessage', (data: any) => {
+          console.log('📨 _layout: Received newMessage:', data);
+
+          dispatch(handleSocketNewMessage({
+            conversationId: data.conversationId,
+            message: data.message || data
+          }));
+
+          // Show toast notification cho tin nhắn mới
+          showNotificationToast({
+            title: data.senderName || 'Tin nhắn mới',
+            message: data.message?.content || data.content || 'Bạn có tin nhắn mới'
+          }, 'message');
+        });
+
+        // Backup event names
+        socketService.on('messageReceived', (data: any) => {
+          console.log('📨 _layout: Received messageReceived:', data);
+
+          dispatch(handleSocketNewMessage({
+            conversationId: data.conversationId,
+            message: data.message || data
+          }));
+        });
+
+        socketService.on('new_message', (data: any) => {
+          console.log('📨 _layout: Received new_message:', data);
+
+          dispatch(handleSocketNewMessage({
+            conversationId: data.conversationId,
+            message: data.message || data
+          }));
+
+          showNotificationToast({
+            title: data.senderName || 'Tin nhắn mới',
+            message: data.message?.content || data.content || 'Bạn có tin nhắn mới'
+          }, 'message');
+        });
+
+        // Thêm các event names khác có thể từ server
+        ['message', 'chat_message', 'receive_message', 'message_sent'].forEach(eventName => {
+          socketService.on(eventName, (data: any) => {
+            console.log(`📨 _layout: Received ${eventName}:`, data);
+
+            dispatch(handleSocketNewMessage({
+              conversationId: data.conversationId,
+              message: data.message || data
+            }));
+          });
         });
       }
 

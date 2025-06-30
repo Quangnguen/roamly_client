@@ -209,10 +209,12 @@ class SocialNetworkNotificationService {
       priority: 'urgent' as const,
       title: '💌 Tin nhắn mới',
       bodyTemplate: (data: any) => {
-        const senderName = data.senderName || data.sender?.name || data.user?.name || 'Ai đó';
+        const senderName = data.username || 'Ai đó';
         const messageText = data.message || data.content || '';
-
+        console.log('🔍 Sender name:', senderName);
+        console.log('🔍 Message text:', messageText);
         if (messageText.length > 50) {
+
           return `${senderName}: ${messageText.substring(0, 50)}...`;
         }
         return `${senderName}: ${messageText}`;
