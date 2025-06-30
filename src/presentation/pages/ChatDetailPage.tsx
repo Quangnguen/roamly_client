@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     Text,
@@ -20,22 +20,17 @@ import { BACKGROUND } from "@/src/const/constants";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from 'expo-image-picker';
+import { useAppDispatch, useAppSelector } from "../redux/hook";
+import { getMessages, addMessage, setSelectedConversation } from "../redux/slices/chatSlice";
+import { MessageResponseInterface } from "../../types/messageResponseInterface";
+import Toast from "react-native-toast-message";
+import { sendMessage } from "../redux/slices/chatSlice";
 
 type ChatDetailRouteProp = RouteProp<RootStackParamList, 'ChatDetailPage'>;
 
 // Kích thước ảnh trong thư viện
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width / 4 - 12;
-
-// Mẫu tin nhắn
-type Message = {
-    id: string;
-    text: string;
-    isMe: boolean;
-    timestamp: string;
-    messageType?: 'text' | 'image';
-    imageUrl?: string;
-};
 
 // Định nghĩa lại type cho ảnh
 type GalleryImage = {
@@ -46,15 +41,72 @@ type GalleryImage = {
 const ChatDetailPage: React.FC = () => {
     const navigation = useNavigation();
     const route = useRoute<ChatDetailRouteProp>();
-    const { name, avatar } = route.params;
-    const flatListRef = React.useRef<FlatList<Message>>(null);
+    const { chatId, name, avatar } = route.params;
+    const flatListRef = React.useRef<FlatList<MessageResponseInterface>>(null);
+    const isNewMessageSent = useRef(false);
 
-    const [messages, setMessages] = useState<Message[]>([
-        { id: '1', text: 'Xin chào, bạn khỏe không?', isMe: false, timestamp: '10:30 AM', messageType: 'text' },
-        { id: '2', text: 'Chào bạn! Tôi khỏe, còn bạn thì sao?', isMe: true, timestamp: '10:32 AM', messageType: 'text' },
-        { id: '3', text: 'Tôi cũng ổn. Bạn đang làm gì vậy?', isMe: false, timestamp: '10:33 AM', messageType: 'text' },
-        { id: '4', text: 'Tôi đang viết code React Native. Còn bạn?', isMe: true, timestamp: '10:35 AM', messageType: 'text' }
-    ]);
+    const dispatch = useAppDispatch();
+    const {
+        messages,
+        messagesLoading,
+        hasMoreMessages,
+        currentPage,
+        selectedConversation
+    } = useAppSelector((state) => state.chat);
+
+    const { profile: currentUser } = useAppSelector((state) => state.auth);
+
+    useEffect(() => {
+        // Set selected conversation khi vào chat detail
+        if (chatId) {
+            console.log('🔧 ChatDetailPage - Setting conversation:', { chatId, name, avatar });
+
+            dispatch(setSelectedConversation({
+                id: chatId,
+                isGroup: false,
+                name: name,
+                createdById: '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                participants: [{
+                    id: chatId,
+                    conversationId: chatId,
+                    userId: chatId,
+                    joinedAt: new Date().toISOString(),
+                    user: {
+                        id: chatId,
+                        username: name,
+                        profilePic: avatar
+                    }
+                }],
+                lastMessage: null
+            }));
+
+            // Load messages đầu tiên
+            console.log('🔧 ChatDetailPage - Dispatching getMessages for:', chatId);
+            dispatch(getMessages({
+                conversationId: chatId,
+                limit: 0,
+                before: "test"
+            }));
+        }
+    }, [chatId, dispatch]);
+
+    // Debug state changes
+    useEffect(() => {
+        console.log('🔧 ChatDetailPage - Messages state updated:', {
+            messagesCount: messages.length,
+            messagesLoading,
+            hasMoreMessages,
+            currentPage,
+            messages: messages.slice(0, 3) // Log first 3 messages
+        });
+    }, [messages, messagesLoading, hasMoreMessages, currentPage]);
+
+    // Debug current user
+    useEffect(() => {
+        console.log('🔧 ChatDetailPage - Current user:', currentUser);
+    }, [currentUser]);
 
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -71,14 +123,76 @@ const ChatDetailPage: React.FC = () => {
         })();
     }, []);
 
-    // Tự động cuộn xuống khi có tin nhắn mới
+    // Debug: Log messages changes
     useEffect(() => {
-        if (messages.length > 0) {
+        console.log('🔍 Messages updated:', {
+            length: messages.length,
+            firstMessage: messages[0]?.content, // Tin nhắn cũ nhất
+            lastMessage: messages[messages.length - 1]?.content // Tin nhắn mới nhất
+        });
+    }, [messages]);
+
+    // Auto scroll to bottom khi vào màn hình và khi load messages lần đầu
+    useEffect(() => {
+        if (messages.length > 0 && !messagesLoading) {
+            console.log('📱 Auto scrolling to latest message on screen enter');
             setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
+                flatListRef.current?.scrollToEnd({ animated: false }); // Không animate lần đầu để nhanh hơn
             }, 200);
         }
-    }, [messages.length]);
+    }, [messages.length, messagesLoading]); // Chạy khi có messages và không còn loading
+
+    // Scroll to bottom khi component mount và có conversation
+    useEffect(() => {
+        if (selectedConversation && chatId) {
+            console.log('📱 Component mounted, preparing to scroll to bottom');
+            // Delay để đảm bảo messages đã được load
+            const timer = setTimeout(() => {
+                if (messages.length > 0) {
+                    flatListRef.current?.scrollToEnd({ animated: false });
+                }
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [selectedConversation, chatId]); // Chạy khi component mount với conversation
+
+    // Scroll to bottom khi selectedConversation thay đổi (chuyển conversation)
+    useEffect(() => {
+        if (selectedConversation) {
+            console.log('📱 Selected conversation changed, will scroll to bottom after messages load');
+            // Reset scroll position khi chuyển conversation
+            const timer = setTimeout(() => {
+                if (messages.length > 0) {
+                    flatListRef.current?.scrollToEnd({ animated: false });
+                }
+            }, 300);
+
+            return () => clearTimeout(timer);
+        }
+    }, [selectedConversation?.id]); // Chạy khi conversation ID thay đổi
+
+    // Theo dõi tin nhắn cuối cùng để scroll khi có tin nhắn mới
+    useEffect(() => {
+        if (messages.length > 0 && isNewMessageSent.current) {
+            console.log('📱 New message sent, scrolling to bottom');
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+                isNewMessageSent.current = false; // Reset flag sau khi scroll
+            }, 150);
+        }
+    }, [messages[messages.length - 1]?.id]); // Theo dõi ID của tin nhắn cuối cùng
+
+    // Load more messages khi scroll lên đầu
+    const handleLoadMore = () => {
+        if (!messagesLoading && hasMoreMessages && chatId) {
+            dispatch(getMessages({
+                conversationId: chatId,
+                limit: 20,
+                before: messages.length > 0 ? messages[0].id : '' // Lấy messages cũ hơn tin nhắn đầu tiên
+            }));
+        }
+    };
 
     const handleBack = () => {
         navigation.goBack();
@@ -145,53 +259,61 @@ const ChatDetailPage: React.FC = () => {
         setIsRecording(!isRecording);
     };
 
-    const handleSendMessage = () => {
-        if (newMessage.trim() === '' && galleryImages.length === 0) {
-            return;
-        }
+    // Function để gửi tin nhắn
+    const handleSendMessage = async (text: string, selectedFiles?: any[]) => {
+        if (!selectedConversation?.id || (!text.trim() && (!selectedFiles || selectedFiles.length === 0))) return;
 
-        const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        let newMessagesToSend: Message[] = [];
+        try {
+            // Set flag để biết đang gửi tin nhắn mới
+            isNewMessageSent.current = true;
 
-        if (newMessage.trim() !== '') {
-            const textMsg: Message = {
-                id: Date.now().toString() + '_text_' + Math.random(),
-                text: newMessage.trim(),
-                isMe: true,
-                timestamp: currentTime,
-                messageType: 'text',
-            };
-            newMessagesToSend.push(textMsg);
+            // Dispatch sendMessage action
+            const result = await dispatch(sendMessage({
+                conversationId: selectedConversation.id,
+                content: text.trim(),
+                files: selectedFiles // Optional files array
+            })).unwrap();
+
+            console.log('✅ Message sent successfully:', result);
+
+            // Clear input và gallery sau khi gửi thành công
             setNewMessage('');
-        }
-
-        if (galleryImages.length > 0) {
-            galleryImages.forEach((img, index) => {
-                if (img.uri) {
-                    const imgMsg: Message = {
-                        id: `img_${index}_` + Date.now().toString(),
-                        text: '',
-                        isMe: true,
-                        timestamp: currentTime,
-                        messageType: 'image',
-                        imageUrl: img.uri,
-                    };
-                    newMessagesToSend.push(imgMsg);
-                }
-            });
-
             setGalleryImages([]);
             setShowGallery(false);
-        }
 
-        if (newMessagesToSend.length > 0) {
-            setMessages(prevMessages => {
-                const updatedMessages = [...prevMessages, ...newMessagesToSend];
-                setTimeout(() => {
-                    flatListRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-                return updatedMessages;
+        } catch (error) {
+            console.error('❌ Failed to send message:', error);
+            isNewMessageSent.current = false; // Reset flag nếu có lỗi
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: 'Không thể gửi tin nhắn. Vui lòng thử lại.',
             });
+        }
+    };
+
+    // Example function để gửi tin nhắn với hình ảnh
+    const handleSendMessageWithImage = async (text: string, imageUri: string) => {
+        if (!selectedConversation?.id) return;
+
+        try {
+            // Tạo file object từ image URI (cho React Native)
+            const file = {
+                uri: imageUri,
+                type: 'image/jpeg', // hoặc type phù hợp
+                name: `image_${Date.now()}.jpg`,
+            };
+
+            await dispatch(sendMessage({
+                conversationId: selectedConversation.id,
+                content: text,
+                files: [file]
+            })).unwrap();
+
+            console.log('✅ Message with image sent successfully');
+
+        } catch (error) {
+            console.error('❌ Failed to send message with image:', error);
         }
     };
 
@@ -205,42 +327,46 @@ const ChatDetailPage: React.FC = () => {
         });
     };
 
-    const renderMessage = ({ item }: { item: Message }) => (
-        <View style={[styles.messageContainer, item.isMe ? styles.myMessage : styles.theirMessage]}>
-            {item.messageType === 'image' ? (
-                <View>
-                    {item.imageUrl ? (
+    const renderMessage = ({ item }: { item: MessageResponseInterface }) => {
+        const isMe = item.senderId === currentUser?.id;
+        const timestamp = new Date(item.createdAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        return (
+            <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage]}>
+                {item.mediaType === 'image' && item.mediaUrls.length > 0 ? (
+                    <View>
                         <TouchableOpacity
                             onPress={() => {
-                                console.log("Đã nhấn vào ảnh:", item.imageUrl);
-                                Alert.alert("Hình ảnh", `URI: ${item.imageUrl}`);
+                                console.log("Đã nhấn vào ảnh:", item.mediaUrls[0]);
+                                Alert.alert("Hình ảnh", `URI: ${item.mediaUrls[0]}`);
                             }}
+                            activeOpacity={0.8}
+                            delayPressIn={100} // Delay để phân biệt với scroll gesture
                         >
                             <Image
-                                source={{ uri: item.imageUrl }}
+                                source={{ uri: item.mediaUrls[0] }}
                                 style={styles.chatImage}
                                 resizeMode="cover"
                                 onError={(e) => {
-                                    console.warn(`Lỗi tải ảnh: ${item.imageUrl}`, e.nativeEvent.error);
+                                    console.warn(`Lỗi tải ảnh: ${item.mediaUrls[0]}`, e.nativeEvent.error);
                                     Alert.alert('Lỗi', 'Không thể tải ảnh, vui lòng thử lại.');
                                 }}
                             />
                         </TouchableOpacity>
-                    ) : (
-                        <View style={[styles.chatImage, { justifyContent: 'center', alignItems: 'center' }]}>
-                            <Text>Không có ảnh</Text>
-                        </View>
-                    )}
-                    <Text style={styles.timestamp}>{item.timestamp}</Text>
-                </View>
-            ) : (
-                <>
-                    <Text style={styles.messageText}>{item.text}</Text>
-                    <Text style={styles.timestamp}>{item.timestamp}</Text>
-                </>
-            )}
-        </View>
-    );
+                        <Text style={styles.timestamp}>{timestamp}</Text>
+                    </View>
+                ) : (
+                    <>
+                        <Text style={styles.messageText}>{item.content}</Text>
+                        <Text style={styles.timestamp}>{timestamp}</Text>
+                    </>
+                )}
+            </View>
+        );
+    };
 
     const renderGalleryItem = ({ item, index }: { item: GalleryImage, index: number }) => {
         if (item.id === 'camera') {
@@ -286,32 +412,91 @@ const ChatDetailPage: React.FC = () => {
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 keyboardVerticalOffset={Platform.OS === "ios" ? 45 : 20}
             >
-                <TouchableWithoutFeedback onPress={handlePressOutside}>
-                    <View style={styles.mainContent}>
+                <View style={styles.mainContent}>
+                    <TouchableWithoutFeedback onPress={handlePressOutside}>
                         <View style={styles.header}>
                             <TouchableOpacity onPress={handleBack}>
                                 <Ionicons name="chevron-back" size={24} />
                             </TouchableOpacity>
                             <Text style={styles.headerTitle}>{name}</Text>
-                            <TouchableOpacity>
-                                <Ionicons name="ellipsis-vertical" size={24} />
+                            <TouchableOpacity onPress={() => {
+                                // Add test message
+                                const testMessage: MessageResponseInterface = {
+                                    id: Date.now().toString(),
+                                    conversationId: chatId,
+                                    senderId: 'test-sender',
+                                    content: 'Đây là tin nhắn test để kiểm tra giao diện',
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString(),
+                                    deletedForAll: false,
+                                    seenBy: [],
+                                    mediaUrls: [],
+                                    mediaType: null,
+                                    pinned: false,
+                                    sender: {
+                                        id: 'test-sender',
+                                        username: 'Test User',
+                                        profilePic: ''
+                                    }
+                                };
+                                dispatch(addMessage(testMessage));
+                            }}>
+                                <Ionicons name="add-circle" size={24} />
                             </TouchableOpacity>
                         </View>
+                    </TouchableWithoutFeedback>
 
+                    {messagesLoading && messages.length === 0 ? (
                         <TouchableWithoutFeedback onPress={dismissKeyboard}>
-                            <FlatList
-                                ref={flatListRef}
-                                data={messages}
-                                renderItem={renderMessage}
-                                keyExtractor={item => item.id}
-                                contentContainerStyle={styles.messagesContainer}
-                                inverted={false}
-                                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                                onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                            />
+                            <View style={styles.loadingContainer}>
+                                <Text style={styles.loadingText}>Đang tải tin nhắn...</Text>
+                            </View>
                         </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
+                    ) : messages.length === 0 ? (
+                        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+                            <View style={styles.emptyContainer}>
+                                <Ionicons name="chatbubbles-outline" size={64} color="#ccc" />
+                                <Text style={styles.emptyText}>Chưa có tin nhắn nào</Text>
+                                <Text style={styles.emptySubText}>Hãy gửi tin nhắn đầu tiên!</Text>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    ) : (
+                        <FlatList
+                            ref={flatListRef}
+                            data={messages}
+                            renderItem={renderMessage}
+                            keyExtractor={item => item.id}
+                            contentContainerStyle={styles.messagesContainer}
+                            style={styles.flatListStyle} // Thêm style riêng cho FlatList
+                            inverted={false}
+                            onContentSizeChange={() => {
+                                // Scroll to end khi content thay đổi
+                                flatListRef.current?.scrollToEnd({ animated: true });
+                            }}
+                            onLayout={() => {
+                                // Scroll to end khi layout xong (lần đầu render)
+                                console.log('📱 FlatList layout completed, scrolling to end');
+                                setTimeout(() => {
+                                    flatListRef.current?.scrollToEnd({ animated: false });
+                                }, 100);
+                            }}
+                            onEndReached={handleLoadMore}
+                            onEndReachedThreshold={0.1}
+                            refreshing={messagesLoading}
+                            onRefresh={handleLoadMore}
+                            showsVerticalScrollIndicator={false} // Ẩn thanh cuộn dọc
+                            showsHorizontalScrollIndicator={false} // Ẩn thanh cuộn ngang
+                            extraData={messages.length} // Force re-render khi messages thay đổi
+                            removeClippedSubviews={false} // Đảm bảo tất cả items được render
+                            keyboardShouldPersistTaps="handled" // Cho phép tap trong FlatList khi keyboard mở
+                            onScrollBeginDrag={dismissKeyboard} // Dismiss keyboard khi bắt đầu scroll
+                            scrollEventThrottle={16} // Smooth scroll performance
+                            bounces={true} // Cho phép bounce effect
+                            alwaysBounceVertical={true} // Luôn có bounce effect dọc
+                            directionalLockEnabled={true} // Chỉ scroll theo một hướng tại một thời điểm
+                        />
+                    )}
+                </View>
 
                 <View style={styles.bottomContainer}>
                     <View style={styles.inputContainer}>
@@ -355,7 +540,7 @@ const ChatDetailPage: React.FC = () => {
                                 styles.iconButton,
                                 (newMessage.trim() !== '' || galleryImages.length > 0) ? styles.sendButton : null
                             ]}
-                            onPress={handleSendMessage}
+                            onPress={() => handleSendMessage(newMessage, galleryImages.length > 0 ? galleryImages : undefined)}
                             activeOpacity={0.5}
                         >
                             <Ionicons
@@ -425,6 +610,10 @@ const styles = StyleSheet.create({
         padding: 16,
         paddingBottom: 16,
         flexGrow: 1,
+    },
+    flatListStyle: {
+        flex: 1,
+        backgroundColor: 'transparent',
     },
     messageContainer: {
         maxWidth: '75%',
@@ -541,6 +730,37 @@ const styles = StyleSheet.create({
     },
     mainContent: {
         flex: 1,
+        backgroundColor: BACKGROUND,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    emptyText: {
+        fontSize: 18,
+        color: '#666',
+        marginTop: 16,
+        textAlign: 'center',
+        fontWeight: '500',
+    },
+    emptySubText: {
+        fontSize: 14,
+        color: '#999',
+        marginTop: 8,
+        textAlign: 'center',
     },
     overlay: {
         position: 'absolute',
