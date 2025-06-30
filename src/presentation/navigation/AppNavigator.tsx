@@ -42,6 +42,8 @@ export type RootStackParamList = {
     chatId: string;
     name: string;
     avatar: string;
+    senderId?: string;
+    messageId?: string;
   };
   WeatherPage: undefined;
   InfoAccPage: {

@@ -108,29 +108,46 @@ const chatSlice = createSlice({
 
         // Socket event handlers
         handleSocketNewMessage: (state, action) => {
+            console.log('🔄 chatSlice: handleSocketNewMessage called with:', action.payload);
+
             const { conversationId, message } = action.payload;
+            console.log('📨 chatSlice: Processing message for conversation:', conversationId);
+            console.log('📨 chatSlice: Message content:', message);
 
             // Find conversation and update lastMessage
             const conversationIndex = state.conversations.findIndex(conv => conv.id === conversationId);
+            console.log('📨 chatSlice: Found conversation at index:', conversationIndex);
+
             if (conversationIndex !== -1) {
-                state.conversations[conversationIndex].lastMessage = message.content || message.text || "Tin nhắn mới";
+                const oldLastMessage = state.conversations[conversationIndex].lastMessage;
+                const newLastMessage = message.content || message.text || "Tin nhắn mới";
+
+                state.conversations[conversationIndex].lastMessage = newLastMessage;
+                console.log('📨 chatSlice: Updated lastMessage from', oldLastMessage, 'to', newLastMessage);
+
                 // Move conversation to top of list
                 const conversation = state.conversations[conversationIndex];
                 state.conversations.splice(conversationIndex, 1);
                 state.conversations.unshift(conversation);
+                console.log('📨 chatSlice: Moved conversation to top');
             }
 
             // Update selected conversation if it matches
             if (state.selectedConversation?.id === conversationId) {
+                console.log('📨 chatSlice: Updating selected conversation and adding message to list');
                 state.selectedConversation!.lastMessage = message.content || message.text || "Tin nhắn mới";
                 // Add message to current messages list
                 state.messages.push(message);
+                console.log('📨 chatSlice: Total messages now:', state.messages.length);
             }
 
             // Increment unread count if not current conversation
             if (state.selectedConversation?.id !== conversationId) {
                 state.unreadCount += 1;
+                console.log('📨 chatSlice: Incremented unread count to:', state.unreadCount);
             }
+
+            console.log('✅ chatSlice: handleSocketNewMessage completed');
         },
 
         handleSocketUserOnline: (state, action) => {

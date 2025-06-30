@@ -12,7 +12,8 @@ import {
     TouchableWithoutFeedback,
     Image,
     Dimensions,
-    Alert
+    Alert,
+    Modal
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -44,6 +45,7 @@ const ChatDetailPage: React.FC = () => {
     const { chatId, name, avatar } = route.params;
     const flatListRef = React.useRef<FlatList<MessageResponseInterface>>(null);
     const isNewMessageSent = useRef(false);
+    const hasInitialScrolled = useRef(false);
 
     const dispatch = useAppDispatch();
     const {
@@ -112,6 +114,8 @@ const ChatDetailPage: React.FC = () => {
     const [newMessage, setNewMessage] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [showGallery, setShowGallery] = useState(false);
+    const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+    const [showImageModal, setShowImageModal] = useState(false);
 
     // Xin quyền truy cập thư viện ảnh khi component mount
     useEffect(() => {
@@ -132,54 +136,21 @@ const ChatDetailPage: React.FC = () => {
         });
     }, [messages]);
 
-    // Auto scroll to bottom khi vào màn hình và khi load messages lần đầu
+    // Reset hasInitialScrolled khi chuyển conversation
     useEffect(() => {
-        if (messages.length > 0 && !messagesLoading) {
-            console.log('📱 Auto scrolling to latest message on screen enter');
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: false }); // Không animate lần đầu để nhanh hơn
-            }, 200);
+        if (selectedConversation?.id) {
+            hasInitialScrolled.current = false;
         }
-    }, [messages.length, messagesLoading]); // Chạy khi có messages và không còn loading
+    }, [selectedConversation?.id]);
 
-    // Scroll to bottom khi component mount và có conversation
-    useEffect(() => {
-        if (selectedConversation && chatId) {
-            console.log('📱 Component mounted, preparing to scroll to bottom');
-            // Delay để đảm bảo messages đã được load
-            const timer = setTimeout(() => {
-                if (messages.length > 0) {
-                    flatListRef.current?.scrollToEnd({ animated: false });
-                }
-            }, 500);
-
-            return () => clearTimeout(timer);
-        }
-    }, [selectedConversation, chatId]); // Chạy khi component mount với conversation
-
-    // Scroll to bottom khi selectedConversation thay đổi (chuyển conversation)
-    useEffect(() => {
-        if (selectedConversation) {
-            console.log('📱 Selected conversation changed, will scroll to bottom after messages load');
-            // Reset scroll position khi chuyển conversation
-            const timer = setTimeout(() => {
-                if (messages.length > 0) {
-                    flatListRef.current?.scrollToEnd({ animated: false });
-                }
-            }, 300);
-
-            return () => clearTimeout(timer);
-        }
-    }, [selectedConversation?.id]); // Chạy khi conversation ID thay đổi
-
-    // Theo dõi tin nhắn cuối cùng để scroll khi có tin nhắn mới
+    // Scroll khi có tin nhắn mới được gửi
     useEffect(() => {
         if (messages.length > 0 && isNewMessageSent.current) {
             console.log('📱 New message sent, scrolling to bottom');
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
                 isNewMessageSent.current = false; // Reset flag sau khi scroll
-            }, 150);
+            }, 100);
         }
     }, [messages[messages.length - 1]?.id]); // Theo dõi ID của tin nhắn cuối cùng
 
@@ -341,7 +312,7 @@ const ChatDetailPage: React.FC = () => {
                         <TouchableOpacity
                             onPress={() => {
                                 console.log("Đã nhấn vào ảnh:", item.mediaUrls[0]);
-                                Alert.alert("Hình ảnh", `URI: ${item.mediaUrls[0]}`);
+                                handleImagePress(item.mediaUrls[0]);
                             }}
                             activeOpacity={0.8}
                             delayPressIn={100} // Delay để phân biệt với scroll gesture
@@ -403,6 +374,16 @@ const ChatDetailPage: React.FC = () => {
             setGalleryImages([]);
             // Không xóa galleryImages để vẫn có thể gửi tin nhắn sau khi ẩn gallery
         }
+    };
+
+    const handleImagePress = (imageUri: string) => {
+        setSelectedImageUri(imageUri);
+        setShowImageModal(true);
+    };
+
+    const closeImageModal = () => {
+        setShowImageModal(false);
+        setSelectedImageUri(null);
     };
 
     return (
@@ -470,15 +451,20 @@ const ChatDetailPage: React.FC = () => {
                             style={styles.flatListStyle} // Thêm style riêng cho FlatList
                             inverted={false}
                             onContentSizeChange={() => {
-                                // Scroll to end khi content thay đổi
-                                flatListRef.current?.scrollToEnd({ animated: true });
+                                // Chỉ scroll khi gửi tin nhắn mới
+                                if (isNewMessageSent.current) {
+                                    flatListRef.current?.scrollToEnd({ animated: true });
+                                }
                             }}
                             onLayout={() => {
-                                // Scroll to end khi layout xong (lần đầu render)
-                                console.log('📱 FlatList layout completed, scrolling to end');
-                                setTimeout(() => {
-                                    flatListRef.current?.scrollToEnd({ animated: false });
-                                }, 100);
+                                // Chỉ scroll lần đầu tiên khi layout hoàn tất
+                                if (!hasInitialScrolled.current && messages.length > 0) {
+                                    console.log('📱 FlatList initial layout completed, scrolling to end');
+                                    hasInitialScrolled.current = true;
+                                    setTimeout(() => {
+                                        flatListRef.current?.scrollToEnd({ animated: false });
+                                    }, 100);
+                                }
                             }}
                             onEndReached={handleLoadMore}
                             onEndReachedThreshold={0.1}
@@ -580,6 +566,46 @@ const ChatDetailPage: React.FC = () => {
                     )}
                 </View>
             </KeyboardAvoidingView>
+
+            {/* Modal phóng to hình ảnh */}
+            <Modal
+                visible={showImageModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={closeImageModal}
+                statusBarTranslucent={true}
+            >
+                <View style={styles.imageModalContainer}>
+                    <TouchableWithoutFeedback onPress={closeImageModal}>
+                        <View style={styles.imageModalBackground} />
+                    </TouchableWithoutFeedback>
+
+                    <View style={styles.imageModalContent}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={closeImageModal}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="close" size={30} color="white" />
+                        </TouchableOpacity>
+
+                        {selectedImageUri && (
+                            <TouchableWithoutFeedback onPress={closeImageModal}>
+                                <Image
+                                    source={{ uri: selectedImageUri }}
+                                    style={styles.fullScreenImage}
+                                    resizeMode="contain"
+                                    onError={(e) => {
+                                        console.warn(`Lỗi tải ảnh fullscreen: ${selectedImageUri}`, e.nativeEvent.error);
+                                        Alert.alert('Lỗi', 'Không thể tải ảnh, vui lòng thử lại.');
+                                        closeImageModal();
+                                    }}
+                                />
+                            </TouchableWithoutFeedback>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -797,6 +823,44 @@ const styles = StyleSheet.create({
         backgroundColor: '#3897F0',
         borderRadius: 50,
         padding: 10,
+    },
+    imageModalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imageModalBackground: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    imageModalContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+    },
+    closeButton: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 40,
+        right: 20,
+        zIndex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        borderRadius: 25,
+        padding: 10,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+    },
+    fullScreenImage: {
+        width: '100%',
+        height: '100%',
     },
     badgeContainer: {
         position: 'absolute',

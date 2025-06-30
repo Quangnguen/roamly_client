@@ -209,10 +209,11 @@ class SocialNetworkNotificationService {
       priority: 'urgent' as const,
       title: '💌 Tin nhắn mới',
       bodyTemplate: (data: any) => {
-        const senderName = data.senderName || data.sender?.name || data.user?.name || 'Ai đó';
+        console.log('🔍 Message data:', data.username);
+        const senderName = data.username || 'Ai đó';
         const messageText = data.message || data.content || '';
-
         if (messageText.length > 50) {
+
           return `${senderName}: ${messageText.substring(0, 50)}...`;
         }
         return `${senderName}: ${messageText}`;
@@ -409,6 +410,12 @@ class SocialNetworkNotificationService {
       this.socket.on('new_notification', async (data: any) => {
         console.log('📢 NEW NOTIFICATION RECEIVED:', data);
 
+        console.log('🔍 Raw notification data:', JSON.stringify(data, null, 2));
+      console.log('🔍 Available keys:', Object.keys(data));
+      console.log('🔍 Username field:', data.username);
+      console.log('🔍 User object:', data.user);
+      console.log('🔍 Sender object:', data.sender);
+
         if (callback) {
           callback(data);
         }
@@ -534,6 +541,32 @@ class SocialNetworkNotificationService {
           data: data,
           timestamp: Date.now(),
           userId: data.followerId || data.userId
+        });
+      });
+    }
+  }
+
+  onNewMessage(callback?: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on('new_message', async (data: any) => {
+        console.log('💌 NEW MESSAGE RECEIVED:', data);
+
+        if (callback) {
+          callback(data);
+        }
+
+        // ✅ Use template
+        const template = this.NOTIFICATION_TEMPLATES['message'];
+
+        await this.handleNotification({
+          id: `message_${data.conversationId}_${Date.now()}`,
+          type: 'message',
+          priority: template.priority,
+          title: template.title,
+          body: template.bodyTemplate(data),
+          data: data,
+          timestamp: Date.now(),
+          userId: data.senderId || data.userId
         });
       });
     }

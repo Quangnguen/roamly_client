@@ -14,8 +14,15 @@ import { AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { incrementLikeFromSocket, decrementLikeFromSocket } from '../src/presentation/redux/slices/postSlice';
 import { incrementUnreadNotifications } from '../src/presentation/redux/slices/authSlice';
+import { handleSocketNewMessage } from '../src/presentation/redux/slices/chatSlice';
+import { router } from 'expo-router'; // ✅ Import Expo Router
+import { useNavigation } from '@react-navigation/native'; // ✅ Import navigation hook
+import type { RootStackParamList } from '@/src/presentation/navigation/AppNavigator'; // ✅ Import types
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Alert } from 'react-native';
 
 function AppContent() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); // ✅ Typed navigation object
   const { connectionState, isConnected } = useSocketWithRetry();
   const user = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
@@ -48,18 +55,23 @@ function AppContent() {
         socketService.off('post_unliked');
         socketService.off('new_comment');
         socketService.off('new_follower');
+        socketService.off('new_message');
         
       }
 
       // ✅ UNIFIED: Single handler cho tất cả notifications
-      const showNotificationToast = (data: any, type: string) => {
+      const showNotificationToast = (data: any, type: string, onPress?: () => void) => {
         // ✅ Get formatted content từ socketService
         const template = socketService.getNotificationTemplate(type);
         const formattedTitle = data.title || template.title;
-        const formattedBody = data.message || data.content || template.bodyTemplate(data);
+        var formattedBody = data.message || data.content || template.bodyTemplate(data);
+        
+        if(type === 'message') {
+          formattedBody = `${data.username || 'Ai đó'}: ${formattedBody}`;
+        }
 
         // ✅ Determine toast type based on notification priority
-        let toastType = 'info';
+        let toastType = 'success'; // Default to success
         switch (template.priority) {
           case 'urgent': toastType = 'success'; break;
           case 'high': toastType = 'success'; break;
@@ -72,6 +84,11 @@ function AppContent() {
           text1: formattedTitle,
           text2: formattedBody,
           visibilityTime: 4000,
+          // ✅ Thêm onPress handler
+          onPress: onPress || undefined,
+          props: {
+            onPress: onPress || undefined,
+          }
         });
       };
 
@@ -82,6 +99,8 @@ function AppContent() {
           showNotificationToast(data, notificationType);
         });
       }
+
+  
 
       if (socketService && typeof socketService.onPostLiked === 'function') {
         socketService.onPostLiked((data: any) => {
@@ -128,9 +147,115 @@ function AppContent() {
         });
       }
 
+      // ✅ Message listener với Alert
+      if (socketService && typeof socketService.onNewMessage === 'function') {
+        socketService.onNewMessage((data: any) => {
+          console.log('💌 New message received:', data);
+          
+          const navigateToChat = () => {
+            console.log('🔍 Navigation function called!');
+            console.log('🔍 Navigation object:', !!navigation);
+            
+            const conversationId = data.conversationId;
+            const senderName = data.username || data.sender?.username || 'Unknown';
+            
+            if (conversationId) {
+              console.log('🔄 About to navigate to ChatDetailPage:', {
+                conversationId,
+                senderName,
+                params: {
+                  chatId: conversationId,
+                  name: senderName,
+                  avatar: data.sender?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg'
+                }
+              });
+              
+              try {
+                navigation.navigate('ChatDetailPage', {
+                  chatId: conversationId,
+                  name: senderName,
+                  avatar: data.sender?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg'
+                });
+                console.log('✅ Navigation call completed');
+              } catch (error) {
+                console.error('❌ Navigation error:', error);
+              }
+            } else {
+              console.warn('⚠️ No conversationId found');
+            }
+          };
+
+          // ✅ Test navigation function immediately
+          console.log('🧪 Testing navigation function...');
+          // navigateToChat(); // Uncomment để test
+
+          showNotificationToast(data, 'message', navigateToChat);
+        });
+      }
+
+      // ✅ Chat event listeners
+      // if (socketService && typeof socketService.on === 'function') {
+      //   console.log('🔌 _layout: Setting up chat event listeners');
+
+      //   // Generic listener để catch tất cả events (for debugging)
+      //   console.log('🔍 _layout: Socket service available, listening for all events...');
+
+      //   // Listener cho tin nhắn mới
+      //   socketService.on('new_message', (data: any) => {
+      //     console.log('📨 _layout: Received newMessage:', data);
+
+      //     dispatch(handleSocketNewMessage({
+      //       conversationId: data.conversationId,
+      //       message: data.message || data
+      //     }));
+
+      //     // Show toast notification cho tin nhắn mới
+      //     showNotificationToast({
+      //       title: data.username || 'Tin nhắn mới',
+      //       message: data.message || data.content || 'Bạn có tin nhắn mới'
+      //     }, 'message');
+      //   });
+
+      //   // // Backup event names
+      //   // socketService.on('messageReceived', (data: any) => {
+      //   //   console.log('📨 _layout: Received messageReceived:', data);
+
+      //   //   dispatch(handleSocketNewMessage({
+      //   //     conversationId: data.conversationId,
+      //   //     message: data.message || data
+      //   //   }));
+      //   // });
+
+      //   // socketService.on('new_message', (data: any) => {
+      //   //   console.log('📨 _layout: Received new_message:', data);
+
+      //   //   dispatch(handleSocketNewMessage({
+      //   //     conversationId: data.conversationId,
+      //   //     message: data.message || data
+      //   //   }));
+
+      //   //   showNotificationToast({
+      //   //     title: data.senderName || 'Tin nhắn mới',
+      //   //     message: data.message?.content || data.content || 'Bạn có tin nhắn mới'
+      //   //   }, 'message');
+      //   // });
+
+      //   // // Thêm các event names khác có thể từ server
+      //   // ['message', 'chat_message', 'receive_message', 'message_sent'].forEach(eventName => {
+      //   //   socketService.on(eventName, (data: any) => {
+      //   //     console.log(`📨 _layout: Received ${eventName}:`, data);
+
+      //   //     dispatch(handleSocketNewMessage({
+      //   //       conversationId: data.conversationId,
+      //   //       message: data.message || data
+      //   //     }));
+      //   //   });
+      //   // });
+      // }
+
       listenersSetupRef.current = true;
     }
-  }, [isConnected, user.profile?.id, dispatch]);
+  }, [isConnected, user.profile?.id, dispatch, navigation]); // ✅ Add navigation to deps
 
   // ✅ Handle notification when app is opened from notification
   useEffect(() => {
