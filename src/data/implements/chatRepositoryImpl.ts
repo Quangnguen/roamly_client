@@ -1,6 +1,6 @@
 import { ChatRepository } from "@/src/data/repositories/chatRepository";
-import { getConversationsApi, getMessagesApi, sendMessageApi } from "../api/chatApi";
-import { ConversationResponseInterface } from "@/src/types/ConversationResponseInterface";
+import { getConversationsApi, getMessagesApi, sendMessageApi, createConversationApi } from "../api/chatApi";
+import { ConversationResponseInterface, CreateConversationRequest } from "@/src/types/ConversationResponseInterface";
 import { MessageResponseInterface } from "@/src/types/messageResponseInterface";
 
 export class ChatRepositoryImpl implements ChatRepository {
@@ -29,6 +29,15 @@ export class ChatRepositoryImpl implements ChatRepository {
             return response.data;
         } catch (error) {
             throw new Error('Failed to send message');
+        }
+    }
+
+    async createConversation(request: CreateConversationRequest): Promise<ConversationResponseInterface> {
+        try {
+            const response = await createConversationApi(request);
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to create conversation');
         }
     }
 }

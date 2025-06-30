@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { dependencies } from '@/src/dependencies/dependencies';
-import { ConversationResponseInterface } from '@/src/types/ConversationResponseInterface';
+import { ConversationResponseInterface, CreateConversationRequest } from '@/src/types/ConversationResponseInterface';
 import { MessageResponseInterface, SendMessageRequest } from '@/src/types/messageResponseInterface';
 
 interface ChatState {
@@ -47,13 +47,6 @@ export const getMessages = createAsyncThunk(
     async ({ conversationId, limit, before }: { conversationId: string, limit: number, before?: string }, { rejectWithValue }) => {
         try {
             const response: MessageResponseInterface[] = await dependencies.chatUsecase.getMessages(conversationId, limit, before || '');
-            console.log('🔧 ChatDetailPage - Messages state updated:', {
-                messagesCount: response.length,
-                messagesLoading: false,
-                hasMoreMessages: true,
-                currentPage: 1,
-                messages: response.slice(0, 3) // Log first 3 messages
-            });
             return { messages: response, conversationId, isLoadMore: !!before };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to get messages');
@@ -74,6 +67,19 @@ export const sendMessage = createAsyncThunk(
             return response;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to send message');
+        }
+    }
+);
+
+// Async thunk để tạo cuộc trò chuyện mới
+export const createConversation = createAsyncThunk(
+    'chat/createConversation',
+    async (request: CreateConversationRequest, { rejectWithValue }) => {
+        try {
+            const response: ConversationResponseInterface = await dependencies.chatUsecase.createConversation(request);
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to create conversation');
         }
     }
 );
@@ -110,53 +116,63 @@ const chatSlice = createSlice({
             }
         },
 
+        // Add optimistic message (hiển thị ngay khi gửi)
+        addOptimisticMessage: (state, action: PayloadAction<MessageResponseInterface>) => {
+            const optimisticMessage = action.payload;
+            state.messages.push(optimisticMessage);
+        },
+
+        // Update message status khi có response
+        updateMessageStatus: (state, action: PayloadAction<{ tempId: string; message?: MessageResponseInterface; status: 'sent' | 'failed' }>) => {
+            const { tempId, message, status } = action.payload;
+            const messageIndex = state.messages.findIndex(msg => msg.tempId === tempId);
+
+            if (messageIndex !== -1) {
+                if (status === 'sent' && message) {
+                    // Thay thế message tạm thời bằng message thực từ server
+                    state.messages[messageIndex] = {
+                        ...message,
+                        sendingStatus: 'sent'
+                    };
+                } else if (status === 'failed') {
+                    // Cập nhật trạng thái thất bại
+                    state.messages[messageIndex].sendingStatus = 'failed';
+                }
+            }
+        },
+
         // Socket event handlers
         handleSocketNewMessage: (state, action) => {
-            console.log('🔄 chatSlice: handleSocketNewMessage called with:', action.payload);
-
             const { conversationId, message } = action.payload;
-            console.log('📨 chatSlice: Processing message for conversation:', conversationId);
-            console.log('📨 chatSlice: Message content:', message);
 
             // Find conversation and update lastMessage
             const conversationIndex = state.conversations.findIndex(conv => conv.id === conversationId);
-            console.log('📨 chatSlice: Found conversation at index:', conversationIndex);
 
             if (conversationIndex !== -1) {
-                const oldLastMessage = state.conversations[conversationIndex].lastMessage;
                 const newLastMessage = message.content || message.text || "Tin nhắn mới";
 
                 state.conversations[conversationIndex].lastMessage = newLastMessage;
-                console.log('📨 chatSlice: Updated lastMessage from', oldLastMessage, 'to', newLastMessage);
 
                 // Move conversation to top of list
                 const conversation = state.conversations[conversationIndex];
                 state.conversations.splice(conversationIndex, 1);
                 state.conversations.unshift(conversation);
-                console.log('📨 chatSlice: Moved conversation to top');
             }
 
             // Update selected conversation if it matches
             if (state.selectedConversation?.id === conversationId) {
-                console.log('📨 chatSlice: Updating selected conversation and adding message to list');
                 state.selectedConversation!.lastMessage = message.content || message.text || "Tin nhắn mới";
                 // Add message to current messages list chỉ nếu chưa tồn tại
                 const existingMessageIndex = state.messages.findIndex(msg => msg.id === message.id);
                 if (existingMessageIndex === -1) {
                     state.messages.push(message);
-                    console.log('📨 chatSlice: Added new message to list. Total messages now:', state.messages.length);
-                } else {
-                    console.log('📨 chatSlice: Message already exists, skipping duplicate');
                 }
             }
 
             // Increment unread count if not current conversation
             if (state.selectedConversation?.id !== conversationId) {
                 state.unreadCount += 1;
-                console.log('📨 chatSlice: Incremented unread count to:', state.unreadCount);
             }
-
-            console.log('✅ chatSlice: handleSocketNewMessage completed');
         },
 
         handleSocketUserOnline: (state, action) => {
@@ -226,17 +242,6 @@ const chatSlice = createSlice({
                     return new Date(bTime).getTime() - new Date(aTime).getTime();
                 });
 
-                console.log('📋 chatSlice: Sorted conversations by lastMessage time', {
-                    originalCount: action.payload.length,
-                    sortedCount: sortedConversations.length,
-                    sortedOrder: sortedConversations.slice(0, 3).map(c => ({
-                        id: c.id,
-                        lastMessageTime: c.lastMessage && typeof c.lastMessage === 'object'
-                            ? c.lastMessage.createdAt
-                            : c.updatedAt
-                    }))
-                });
-
                 state.conversations = sortedConversations;
                 state.error = null;
             })
@@ -282,8 +287,8 @@ const chatSlice = createSlice({
                 state.loading = false;
                 const newMessage = action.payload;
 
-                // Thêm message mới vào cuối danh sách messages
-                state.messages.push(newMessage);
+                // Không thêm message ở đây nữa vì đã có optimistic update
+                // Message sẽ được cập nhật qua updateMessageStatus action
 
                 // Cập nhật lastMessage của conversation hiện tại
                 if (state.selectedConversation) {
@@ -307,6 +312,24 @@ const chatSlice = createSlice({
             .addCase(sendMessage.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string || action.error.message || 'Có lỗi xảy ra khi gửi tin nhắn';
+            })
+
+            // Create conversation
+            .addCase(createConversation.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createConversation.fulfilled, (state, action) => {
+                state.loading = false;
+                const newConversation = action.payload;
+
+                // Thêm conversation mới vào đầu danh sách
+                state.conversations.unshift(newConversation);
+                state.error = null;
+            })
+            .addCase(createConversation.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string || action.error.message || 'Có lỗi xảy ra khi tạo cuộc trò chuyện';
             });
     }
 });
@@ -316,6 +339,8 @@ export const {
     setSelectedConversation,
     clearSelectedConversation,
     addMessage,
+    addOptimisticMessage,
+    updateMessageStatus,
     handleSocketNewMessage,
     handleSocketUserOnline,
     handleSocketUserOffline,

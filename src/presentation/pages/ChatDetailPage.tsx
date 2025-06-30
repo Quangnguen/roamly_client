@@ -22,7 +22,7 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from 'expo-image-picker';
 import { useAppDispatch, useAppSelector } from "../redux/hook";
-import { getMessages, addMessage, setSelectedConversation } from "../redux/slices/chatSlice";
+import { getMessages, addMessage, addOptimisticMessage, updateMessageStatus, setSelectedConversation } from "../redux/slices/chatSlice";
 import { MessageResponseInterface } from "../../types/messageResponseInterface";
 import Toast from "react-native-toast-message";
 import { sendMessage } from "../redux/slices/chatSlice";
@@ -46,7 +46,6 @@ const ChatDetailPage: React.FC = () => {
     const { chatId, name, avatar } = route.params;
     const flatListRef = React.useRef<FlatList<MessageResponseInterface>>(null);
     const isNewMessageSent = useRef(false);
-    const hasInitialScrolled = useRef(false);
 
     const dispatch = useAppDispatch();
     const {
@@ -62,8 +61,6 @@ const ChatDetailPage: React.FC = () => {
     useEffect(() => {
         // Set selected conversation khi vào chat detail
         if (chatId) {
-            console.log('🔧 ChatDetailPage - Setting conversation:', { chatId, name, avatar });
-
             dispatch(setSelectedConversation({
                 id: chatId,
                 isGroup: false,
@@ -86,7 +83,6 @@ const ChatDetailPage: React.FC = () => {
             }));
 
             // Load messages đầu tiên
-            console.log('🔧 ChatDetailPage - Dispatching getMessages for:', chatId);
             dispatch(getMessages({
                 conversationId: chatId,
                 limit: 0,
@@ -94,22 +90,6 @@ const ChatDetailPage: React.FC = () => {
             }));
         }
     }, [chatId, dispatch]);
-
-    // Debug state changes
-    useEffect(() => {
-        console.log('🔧 ChatDetailPage - Messages state updated:', {
-            messagesCount: messages.length,
-            messagesLoading,
-            hasMoreMessages,
-            currentPage,
-            messages: messages.slice(0, 3) // Log first 3 messages
-        });
-    }, [messages, messagesLoading, hasMoreMessages, currentPage]);
-
-    // Debug current user
-    useEffect(() => {
-        console.log('🔧 ChatDetailPage - Current user:', currentUser);
-    }, [currentUser]);
 
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -128,32 +108,17 @@ const ChatDetailPage: React.FC = () => {
         })();
     }, []);
 
-    // Debug: Log messages changes
+    // Tự động scroll xuống cuối sau khi load messages xong hoặc khi gửi tin nhắn mới
     useEffect(() => {
-        console.log('🔍 Messages updated:', {
-            length: messages.length,
-            firstMessage: messages[0]?.content, // Tin nhắn cũ nhất
-            lastMessage: messages[messages.length - 1]?.content // Tin nhắn mới nhất
-        });
-    }, [messages]);
-
-    // Reset hasInitialScrolled khi chuyển conversation
-    useEffect(() => {
-        if (selectedConversation?.id) {
-            hasInitialScrolled.current = false;
-        }
-    }, [selectedConversation?.id]);
-
-    // Scroll khi có tin nhắn mới được gửi
-    useEffect(() => {
-        if (messages.length > 0 && isNewMessageSent.current) {
-            console.log('📱 New message sent, scrolling to bottom');
+        if (messages.length > 0 && !messagesLoading) {
             setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-                isNewMessageSent.current = false; // Reset flag sau khi scroll
+                flatListRef.current?.scrollToEnd({ animated: isNewMessageSent.current });
+                if (isNewMessageSent.current) {
+                    isNewMessageSent.current = false; // Reset flag sau khi scroll
+                }
             }, 100);
         }
-    }, [messages[messages.length - 1]?.id]); // Theo dõi ID của tin nhắn cuối cùng
+    }, [messages.length, messagesLoading]);
 
     // Load more messages khi scroll lên đầu
     const handleLoadMore = () => {
@@ -163,6 +128,16 @@ const ChatDetailPage: React.FC = () => {
                 limit: 20,
                 before: messages.length > 0 ? messages[0].id : '' // Lấy messages cũ hơn tin nhắn đầu tiên
             }));
+        }
+    };
+
+    // Handle scroll để detect khi scroll lên đầu (load more messages cũ)
+    const handleScroll = (event: any) => {
+        const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+
+        // Kiểm tra nếu scroll gần đến đầu danh sách (tin nhắn cũ)
+        if (contentOffset.y <= 100 && !messagesLoading && hasMoreMessages) {
+            handleLoadMore();
         }
     };
 
@@ -189,9 +164,7 @@ const ChatDetailPage: React.FC = () => {
         });
 
         if (!result.canceled && result.assets) {
-            console.log("Đã chọn được", result.assets.length, "ảnh từ thư viện");
             const newImages: GalleryImage[] = result.assets.map((asset, index) => {
-                console.log("URL ảnh được chọn:", asset.uri);
                 return {
                     id: asset.assetId || `${asset.uri}-${index}`,
                     uri: asset.uri,
@@ -216,8 +189,6 @@ const ChatDetailPage: React.FC = () => {
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
-            console.log("Đã chụp được ảnh từ camera");
-            console.log("URL ảnh từ camera:", result.assets[0].uri);
             const newImage: GalleryImage = {
                 id: result.assets[0].assetId || `camera-${Date.now()}`,
                 uri: result.assets[0].uri,
@@ -235,27 +206,101 @@ const ChatDetailPage: React.FC = () => {
     const handleSendMessage = async (text: string, selectedFiles?: any[]) => {
         if (!selectedConversation?.id || (!text.trim() && (!selectedFiles || selectedFiles.length === 0))) return;
 
-        try {
-            // Set flag để biết đang gửi tin nhắn mới
-            isNewMessageSent.current = true;
+        const hasText = text.trim() !== '';
+        const hasImages = selectedFiles && selectedFiles.length > 0;
 
-            // Dispatch sendMessage action
+        // Clear input và gallery ngay lập tức để UX mượt mà
+        setNewMessage('');
+        setGalleryImages([]);
+        setShowGallery(false);
+        isNewMessageSent.current = true;
+
+        // Case 1: Chỉ có text
+        if (hasText && !hasImages) {
+            await sendSingleMessage(text.trim(), undefined);
+        }
+        // Case 2: Chỉ có ảnh  
+        else if (!hasText && hasImages) {
+            await sendSingleMessage("hinh anh", selectedFiles);
+        }
+        // Case 3: Có cả text và ảnh - gửi 2 tin nhắn riêng biệt
+        else if (hasText && hasImages) {
+            // Gửi tin nhắn text trước
+            await sendSingleMessage(text.trim(), undefined);
+            // Sau đó gửi tin nhắn ảnh với delay nhỏ
+            setTimeout(() => {
+                sendSingleMessage("hinh anh", selectedFiles);
+            }, 100);
+        }
+    };
+
+    // Helper function để gửi 1 tin nhắn
+    const sendSingleMessage = async (content: string, files?: any[]) => {
+        if (!selectedConversation?.id) return;
+
+        // Tạo tempId cho tin nhắn tạm thời
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Tạo optimistic message để hiển thị ngay
+        const optimisticMessage: MessageResponseInterface = {
+            id: tempId,
+            tempId: tempId,
+            conversationId: selectedConversation.id,
+            senderId: currentUser?.id || '',
+            content: content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            deletedForAll: false,
+            seenBy: [],
+            mediaUrls: files ? files.map((file: GalleryImage) => file.uri) : [],
+            mediaType: files && files.length > 0 ? 'image' : null,
+            pinned: false,
+            sender: {
+                id: currentUser?.id || '',
+                username: currentUser?.username || '',
+                profilePic: currentUser?.profilePic || ''
+            },
+            sendingStatus: 'sending'
+        };
+
+        // Hiển thị tin nhắn ngay lập tức trên UI
+        dispatch(addOptimisticMessage(optimisticMessage));
+
+        try {
+            // Chuyển đổi galleryImages thành format file phù hợp cho API
+            let apiFiles = undefined;
+            if (files && files.length > 0) {
+                apiFiles = files.map((image: GalleryImage) => ({
+                    uri: image.uri,
+                    type: 'image/jpeg',
+                    name: `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`,
+                }));
+
+            }
+
+            // Gửi tin nhắn thực sự
             const result = await dispatch(sendMessage({
                 conversationId: selectedConversation.id,
-                content: text.trim(),
-                files: selectedFiles // Optional files array
+                content: content,
+                files: apiFiles
             })).unwrap();
 
-            console.log('✅ Message sent successfully:', result);
 
-            // Clear input và gallery sau khi gửi thành công
-            setNewMessage('');
-            setGalleryImages([]);
-            setShowGallery(false);
+
+            // Cập nhật trạng thái thành công
+            dispatch(updateMessageStatus({
+                tempId: tempId,
+                message: result,
+                status: 'sent'
+            }));
 
         } catch (error) {
-            console.error('❌ Failed to send message:', error);
-            isNewMessageSent.current = false; // Reset flag nếu có lỗi
+            // Cập nhật trạng thái thất bại
+            dispatch(updateMessageStatus({
+                tempId: tempId,
+                status: 'failed'
+            }));
+
             Toast.show({
                 type: 'error',
                 text1: 'Lỗi',
@@ -282,10 +327,8 @@ const ChatDetailPage: React.FC = () => {
                 files: [file]
             })).unwrap();
 
-            console.log('✅ Message with image sent successfully');
-
         } catch (error) {
-            console.error('❌ Failed to send message with image:', error);
+            // Handle error
         }
     };
 
@@ -306,34 +349,80 @@ const ChatDetailPage: React.FC = () => {
             minute: '2-digit'
         });
 
+        // Xác định màu và opacity dựa trên trạng thái
+        const getMessageStyle = () => {
+            if (item.sendingStatus === 'sending') {
+                return [styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage, styles.sendingMessage];
+            }
+            if (item.sendingStatus === 'failed') {
+                return [styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage, styles.failedMessage];
+            }
+            return [styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage];
+        };
+
+        // Icon trạng thái cho tin nhắn của mình
+        const renderStatusIcon = () => {
+            if (!isMe) return null;
+
+            if (item.sendingStatus === 'sending') {
+                return <Ionicons name="time" size={12} color="#999" style={styles.statusIcon} />;
+            }
+            if (item.sendingStatus === 'failed') {
+                return <Ionicons name="alert-circle" size={12} color="#FF6B6B" style={styles.statusIcon} />;
+            }
+            if (item.sendingStatus === 'sent' || !item.sendingStatus) {
+                return <Ionicons name="checkmark" size={12} color="#4CAF50" style={styles.statusIcon} />;
+            }
+            return null;
+        };
+
         return (
-            <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage]}>
+            <View style={getMessageStyle()}>
                 {item.mediaType === 'image' && item.mediaUrls.length > 0 ? (
                     <View>
                         <TouchableOpacity
                             onPress={() => {
-                                console.log("Đã nhấn vào ảnh:", item.mediaUrls[0]);
-                                handleImagePress(item.mediaUrls[0]);
+                                // Chỉ cho phép xem ảnh nếu đã gửi thành công
+                                if (item.sendingStatus !== 'sending' && item.sendingStatus !== 'failed') {
+                                    handleImagePress(item.mediaUrls[0]);
+                                }
                             }}
-                            activeOpacity={0.8}
-                            delayPressIn={100} // Delay để phân biệt với scroll gesture
+                            activeOpacity={item.sendingStatus === 'sending' ? 1 : 0.8}
+                            delayPressIn={100}
                         >
                             <Image
                                 source={{ uri: item.mediaUrls[0] }}
-                                style={styles.chatImage}
+                                style={[
+                                    styles.chatImage,
+                                    item.sendingStatus === 'sending' && styles.sendingImage
+                                ]}
                                 resizeMode="cover"
                                 onError={(e) => {
-                                    console.warn(`Lỗi tải ảnh: ${item.mediaUrls[0]}`, e.nativeEvent.error);
-                                    Alert.alert('Lỗi', 'Không thể tải ảnh, vui lòng thử lại.');
+                                    if (item.sendingStatus !== 'sending') {
+                                        Alert.alert('Lỗi', 'Không thể tải ảnh, vui lòng thử lại.');
+                                    }
                                 }}
                             />
+                            {item.sendingStatus === 'sending' && (
+                                <View style={styles.sendingOverlay}>
+                                    <Text style={styles.sendingText}>Đang gửi...</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
-                        <Text style={styles.timestamp}>{timestamp}</Text>
+                        <View style={styles.timestampContainer}>
+                            <Text style={styles.timestamp}>{timestamp}</Text>
+                            {renderStatusIcon()}
+                        </View>
                     </View>
                 ) : (
                     <>
-                        <Text style={styles.messageText}>{item.content}</Text>
-                        <Text style={styles.timestamp}>{timestamp}</Text>
+                        <Text style={[styles.messageText, item.sendingStatus === 'sending' && styles.sendingText]}>
+                            {item.content}
+                        </Text>
+                        <View style={styles.timestampContainer}>
+                            <Text style={styles.timestamp}>{timestamp}</Text>
+                            {renderStatusIcon()}
+                        </View>
                     </>
                 )}
             </View>
@@ -370,7 +459,6 @@ const ChatDetailPage: React.FC = () => {
 
     const handlePressOutside = () => {
         if (showGallery) {
-            console.log("Đóng gallery từ handlePressOutside");
             setShowGallery(false);
             setGalleryImages([]);
             // Không xóa galleryImages để vẫn có thể gửi tin nhắn sau khi ẩn gallery
@@ -391,16 +479,12 @@ const ChatDetailPage: React.FC = () => {
     useEffect(() => {
         if (!chatId || !selectedConversation?.id) return;
 
-        console.log('🔌 ChatDetailPage: Setting up WebSocket listeners for conversation:', chatId);
+
 
         // Handler cho tin nhắn mới
         const handleNewMessage = (data: any) => {
-            console.log('📨 ChatDetailPage: Received new message:', data);
-
             // Chỉ xử lý nếu tin nhắn thuộc về conversation hiện tại
             if (data.conversationId === chatId || data.conversationId === selectedConversation.id) {
-                console.log('📨 ChatDetailPage: Message belongs to current conversation, adding to messages');
-
                 // Thêm message vào danh sách messages hiện tại
                 if (data.message) {
                     dispatch(addMessage(data.message));
@@ -412,36 +496,27 @@ const ChatDetailPage: React.FC = () => {
                         }, 100);
                     }
                 }
-            } else {
-                console.log('📨 ChatDetailPage: Message belongs to different conversation, ignoring');
             }
         };
 
         // Handler cho typing indicator
         const handleUserTyping = (data: any) => {
-            console.log('⌨️ ChatDetailPage: User typing:', data);
-
             if (data.conversationId === chatId && data.userId !== currentUser?.id) {
                 // TODO: Hiển thị typing indicator
-                console.log(`${data.username || 'Ai đó'} đang gõ...`);
             }
         };
 
         // Handler cho user online/offline
         const handleUserOnline = (data: any) => {
-            console.log('🟢 ChatDetailPage: User came online:', data);
             // TODO: Cập nhật online status
         };
 
         const handleUserOffline = (data: any) => {
-            console.log('🔴 ChatDetailPage: User went offline:', data);
             // TODO: Cập nhật offline status
         };
 
         // Đăng ký listeners
         if (socketService.isConnected()) {
-            console.log('✅ ChatDetailPage: Socket connected, registering listeners');
-
             // Các event names có thể có
             socketService.on('newMessage', handleNewMessage);
             socketService.on('messageReceived', handleNewMessage);
@@ -465,9 +540,7 @@ const ChatDetailPage: React.FC = () => {
             });
 
         } else {
-            console.log('⚠️ ChatDetailPage: Socket not connected, trying to connect...');
             socketService.connect().then(() => {
-                console.log('✅ ChatDetailPage: Socket connected after retry');
                 // Register listeners after connection
                 socketService.on('newMessage', handleNewMessage);
                 socketService.on('messageReceived', handleNewMessage);
@@ -486,14 +559,12 @@ const ChatDetailPage: React.FC = () => {
                     userId: currentUser?.id
                 });
             }).catch(error => {
-                console.error('❌ ChatDetailPage: Failed to connect socket:', error);
+                // Handle connection error silently
             });
         }
 
         // Cleanup function
         return () => {
-            console.log('🧹 ChatDetailPage: Cleaning up WebSocket listeners');
-
             // Leave conversation room
             if (socketService.isConnected()) {
                 socketService.emit('leaveConversation', {
@@ -593,38 +664,12 @@ const ChatDetailPage: React.FC = () => {
                             renderItem={renderMessage}
                             keyExtractor={item => item.id}
                             contentContainerStyle={styles.messagesContainer}
-                            style={styles.flatListStyle} // Thêm style riêng cho FlatList
-                            inverted={false}
-                            onContentSizeChange={() => {
-                                // Chỉ scroll khi gửi tin nhắn mới
-                                if (isNewMessageSent.current) {
-                                    flatListRef.current?.scrollToEnd({ animated: true });
-                                }
-                            }}
-                            onLayout={() => {
-                                // Chỉ scroll lần đầu tiên khi layout hoàn tất
-                                if (!hasInitialScrolled.current && messages.length > 0) {
-                                    console.log('📱 FlatList initial layout completed, scrolling to end');
-                                    hasInitialScrolled.current = true;
-                                    setTimeout(() => {
-                                        flatListRef.current?.scrollToEnd({ animated: false });
-                                    }, 100);
-                                }
-                            }}
-                            onEndReached={handleLoadMore}
-                            onEndReachedThreshold={0.1}
-                            refreshing={messagesLoading}
-                            onRefresh={handleLoadMore}
-                            showsVerticalScrollIndicator={false} // Ẩn thanh cuộn dọc
-                            showsHorizontalScrollIndicator={false} // Ẩn thanh cuộn ngang
-                            extraData={messages.length} // Force re-render khi messages thay đổi
-                            removeClippedSubviews={false} // Đảm bảo tất cả items được render
-                            keyboardShouldPersistTaps="handled" // Cho phép tap trong FlatList khi keyboard mở
-                            onScrollBeginDrag={dismissKeyboard} // Dismiss keyboard khi bắt đầu scroll
-                            scrollEventThrottle={16} // Smooth scroll performance
-                            bounces={true} // Cho phép bounce effect
-                            alwaysBounceVertical={true} // Luôn có bounce effect dọc
-                            directionalLockEnabled={true} // Chỉ scroll theo một hướng tại một thời điểm
+                            style={styles.flatListStyle}
+                            onScroll={handleScroll}
+                            scrollEventThrottle={16}
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            onScrollBeginDrag={dismissKeyboard}
                         />
                     )}
                 </View>
@@ -743,7 +788,6 @@ const ChatDetailPage: React.FC = () => {
                                     style={styles.fullScreenImage}
                                     resizeMode="contain"
                                     onError={(e) => {
-                                        console.warn(`Lỗi tải ảnh fullscreen: ${selectedImageUri}`, e.nativeEvent.error);
                                         Alert.alert('Lỗi', 'Không thể tải ảnh, vui lòng thử lại.');
                                         closeImageModal();
                                     }}
@@ -1025,6 +1069,42 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 12,
         fontWeight: 'bold',
+    },
+    // Styles for message status
+    sendingMessage: {
+        opacity: 0.7,
+    },
+    failedMessage: {
+        borderWidth: 1,
+        borderColor: '#FF6B6B',
+        backgroundColor: '#FFE6E6',
+    },
+    sendingImage: {
+        opacity: 0.6,
+    },
+    sendingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    sendingText: {
+        color: '#999',
+        fontStyle: 'italic',
+    },
+    timestampContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 4,
+    },
+    statusIcon: {
+        marginLeft: 4,
     },
 });
 

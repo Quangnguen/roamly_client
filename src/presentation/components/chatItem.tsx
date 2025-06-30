@@ -1,5 +1,4 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
 import type { ChatItemType } from "../../types/chatItem"
 import { useNavigation } from "@react-navigation/native"
 import { NavigationProp } from "@/src/utils/PropsNavigate"
@@ -30,7 +29,6 @@ const ChatItem = ({ chat }: ChatItemProps) => {
 
       <View style={styles.rightContainer}>
         <Text style={styles.time}>{chat.time}</Text>
-        <Ionicons name="camera-outline" size={20} color="#666" />
       </View>
     </TouchableOpacity>
   )
@@ -65,7 +63,6 @@ const styles = StyleSheet.create({
   time: {
     color: "#666",
     fontSize: 12,
-    marginBottom: 4,
   },
 })
 

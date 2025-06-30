@@ -40,3 +40,8 @@ export interface ConversationResponseInterface {
     participants: Participant[];
     lastMessage: Message | string | null;
 }
+
+// Interface cho request tạo conversation mới
+export interface CreateConversationRequest {
+    userIds: string[];
+}

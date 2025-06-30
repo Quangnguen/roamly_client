@@ -1,5 +1,5 @@
 import { ChatRepository } from "@/src/data/repositories/chatRepository";
-import { ConversationResponseInterface } from "@/src/types/ConversationResponseInterface";
+import { ConversationResponseInterface, CreateConversationRequest } from "@/src/types/ConversationResponseInterface";
 import { MessageResponseInterface } from "@/src/types/messageResponseInterface";
 
 export class ChatUsecase {
@@ -26,6 +26,15 @@ export class ChatUsecase {
     async sendMessage(conversationId: string, content: string, files?: any[]): Promise<MessageResponseInterface> {
         try {
             const response = await this.chatRepository.sendMessage(conversationId, content, files);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async createConversation(request: CreateConversationRequest): Promise<ConversationResponseInterface> {
+        try {
+            const response = await this.chatRepository.createConversation(request);
             return response;
         } catch (error) {
             throw error;
