@@ -24,3 +24,27 @@ export const getMessagesApi = async (conversationId: string, limit: number, befo
     });
 };
 
+// Gửi tin nhắn
+export const sendMessageApi = async (conversationId: string, content: string, files?: any[]) => {
+    const formData = new FormData();
+
+    // Thêm conversationId và content vào FormData
+    formData.append('conversationId', conversationId);
+    formData.append('content', content);
+
+    // Thêm files nếu có
+    if (files && files.length > 0) {
+        files.forEach((file, index) => {
+            formData.append('files', file);
+        });
+    }
+
+    return await authorizedRequest(`${API_BASE_URL}/chat/message`, {
+        method: 'POST',
+        body: formData,
+        // Không set Content-Type header để browser tự động set với boundary cho multipart/form-data
+    });
+};
+
+
+
