@@ -157,7 +157,7 @@ const Post: React.FC<PostProps> = ({
   const currentLikeCount = currentPost?._count?.likes ?? currentPost?.likeCount ?? likeCount;
 
   // Defensive coding cho commentCount
-  const currentCommentCount = currentPost?._count?.comments ?? currentPost?.commentCount ?? commentCount;
+  var currentCommentCount = currentPost?._count?.comments ?? currentPost?.commentCount ?? commentCount;
 
   // Khởi tạo và sync trạng thái like
   useEffect(() => {
@@ -318,7 +318,10 @@ const Post: React.FC<PostProps> = ({
   const handleCloseCommentsModal = useCallback(() => {
     setIsCommentsModalVisible(false);
     setNewComment('');
-    dispatch(clearComments()); // Clear comments from Redux store
+    dispatch({
+      type: 'comment/clearCommentsOnly', // Tạo action mới
+      payload: null
+    });
   }, []);
 
   const handleCommentLike = useCallback((commentId: string) => {
@@ -972,7 +975,7 @@ const Post: React.FC<PostProps> = ({
                 onSubmitEditing={handleAddComment}
                 enablesReturnKeyAutomatically={true}
                 multiline
-                blurOnSubmit={false}
+                // blurOnSubmit is not needed because multiline is always true
               />
               <TouchableOpacity
                 style={[

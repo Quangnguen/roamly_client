@@ -237,7 +237,7 @@ class SocialNetworkNotificationService {
       priority: 'high' as const,
       title: '💬 Bình luận mới',
       bodyTemplate: (data: any) => {
-        const commenterName = data.commenterName || data.user?.name || 'Ai đó';
+        const commenterName = data.commenterName || data.username || 'Ai đó';
         const commentText = data.commentText || data.content || '';
         const postTitle = data.postTitle || data.post?.title || 'bài viết của bạn';
 
