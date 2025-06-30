@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/src/const/api";
 import { authorizedRequest } from "@/src/utils/authorizedRequest";
+import { CreateConversationRequest } from "@/src/types/ConversationResponseInterface";
 
 // Lấy danh sách cuộc trò chuyện
 export const getConversationsApi = async () => {
@@ -43,6 +44,17 @@ export const sendMessageApi = async (conversationId: string, content: string, fi
         method: 'POST',
         body: formData,
         // Không set Content-Type header để browser tự động set với boundary cho multipart/form-data
+    });
+};
+
+// Tạo cuộc trò chuyện mới
+export const createConversationApi = async (request: CreateConversationRequest) => {
+    return await authorizedRequest(`${API_BASE_URL}/chat/conversation`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
     });
 };
 

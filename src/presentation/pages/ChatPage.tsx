@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons, Feather } from "@expo/vector-icons"
 import ChatItem from "../components/chatItem"
@@ -8,9 +8,12 @@ import { NavigationProp } from "@/src/utils/PropsNavigate"
 import { BACKGROUND } from "@/src/const/constants"
 import React, { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "../redux/hook"
-import { getConversations, handleSocketNewMessage } from "../redux/slices/chatSlice"
+import { getConversations, handleSocketNewMessage, createConversation } from "../redux/slices/chatSlice"
 import { ConversationResponseInterface } from "@/src/types/ConversationResponseInterface"
 import { socketService } from "@/src/services/socketService"
+import { getFollowersApi, getFollowingApi } from "@/src/data/api/followApi"
+import ConversationsSection from "../components/ConversationsSection"
+import FriendsSection from "../components/FriendsSection"
 
 // Helper function để convert ConversationResponseInterface sang ChatItemType
 const convertConversationToChat = (conversation: ConversationResponseInterface, currentUserId: string): ChatItemType => {
@@ -24,8 +27,16 @@ const convertConversationToChat = (conversation: ConversationResponseInterface, 
     ? lastMessage
     : (lastMessage as any)?.content || (lastMessage as any)?.text || null;
 
-  // Calculate time ago from updatedAt
-  const timeAgo = calculateTimeAgo(conversation.updatedAt);
+  // Calculate time ago from lastMessage time or conversation creation time
+  let timeToUse: string;
+  if (lastMessage && typeof lastMessage === 'object' && (lastMessage as any)?.createdAt) {
+    // Nếu có lastMessage object và có thời gian, dùng thời gian của lastMessage
+    timeToUse = (lastMessage as any).createdAt;
+  } else {
+    // Nếu không có lastMessage hoặc lastMessage là string, dùng thời gian tạo nhóm
+    timeToUse = conversation.createdAt;
+  }
+  const timeAgo = calculateTimeAgo(timeToUse);
 
   return {
     id: conversation.id,
@@ -55,6 +66,14 @@ const calculateTimeAgo = (dateString: string): string => {
   return `${diffInDays}d`;
 };
 
+// Interface cho friend item
+interface FriendItem {
+  id: string;
+  username: string;
+  profilePic: string;
+  isOnline?: boolean;
+}
+
 const ChatPage: React.FC = () => {
   const navigation: NavigationProp<'Home'> = useNavigation()
   const dispatch = useAppDispatch()
@@ -63,23 +82,93 @@ const ChatPage: React.FC = () => {
   const { conversations, loading, error } = useAppSelector(state => state.chat)
   const profile = useAppSelector(state => state.auth.profile)
 
+  // Section state
   const [searchText, setSearchText] = React.useState("");
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [socketConnected, setSocketConnected] = React.useState(false);
+
+  // Friends state
+  const [friends, setFriends] = React.useState<FriendItem[]>([]);
+  const [friendsLoading, setFriendsLoading] = React.useState(false);
+  const [friendsError, setFriendsError] = React.useState<string | null>(null);
 
   // Load conversations on component mount
   useEffect(() => {
     dispatch(getConversations());
   }, [dispatch]);
 
+  // Load friends khi component mount
+  useEffect(() => {
+    loadFriends();
+  }, []);
+
+  // Function để load danh sách bạn bè
+  const loadFriends = async () => {
+    setFriendsLoading(true);
+    setFriendsError(null);
+
+    try {
+      // Lấy cả followers và following
+      const [followersResponse, followingResponse] = await Promise.all([
+        getFollowersApi(),
+        getFollowingApi()
+      ]);
+
+      // Kiểm tra response structure  
+      if (!followersResponse && !followingResponse) {
+        setFriends([]);
+        return;
+      }
+
+      // Combine và deduplicate
+      const allFriends: FriendItem[] = [];
+      const seenIds = new Set();
+
+      // Add followers - API trả về direct objects
+      if (followersResponse?.data) {
+        followersResponse.data.forEach((follower: any) => {
+          // API trả về direct object không có nested structure
+          if (follower?.id && !seenIds.has(follower.id)) {
+            allFriends.push({
+              id: follower.id,
+              username: follower.username || 'Unknown',
+              profilePic: follower.profilePic || "https://i.pinimg.com/474x/0b/38/83/0b3883c43e5b003eb00fe0f20b41b08b.jpg"
+            });
+            seenIds.add(follower.id);
+          }
+        });
+      }
+
+      // Add following - API trả về direct objects  
+      if (followingResponse?.data) {
+        followingResponse.data.forEach((following: any) => {
+          // API trả về direct object không có nested structure
+          if (following?.id && !seenIds.has(following.id)) {
+            allFriends.push({
+              id: following.id,
+              username: following.username || 'Unknown',
+              profilePic: following.profilePic || "https://i.pinimg.com/474x/0b/38/83/0b3883c43e5b003eb00fe0f20b41b08b.jpg"
+            });
+            seenIds.add(following.id);
+          }
+        });
+      }
+
+      // Sort theo alphabet
+      allFriends.sort((a, b) => a.username.localeCompare(b.username));
+      setFriends(allFriends);
+
+    } catch (error: any) {
+      setFriendsError(error.message || 'Không thể tải danh sách bạn bè');
+    } finally {
+      setFriendsLoading(false);
+    }
+  };
+
   // Setup WebSocket listeners for real-time chat updates
   useEffect(() => {
-    console.log('🔌 ChatPage: Setting up WebSocket listeners');
-
     // Listener cho tin nhắn mới
     const handleNewMessage = (data: any) => {
-      console.log('📨 ChatPage: Received new message:', data);
-
       // Dispatch action để cập nhật Redux state
       dispatch(handleSocketNewMessage({
         conversationId: data.conversationId,
@@ -89,7 +178,6 @@ const ChatPage: React.FC = () => {
       // Nếu đây là conversation mới (không có trong danh sách), reload conversations
       const existingConversation = conversations.find(conv => conv.id === data.conversationId);
       if (!existingConversation) {
-        console.log('📨 New conversation detected, reloading conversations...');
         setTimeout(() => {
           dispatch(getConversations());
         }, 500); // Delay nhỏ để đảm bảo server đã cập nhật
@@ -98,42 +186,35 @@ const ChatPage: React.FC = () => {
 
     // Listener cho khi user online/offline
     const handleUserOnline = (data: any) => {
-      console.log('🟢 User came online:', data);
       // TODO: Có thể thêm indicator online status sau
     };
 
     const handleUserOffline = (data: any) => {
-      console.log('🔴 User went offline:', data);
       // TODO: Có thể thêm indicator offline status sau
     };
 
     // Đăng ký listeners
     if (socketService.isConnected()) {
-      console.log('✅ ChatPage: Socket already connected');
       setSocketConnected(true);
       socketService.on('newMessage', handleNewMessage);
       socketService.on('messageReceived', handleNewMessage); // Backup event name
       socketService.on('userOnline', handleUserOnline);
       socketService.on('userOffline', handleUserOffline);
     } else {
-      console.log('⚠️ ChatPage: Socket not connected, trying to connect...');
       setSocketConnected(false);
       socketService.connect().then(() => {
-        console.log('✅ ChatPage: Socket connected successfully');
         setSocketConnected(true);
         socketService.on('newMessage', handleNewMessage);
         socketService.on('messageReceived', handleNewMessage);
         socketService.on('userOnline', handleUserOnline);
         socketService.on('userOffline', handleUserOffline);
       }).catch(error => {
-        console.error('❌ ChatPage: Failed to connect socket:', error);
         setSocketConnected(false);
       });
     }
 
     // Cleanup function
     return () => {
-      console.log('🧹 ChatPage: Cleaning up WebSocket listeners');
       setSocketConnected(false);
       socketService.off('newMessage', handleNewMessage);
       socketService.off('messageReceived', handleNewMessage);
@@ -151,14 +232,8 @@ const ChatPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Convert conversations to chat items
+  // Convert conversations to chat items (remove sorting here)
   const chatData: ChatItemType[] = React.useMemo(() => {
-    console.log('🔄 ChatPage: Converting conversations to chat data', {
-      conversationsCount: conversations?.length || 0,
-      profileId: profile?.id,
-      currentTime: currentTime.toISOString()
-    });
-
     if (!conversations || conversations.length === 0) {
       return [];
     }
@@ -166,22 +241,11 @@ const ChatPage: React.FC = () => {
     // Use profile id if available, otherwise use fallback for development
     const currentUserId = profile?.id || 'fallback-user-id';
 
+    // Conversations are already sorted in Redux, just convert them
     return conversations.map(conversation =>
       convertConversationToChat(conversation, currentUserId)
     );
-  }, [conversations, profile?.id, currentTime]); // Thêm currentTime để update thời gian
-
-  // Filter chat data based on search
-  const filteredChatData = React.useMemo(() => {
-    if (!searchText.trim()) {
-      return chatData;
-    }
-
-    return chatData.filter(chat =>
-      chat.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      chat.lastMessage.toLowerCase().includes(searchText.toLowerCase())
-    );
-  }, [chatData, searchText]);
+  }, [conversations, profile?.id, currentTime]);
 
   const handleClearSearch = () => {
     setSearchText("");
@@ -197,10 +261,6 @@ const ChatPage: React.FC = () => {
 
   // Debug function để test WebSocket
   const testWebSocket = () => {
-    console.log('🧪 Testing WebSocket connection...');
-    console.log('Socket connected:', socketService.isConnected());
-    console.log('Socket ID:', socketService.getSocketId());
-
     // Test emit một event
     if (socketService.isConnected()) {
       socketService.emit('test_event', {
@@ -208,16 +268,11 @@ const ChatPage: React.FC = () => {
         userId: profile?.id,
         timestamp: new Date().toISOString()
       });
-      console.log('✅ Test event emitted');
-    } else {
-      console.log('❌ Socket not connected');
     }
   }
 
   // Test function để simulate tin nhắn mới
   const simulateNewMessage = () => {
-    console.log('🧪 Simulating new message...');
-
     if (conversations.length > 0) {
       const testConversation = conversations[0];
       const testMessage = {
@@ -239,15 +294,52 @@ const ChatPage: React.FC = () => {
         }
       };
 
-      console.log('📨 Dispatching test message:', testMessage);
       dispatch(handleSocketNewMessage({
         conversationId: testConversation.id,
         message: testMessage
       }));
-    } else {
-      console.log('❌ No conversations available for test');
     }
   }
+
+  // Function để handle bắt đầu chat với friend
+  const handleStartChat = async (friend: FriendItem) => {
+    try {
+      // Kiểm tra xem đã có conversation với friend này chưa
+      const existingConversation = conversations.find(conv => {
+        // Kiểm tra conversation 1-on-1 (không phải group)
+        if (conv.isGroup) return false;
+
+        // Kiểm tra xem có participant nào là friend này không
+        return conv.participants.some(participant => participant.userId === friend.id);
+      });
+
+      if (existingConversation) {
+        // Navigate đến ChatDetailPage với conversation đã có
+        navigation.navigate('ChatDetailPage', {
+          chatId: existingConversation.id,
+          name: friend.username,
+          avatar: friend.profilePic
+        });
+        return;
+      }
+
+      // Gọi API tạo conversation mới
+      const result = await dispatch(createConversation({
+        userIds: [friend.id]
+      })).unwrap();
+
+      // Navigate đến ChatDetailPage với conversation mới
+      navigation.navigate('ChatDetailPage', {
+        chatId: result.id,
+        name: friend.username,
+        avatar: friend.profilePic
+      });
+
+    } catch (error: any) {
+      // Có thể show alert hoặc toast thông báo lỗi
+    }
+  };
+
   return (
 
 
@@ -275,7 +367,7 @@ const ChatPage: React.FC = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color="gray" />
-          <TextInput placeholder="Search"
+          <TextInput placeholder="Tìm kiếm cuộc trò chuyện và bạn bè"
             placeholderTextColor="gray"
             style={styles.searchInput}
             value={searchText} onChangeText={setSearchText} />
@@ -288,32 +380,21 @@ const ChatPage: React.FC = () => {
       </View>
 
       <ScrollView style={styles.chatList}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Đang tải cuộc trò chuyện...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Lỗi: {error}</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={() => dispatch(getConversations())}
-            >
-              <Text style={styles.retryButtonText}>Thử lại</Text>
-            </TouchableOpacity>
-          </View>
-        ) : filteredChatData.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {searchText ? "Không tìm thấy cuộc trò chuyện" : "Chưa có cuộc trò chuyện nào"}
-            </Text>
-          </View>
-        ) : (
-          filteredChatData.map((chat) => (
-            <ChatItem key={chat.id} chat={chat} />
-          ))
-        )}
+        <ConversationsSection
+          conversations={chatData}
+          loading={loading}
+          error={error}
+          searchText={searchText}
+        />
+
+        <FriendsSection
+          friends={friends}
+          loading={friendsLoading}
+          error={friendsError}
+          searchText={searchText}
+          onRetry={loadFriends}
+          onStartChat={handleStartChat}
+        />
       </ScrollView>
     </SafeAreaView>
   )
@@ -414,6 +495,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center",
+  },
+  // Section styles
+  section: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f8f8f8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  sectionHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionCount: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 8,
+  },
+  sectionContent: {
+    backgroundColor: 'white',
+  },
+  // Friend item styles
+  friendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  friendAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  friendInfo: {
+    flex: 1,
+  },
+  friendName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  friendStatus: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
   },
 })
 

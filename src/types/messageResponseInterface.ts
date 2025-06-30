@@ -23,4 +23,8 @@ export interface MessageResponseInterface {
     mediaType: string | null;
     pinned: boolean;
     sender: Sender;
+    // Trạng thái gửi tin nhắn (chỉ dùng ở client)
+    sendingStatus?: 'sending' | 'sent' | 'failed';
+    // ID tạm thời cho tin nhắn đang gửi
+    tempId?: string;
 }
