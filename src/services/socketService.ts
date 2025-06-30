@@ -240,8 +240,8 @@ class SocialNetworkNotificationService {
         const postTitle = data.postTitle || data.post?.title || 'bài viết của bạn';
 
         if (commentText && commentText.length > 0) {
-          if (commentText.length > 60) {
-            return `${commenterName}: "${commentText.substring(0, 60)}..."`;
+          if (commentText.length > 50) {
+            return `${commenterName}: "${commentText.substring(0, 50)}..."`;
           }
           return `${commenterName}: "${commentText}"`;
         }
@@ -272,7 +272,7 @@ class SocialNetworkNotificationService {
       priority: 'medium' as const,
       title: '👥 Người theo dõi mới',
       bodyTemplate: (data: any) => {
-        const followerName = data.followerName || data.follower?.name || data.user?.name || 'Ai đó';
+        const followerName = data.followerName || data.username || 'Ai đó';
         const followerUsername = data.followerUsername || data.follower?.username || '';
 
         if (followerUsername) {

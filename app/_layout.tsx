@@ -48,6 +48,7 @@ function AppContent() {
         socketService.off('post_unliked');
         socketService.off('new_comment');
         socketService.off('new_follower');
+        
       }
 
       // ✅ UNIFIED: Single handler cho tất cả notifications
@@ -60,10 +61,10 @@ function AppContent() {
         // ✅ Determine toast type based on notification priority
         let toastType = 'info';
         switch (template.priority) {
-          case 'urgent': toastType = 'error'; break;
+          case 'urgent': toastType = 'success'; break;
           case 'high': toastType = 'success'; break;
-          case 'medium': toastType = 'info'; break;
-          case 'low': toastType = 'info'; break;
+          case 'medium': toastType = 'success'; break;
+          case 'low': toastType = 'success'; break;
         }
 
         Toast.show({
