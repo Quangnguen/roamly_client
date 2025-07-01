@@ -5,16 +5,24 @@ export interface CommentResponseInterface {
   postId: string;
   authorId: string;
   content: string;
-  parentId?: string;
-  likeCount: number; // Sửa từ likesCount thành likeCount để match API
-  isLiked: boolean;
+  parentId?: string | null;
+  likeCount: number;
+  isLike: boolean;
   isEdited: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  isOptimistic?: boolean; // For optimistic updates
-  author?: {
+  createdAt: string;
+  updatedAt: string;
+  author: {
     id: string;
     username: string;
     profilePic: string;
   };
+  likes: Array<{
+    user: {
+      id: string;
+      username: string;
+      profilePic: string;
+    };
+  }>;
+  replies: Array<CommentResponseInterface | { replies: Array<CommentResponseInterface> }>;
+  isOptimistic?: boolean;
 }

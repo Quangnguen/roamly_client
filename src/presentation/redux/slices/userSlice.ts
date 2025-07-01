@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { dependencies } from '../../../dependencies/dependencies';
 import { User } from '../../../domain/models/User';
-import { UserApiResponse } from '@/src/types/UserResponseInterface';
+import { UserApiResponse, SearchUserParams, SearchUserResponse, SearchUserResult } from '@/src/types/UserResponseInterface';
 import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
 import { updateAuthProfile } from './authSlice'; // Import action từ authSlice
 
@@ -12,9 +12,18 @@ interface UserState {
   error: string | null;
   message: string | null;
   status: string | null;
-  statusCode?: number | null; // Thêm dòng này
-  users: User[] | null; // Thêm dòng này
-  profile: User | null; // Thêm dòng này
+  statusCode?: number | null;
+  users: User[] | null;
+  profile: User | null;
+  // Thêm state cho search
+  searchResults: SearchUserResult[];
+  searchLoading: boolean;
+  searchError: string | null;
+  searchPagination: {
+    currentPage: number;
+    total: number;
+    totalPages: number;
+  } | null;
 }
 
 // Initial state
@@ -24,9 +33,14 @@ const initialState: UserState = {
   error: null,
   message: null,
   status: null,
-  statusCode: null, // Thêm dòng này
-  users: null, // Thêm dòng này
-  profile: null, // Thêm dòng này
+  statusCode: null,
+  users: null,
+  profile: null,
+  // Thêm initial state cho search
+  searchResults: [],
+  searchLoading: false,
+  searchError: null,
+  searchPagination: null,
 };
 
 // Fetch user profile thunk
@@ -138,6 +152,19 @@ export const uploadProfilePicture = createAsyncThunk(
   }
 );
 
+// Search users thunk
+export const searchUsers = createAsyncThunk(
+  'user/searchUsers',
+  async (params: SearchUserParams, thunkAPI) => {
+    try {
+      const response = await dependencies.userUsecase.searchUsers(params);
+      return response as SearchUserResponse;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || 'Failed to search users');
+    }
+  }
+);
+
 // User slice
 const userSlice = createSlice({
   name: 'user',
@@ -150,7 +177,12 @@ const userSlice = createSlice({
     clearMessage: (state) => {
       state.message = null;
       state.status = null;
-      state.statusCode = null; // Thêm dòng này
+      state.statusCode = null;
+    },
+    clearSearchResults: (state) => {
+      state.searchResults = [];
+      state.searchError = null;
+      state.searchPagination = null;
     }
   },
   extraReducers: (builder) => {
@@ -287,11 +319,31 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+
+    // Search users cases
+    builder
+      .addCase(searchUsers.pending, (state) => {
+        state.searchLoading = true;
+        state.searchError = null;
+      })
+      .addCase(searchUsers.fulfilled, (state, action) => {
+        state.searchLoading = false;
+        state.searchResults = action.payload.data.results;
+        state.searchPagination = {
+          currentPage: action.payload.data.currentPage,
+          total: action.payload.data.total,
+          totalPages: action.payload.data.totalPages,
+        };
+      })
+      .addCase(searchUsers.rejected, (state, action) => {
+        state.searchLoading = false;
+        state.searchError = action.payload as string;
+      });
   },
 });
 
 // Export actions
-export const { clearUser, clearMessage } = userSlice.actions;
+export const { clearUser, clearMessage, clearSearchResults } = userSlice.actions;
 
 // Export reducer
 export default userSlice.reducer;

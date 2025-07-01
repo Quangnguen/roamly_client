@@ -1,6 +1,6 @@
 import { UserRepository } from '../../data/repositories/userRepository';
 import { User } from '../models/User';
-import { UserApiResponse } from '../../types/UserResponseInterface';
+import { UserApiResponse, SearchUserParams, SearchUserResponse } from '../../types/UserResponseInterface';
 import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
 
 
@@ -38,5 +38,9 @@ export class UserUseCase {
 
   async uploadProfilePicture(imageFile: FormData): Promise<UserApiResponse> {
     return await this.repo.uploadProfilePicture(imageFile);
+  }
+
+  async searchUsers(params: SearchUserParams): Promise<SearchUserResponse> {
+    return await this.repo.searchUsers(params);
   }
 }

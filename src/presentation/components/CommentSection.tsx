@@ -237,14 +237,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                     <View style={styles.commentActions}>
                         <TouchableOpacity
                             style={styles.commentLikeButton}
-                            onPress={() => handleCommentLike(reply.id, reply.isLiked || false)}
+                            onPress={() => handleCommentLike(reply.id, reply.isLike || false)}
                         >
                             <FontAwesome
-                                name={reply.isLiked ? 'heart' : 'heart-o'}
+                                name={reply.isLike ? 'heart' : 'heart-o'}
                                 size={12}
-                                color={reply.isLiked ? '#e74c3c' : '#8e8e8e'}
+                                color={reply.isLike ? '#e74c3c' : '#8e8e8e'}
                             />
-                            <Text style={[styles.commentLikeCount, reply.isLiked && styles.commentLikeCountActive]}>
+                            <Text style={[styles.commentLikeCount, reply.isLike && styles.commentLikeCountActive]}>
                                 {reply.likeCount || 0}
                             </Text>
                         </TouchableOpacity>
@@ -297,14 +297,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                         <View style={styles.commentActions}>
                             <TouchableOpacity
                                 style={styles.commentLikeButton}
-                                onPress={() => handleCommentLike(item.id, item.isLiked || false)}
+                                onPress={() => handleCommentLike(item.id, item.isLike || false)}
                             >
                                 <FontAwesome
-                                    name={item.isLiked ? 'heart' : 'heart-o'}
+                                    name={item.isLike ? 'heart' : 'heart-o'}
                                     size={12}
-                                    color={item.isLiked ? '#e74c3c' : '#8e8e8e'}
+                                    color={item.isLike ? '#e74c3c' : '#8e8e8e'}
                                 />
-                                <Text style={[styles.commentLikeCount, item.isLiked && styles.commentLikeCountActive]}>
+                                <Text style={[styles.commentLikeCount, item.isLike && styles.commentLikeCountActive]}>
                                     {item.likeCount || 0}
                                 </Text>
                             </TouchableOpacity>

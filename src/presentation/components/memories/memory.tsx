@@ -50,9 +50,9 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
   // Map dữ liệu từ API về đúng định dạng Memory[]
   const mappedMemories: Memory[] = Array.isArray(apiMemories)
     ? apiMemories.map((item) => ({
-        ...item,
-        images: item.imageUrl || [],
-      }))
+      ...item,
+      images: item.imageUrl || [],
+    }))
     : [];
 
   const [selected, setSelected] = useState<Memory | null>(null);
@@ -63,7 +63,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
   const [editDate, setEditDate] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [memoriesState, setMemoriesState] = useState<Memory[]>(mappedMemories);
-  const [editMemory, setEditMemory] = useState(null);
+  const [editMemory, setEditMemory] = useState<Memory | null>(null);
 
   const addMemoryItem = { id: 'add', images: [''], title: '', startDate: '', placesVisited: [] };
   const dataWithAdd = userId === profile?.id ? [addMemoryItem, ...memoriesState] : memoriesState;
@@ -114,14 +114,14 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
   };
 
   const getPrivacyIcon = (privacy: string) => {
-  switch(privacy) {
-    case 'private': return '🔒';
-    case 'tagged': return '🏷️';
-    case 'followers': return '👥';
-    case 'public': return '🌐';
-    default: return '🌐';
-  }
-};
+    switch (privacy) {
+      case 'private': return '🔒';
+      case 'tagged': return '🏷️';
+      case 'followers': return '👥';
+      case 'public': return '🌐';
+      default: return '🌐';
+    }
+  };
 
 
   const handleScroll = (e: any) => {
@@ -131,7 +131,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
 
   const startEdit = () => {
     if (selected) {
-      setEditMemory(selected);
+      setEditMemory(selected as Memory);
       setShowAddModal(true);
     }
   };
@@ -196,14 +196,18 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
         onRequestClose={() => { setSelected(null); setEditMode(false); }}
       >
         {selected && !editMode && (
-          <ScrollView style={styles.detailContainer}>
+          <ScrollView
+            style={styles.detailContainer}
+            contentContainerStyle={styles.scrollContentContainer}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Header cải tiến với gradient */}
             <View style={styles.detailHeader}>
               <TouchableOpacity style={styles.backButton} onPress={() => setSelected(null)}>
                 <Ionicons name="arrow-back" size={24} color="#228be6" />
               </TouchableOpacity>
               <Text style={styles.detailHeaderTitle}>Chi tiết kỷ niệm</Text>
-              <View style={{width: 40}}></View>
+              <View style={{ width: 40 }}></View>
             </View>
 
             {/* Ảnh carousel cải tiến */}
@@ -222,7 +226,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
               />
-              
+
               {/* Dots indicator cải tiến */}
               <View style={styles.dotsContainer}>
                 {selected.images.map((_, idx) => (
@@ -236,7 +240,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                 ))}
               </View>
             </View>
-            
+
             {/* Tiêu đề nổi bật hơn */}
             <View style={styles.titleContainer}>
               <Text style={styles.detailTitle}>
@@ -259,14 +263,14 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                   <Text style={styles.detailRowHeaderIcon}>🧳</Text>
                   <Text style={styles.detailRowHeaderText}>THÔNG TIN CHUYẾN ĐI</Text>
                 </View>
-                
+
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Giới thiệu</Text>
                   <Text style={styles.detailDescription}>
                     {selected.description ? selected.description : 'Không được chia sẻ'}
                   </Text>
                 </View>
-                
+
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Chi tiết</Text>
                   <View style={styles.detailRow}>
@@ -290,7 +294,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                     <Text style={styles.detailLabel}>Chi phí:</Text>
                     {
                       !selected.cost ||
-                      (typeof selected.cost === 'object' && Object.keys(selected.cost).length === 0) ? (
+                        (typeof selected.cost === 'object' && Object.keys(selected.cost).length === 0) ? (
                         <Text style={styles.detailValue}>Không được chia sẻ</Text>
                       ) : typeof selected.cost === 'string' ? (
                         <Text style={styles.detailValue}>{selected.cost}</Text>
@@ -328,20 +332,20 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                     <Text style={styles.detailIcon}><Text style={styles.detailIcon}>{getPrivacyIcon(selected.privacy ?? 'public')}</Text></Text>
                     <Text style={styles.detailLabel}>Quyền riêng tư:</Text>
                     <Text style={[
-                      styles.detailValue, 
-                      {color: selected.privacy === 'private' ? '#ff6b6b' : '#51cf66'}
+                      styles.detailValue,
+                      { color: selected.privacy === 'private' ? '#ff6b6b' : '#51cf66' }
                     ]}>
-                      {selected.privacy === 'private' 
-                      ? 'Chỉ mình tôi' 
-                      : selected.privacy === 'tagged' 
-                        ? 'Bạn bè được gắn thẻ' 
-                        : selected.privacy === 'followers' 
-                          ? 'Bạn bè follow' 
-                          : 'Công khai'}
+                      {selected.privacy === 'private'
+                        ? 'Chỉ mình tôi'
+                        : selected.privacy === 'tagged'
+                          ? 'Bạn bè được gắn thẻ'
+                          : selected.privacy === 'followers'
+                            ? 'Bạn bè follow'
+                            : 'Công khai'}
                     </Text>
                   </View>
                 </View>
-                
+
                 {/* Tags */}
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Thẻ</Text>
@@ -357,7 +361,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                     )}
                   </View>
                 </View>
-                
+
                 {/* Participants */}
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Người tham gia</Text>
@@ -378,7 +382,7 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                 </View>
               </View>
             </View>
-            
+
             {/* Nút tác vụ đẹp hơn */}
             {userId === profile?.id && (
               <View style={styles.actionButtonsContainer}>
@@ -392,6 +396,8 @@ const MemoriesGrid: React.FC<MemoriesGridProps> = ({ userId }) => {
                 </TouchableOpacity>
               </View>
             )}
+
+
           </ScrollView>
         )}
 
@@ -516,8 +522,10 @@ const styles = StyleSheet.create({
   },
   detailContainer: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#f8fafb',
+  },
+  scrollContentContainer: {
+    padding: 20
   },
   detailHeader: {
     flexDirection: 'row',
@@ -739,6 +747,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 16,
+    marginBottom: 20, // Thêm margin bottom
+    paddingHorizontal: 4, // Thêm padding horizontal
   },
   editButton: {
     backgroundColor: '#228be6',
@@ -888,7 +898,7 @@ const styles = StyleSheet.create({
   costCardContainer: {
     backgroundColor: '#f9fafb',
     borderRadius: 12,
-    padding:16,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },

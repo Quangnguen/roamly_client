@@ -2,6 +2,7 @@ import { authorizedRequest } from '../../utils/authorizedRequest';
 import { API_BASE_URL } from '../../const/api';
 import { getAccessToken } from '@/src/utils/tokenStorage';
 import { UserChangePasswordInterface, UserUpdateInterface } from '@/src/types/UserUpdateInterface';
+import { SearchUserParams } from '@/src/types/UserResponseInterface';
 
 
 // Lấy thông tin người dùng hiện tại
@@ -101,3 +102,20 @@ export const uploadProfilePicture = async (imageFile: FormData) => {
     },
   });
 };
+
+// Search users API
+export const searchUserApi = async (params: SearchUserParams) => {
+  const queryString = new URLSearchParams({
+    q: params.q,
+    ...(params.page && { page: params.page.toString() }),
+    ...(params.limit && { limit: params.limit.toString() }),
+  }).toString();
+
+  return await authorizedRequest(`${API_BASE_URL}/users/search?${queryString}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
+

@@ -1,6 +1,6 @@
 import { UserRepository } from '../repositories/userRepository';
-import { getUserProfile, updateUserProfile, changePassword, getUsers, getUserById as getUserByIdApi, uploadProfilePicture } from '../api/userApi';
-import { UserApiResponse } from '@/src/types/UserResponseInterface';
+import { getUserProfile, updateUserProfile, changePassword, getUsers, getUserById as getUserByIdApi, uploadProfilePicture, searchUserApi } from '../api/userApi';
+import { UserApiResponse, SearchUserParams, SearchUserResponse } from '@/src/types/UserResponseInterface';
 import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
 
 
@@ -110,6 +110,23 @@ export class UserRepositoryImpl implements UserRepository {
     } catch (error) {
       console.error('Failed to upload profile picture:', error);
       throw new Error('Failed to upload profile picture');
+    }
+  }
+
+  async searchUsers(params: SearchUserParams): Promise<SearchUserResponse> {
+    console.log('Searching users with params:', params);
+    try {
+      const response = await searchUserApi(params);
+      console.log('searchUsers response:', response);
+
+      if (response.statusCode === 200) {
+        return response;
+      }
+
+      throw new Error('Failed to search users');
+    } catch (error) {
+      console.error('Failed to search users:', error);
+      throw new Error('Failed to search users');
     }
   }
 }

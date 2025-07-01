@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   FlatList,
 } from 'react-native';
-import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -21,6 +21,7 @@ import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
 import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
 import { getPosts, getPostsByUserId } from '../redux/slices/postSlice';
+import { getConversations, createConversation } from '../redux/slices/chatSlice';
 import { dependencies } from '@/src/dependencies/dependencies';
 import { Post } from '@/src/domain/entities/post';
 
@@ -40,6 +41,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const { user, message, status } = useSelector((state: RootState) => state.user);
   const { following } = useSelector((state: RootState) => state.follow);
   const { profile: authUser } = useSelector((state: RootState) => state.auth);
+  const { conversations } = useSelector((state: RootState) => state.chat);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<InfoAccPageRouteProp>();
   const { id } = route.params;
@@ -50,6 +52,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   useEffect(() => {
     dispatch(getUserById(id));
     dispatch(getPostsByUserId(id));
+    dispatch(getConversations());
   }, [dispatch, id]);
 
   useEffect(() => {
@@ -122,13 +125,48 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
     dispatch(getFollowing());
   };
 
-  const handleMessagePress = () => {
+  const handleMessagePress = async () => {
     if (!user?.id) return;
-    navigation.navigate('ChatDetailPage', {
-      chatId: user.id,
-      name: user.name || user.username || '',
-      avatar: user.profilePic || '',
-    });
+
+    try {
+      // Kiểm tra xem đã có conversation với user này chưa
+      const existingConversation = conversations.find(conv => {
+        // Kiểm tra conversation 1-on-1 (không phải group)
+        if (conv.isGroup) return false;
+
+        // Kiểm tra xem có participant nào là user này không
+        return conv.participants.some(participant => participant.userId === user.id);
+      });
+
+      if (existingConversation) {
+        // Navigate đến ChatDetailPage với conversation đã có
+        navigation.navigate('ChatDetailPage', {
+          chatId: existingConversation.id,
+          name: user.name || user.username || '',
+          avatar: user.profilePic || ''
+        });
+        return;
+      }
+
+      // Gọi API tạo conversation mới
+      const result = await dispatch(createConversation({
+        userIds: [user.id]
+      })).unwrap();
+
+      // Navigate đến ChatDetailPage với conversation mới
+      navigation.navigate('ChatDetailPage', {
+        chatId: result.id,
+        name: user.name || user.username || '',
+        avatar: user.profilePic || ''
+      });
+
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Không thể tạo cuộc trò chuyện',
+        text2: 'Vui lòng thử lại sau'
+      });
+    }
   };
 
   const author = {

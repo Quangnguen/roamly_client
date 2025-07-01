@@ -1,5 +1,5 @@
 import { GetUsersParams } from '@/src/types/GetUsersParamsInterface';
-import { UserApiResponse } from '@/src/types/UserResponseInterface';
+import { UserApiResponse, SearchUserParams, SearchUserResponse } from '@/src/types/UserResponseInterface';
 
 
 export interface UserRepository {
@@ -17,4 +17,5 @@ export interface UserRepository {
   getUsers(params?: GetUsersParams): Promise<any>;
   getUserById(userId: string): Promise<UserApiResponse>;
   uploadProfilePicture(imageFile: FormData): Promise<UserApiResponse>;
+  searchUsers(params: SearchUserParams): Promise<SearchUserResponse>;
 }

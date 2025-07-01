@@ -15,7 +15,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BACKGROUND } from '@/src/const/constants';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../redux/store';
-import { getUsers } from '../redux/slices/userSlice';
+import { getUsers, searchUsers, clearSearchResults as clearUserSearchResults } from '../redux/slices/userSlice';
 import { getFollowing } from '../redux/slices/followSlice';
 import { getPosts, searchPosts, clearSearchResults } from '../redux/slices/postSlice';
 import PostTab from '../components/search/PostTab';
@@ -42,30 +42,47 @@ const SearchPage: React.FC = () => {
 
   // Load initial data
   useEffect(() => {
-    if (activeTab === 'Người dùng') {
+    if (activeTab === 'Người dùng' && !searchText.trim()) {
+      // Load danh sách users ban đầu khi không có search text
       dispatch(getUsers({ page: 1, limit: 5 }));
       dispatch(getFollowing());
+      // Clear previous search results
+      dispatch(clearUserSearchResults());
     }
     if (activeTab === 'Bài viết' && !searchText.trim()) {
       // Chỉ load tất cả posts khi không có search text
       dispatch(getPosts());
     }
-  }, [dispatch, activeTab, searchText]);
+  }, [dispatch, activeTab]);
 
   // Debounced search effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchText.trim() && activeTab === 'Bài viết') {
-        // Thực hiện search posts
-        dispatch(searchPosts({
-          q: searchText.trim(),
-          page: 1,
-          limit: 20
-        }));
-      } else if (!searchText.trim() && activeTab === 'Bài viết') {
-        // Clear search results và load lại posts
-        dispatch(clearSearchResults());
-        dispatch(getPosts());
+      if (searchText.trim()) {
+        if (activeTab === 'Bài viết') {
+          // Thực hiện search posts
+          dispatch(searchPosts({
+            q: searchText.trim(),
+            page: 1,
+            limit: 20
+          }));
+        } else if (activeTab === 'Người dùng') {
+          // Thực hiện search users
+          dispatch(searchUsers({
+            q: searchText.trim(),
+            page: 1,
+            limit: 10
+          }));
+        }
+      } else {
+        // Clear search results khi không có search text
+        if (activeTab === 'Bài viết') {
+          dispatch(clearSearchResults());
+          dispatch(getPosts());
+        } else if (activeTab === 'Người dùng') {
+          dispatch(clearUserSearchResults());
+          dispatch(getUsers({ page: 1, limit: 5 }));
+        }
       }
     }, 500); // Debounce 500ms
 
@@ -76,6 +93,8 @@ const SearchPage: React.FC = () => {
     setSearchText('');
     if (activeTab === 'Bài viết') {
       dispatch(clearSearchResults());
+    } else if (activeTab === 'Người dùng') {
+      dispatch(clearUserSearchResults());
     }
   };
 
@@ -88,7 +107,7 @@ const SearchPage: React.FC = () => {
       case 'Nhà nghỉ':
         return <HomeStayTab />;
       case 'Người dùng':
-        return <UserTab />;
+        return <UserTab searchText={searchText} />;
       default:
         return null;
     }
@@ -104,7 +123,13 @@ const SearchPage: React.FC = () => {
               <Ionicons name="search-outline" size={20} color="#888" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchBar}
-                placeholder="Tìm kiếm"
+                placeholder={
+                  activeTab === 'Người dùng'
+                    ? "Tìm kiếm người dùng..."
+                    : activeTab === 'Bài viết'
+                      ? "Tìm kiếm bài viết..."
+                      : "Tìm kiếm"
+                }
                 placeholderTextColor="#888"
                 value={searchText}
                 onChangeText={setSearchText}

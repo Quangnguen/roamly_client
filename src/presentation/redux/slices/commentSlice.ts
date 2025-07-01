@@ -144,11 +144,11 @@ export const commentSlice = createSlice({
             state.comments = state.comments?.filter(comment => comment.id !== action.payload) || [];
         },
         // ✅ Toggle like status optimistically
-        toggleCommentLike: (state, action: PayloadAction<{ commentId: string; isLiked: boolean; likeCount: number }>) => {
-            const { commentId, isLiked, likeCount } = action.payload;
+        toggleCommentLike: (state, action: PayloadAction<{ commentId: string; isLike: boolean; likeCount: number }>) => {
+            const { commentId, isLike, likeCount } = action.payload;
             const comment = state.comments?.find(c => c.id === commentId);
             if (comment) {
-                comment.isLiked = isLiked;
+                comment.isLike = isLike;
                 comment.likeCount = likeCount;
             }
         },

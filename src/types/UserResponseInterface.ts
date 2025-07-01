@@ -8,3 +8,32 @@ export interface UserApiResponse {
   error?: string;
 }
 
+// Interface cho user search result
+export interface SearchUserResult {
+  id: string;
+  username: string;
+  name: string;
+  profilePic: string | null;
+  followerCount: number;
+  isFollowing: boolean;
+}
+
+// Interface cho search user response với pagination
+export interface SearchUserResponse {
+  message: string;
+  statusCode: number;
+  data: {
+    currentPage: number;
+    total: number;
+    totalPages: number;
+    results: SearchUserResult[];
+  };
+}
+
+// Interface cho search user params
+export interface SearchUserParams {
+  q: string;
+  page?: number;
+  limit?: number;
+}
+
