@@ -165,63 +165,19 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // Setup WebSocket listeners for real-time chat updates
+  // ✅ Socket connection status check (không cần duplicate listeners)
   useEffect(() => {
-    // Listener cho tin nhắn mới
-    const handleNewMessage = (data: any) => {
-      // Dispatch action để cập nhật Redux state
-      dispatch(handleSocketNewMessage({
-        conversationId: data.conversationId,
-        message: data.message || data
-      }));
-
-      // Nếu đây là conversation mới (không có trong danh sách), reload conversations
-      const existingConversation = conversations.find(conv => conv.id === data.conversationId);
-      if (!existingConversation) {
-        setTimeout(() => {
-          dispatch(getConversations());
-        }, 500); // Delay nhỏ để đảm bảo server đã cập nhật
-      }
+    const checkConnection = () => {
+      setSocketConnected(socketService.isConnected());
     };
 
-    // Listener cho khi user online/offline
-    const handleUserOnline = (data: any) => {
-      // TODO: Có thể thêm indicator online status sau
-    };
+    checkConnection();
 
-    const handleUserOffline = (data: any) => {
-      // TODO: Có thể thêm indicator offline status sau
-    };
+    // Check connection status every few seconds
+    const interval = setInterval(checkConnection, 3000);
 
-    // Đăng ký listeners
-    if (socketService.isConnected()) {
-      setSocketConnected(true);
-      socketService.on('newMessage', handleNewMessage);
-      socketService.on('messageReceived', handleNewMessage); // Backup event name
-      socketService.on('userOnline', handleUserOnline);
-      socketService.on('userOffline', handleUserOffline);
-    } else {
-      setSocketConnected(false);
-      socketService.connect().then(() => {
-        setSocketConnected(true);
-        socketService.on('newMessage', handleNewMessage);
-        socketService.on('messageReceived', handleNewMessage);
-        socketService.on('userOnline', handleUserOnline);
-        socketService.on('userOffline', handleUserOffline);
-      }).catch(error => {
-        setSocketConnected(false);
-      });
-    }
-
-    // Cleanup function
-    return () => {
-      setSocketConnected(false);
-      socketService.off('newMessage', handleNewMessage);
-      socketService.off('messageReceived', handleNewMessage);
-      socketService.off('userOnline', handleUserOnline);
-      socketService.off('userOffline', handleUserOffline);
-    };
-  }, [dispatch]); // Chỉ setup một lần khi component mount
+    return () => clearInterval(interval);
+  }, []);
 
   // Update current time every minute for real-time "time ago" updates
   useEffect(() => {

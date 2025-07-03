@@ -170,6 +170,12 @@ function AppContent() {
         socketService.onNewMessage((data: any) => {
           console.log('💌 New message received:', data);
 
+          // ✅ QUAN TRỌNG: Dispatch Redux action để cập nhật ChatPage
+          dispatch(handleSocketNewMessage({
+            conversationId: data.conversationId,
+            message: data.message || data
+          }));
+
           const navigateToChat = () => {
             console.log('🔍 Navigation function called!');
             console.log('🔍 Navigation object:', !!navigation);
