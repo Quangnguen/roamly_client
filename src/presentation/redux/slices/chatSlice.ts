@@ -287,13 +287,36 @@ const chatSlice = createSlice({
                 const { messages, isLoadMore } = action.payload;
 
                 if (isLoadMore) {
+                    // ✅ Sort messages cũ hơn theo thời gian (oldest first) trước khi prepend
+                    const sortedOlderMessages = [...messages].sort((a, b) =>
+                        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                    );
+
                     // Prepend older messages to the beginning of the list
-                    state.messages = [...messages, ...state.messages];
+                    state.messages = [...sortedOlderMessages, ...state.messages];
                     state.currentPage += 1;
+
+                    console.log('📥 Load more completed:', {
+                        newMessages: sortedOlderMessages.length,
+                        totalMessages: state.messages.length,
+                        oldestNew: sortedOlderMessages[0]?.content?.substring(0, 30) + '...',
+                        newestNew: sortedOlderMessages[sortedOlderMessages.length - 1]?.content?.substring(0, 30) + '...'
+                    });
                 } else {
+                    // ✅ Sort messages cho first load (oldest first)
+                    const sortedMessages = [...messages].sort((a, b) =>
+                        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                    );
+
                     // Replace with new messages (first load)
-                    state.messages = messages;
+                    state.messages = sortedMessages;
                     state.currentPage = 1;
+
+                    console.log('📥 First load completed:', {
+                        totalMessages: sortedMessages.length,
+                        oldest: sortedMessages[0]?.content?.substring(0, 30) + '...',
+                        newest: sortedMessages[sortedMessages.length - 1]?.content?.substring(0, 30) + '...'
+                    });
                 }
 
                 // Check if we have more messages to load

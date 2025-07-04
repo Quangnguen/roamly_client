@@ -45,6 +45,7 @@ const ChatDetailPage: React.FC = () => {
     const { chatId, name, avatar } = route.params;
     const flatListRef = React.useRef<FlatList<MessageResponseInterface>>(null);
     const isNewMessageSent = useRef(false);
+    const isLoadingMore = useRef(false); // ✅ Track load more state
 
     const dispatch = useAppDispatch();
     const {
@@ -107,25 +108,53 @@ const ChatDetailPage: React.FC = () => {
         })();
     }, []);
 
-    // Tự động scroll xuống cuối sau khi load messages xong hoặc khi gửi tin nhắn mới
+    // ✅ Tự động scroll xuống cuối chỉ khi có tin nhắn mới (KHÔNG phải load more)
     useEffect(() => {
         if (messages.length > 0 && !messagesLoading) {
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: isNewMessageSent.current });
-                if (isNewMessageSent.current) {
-                    isNewMessageSent.current = false; // Reset flag sau khi scroll
-                }
-            }, 100);
+            // Chỉ scroll nếu KHÔNG phải load more
+            if (!isLoadingMore.current) {
+                setTimeout(() => {
+                    // Scroll với animation nếu là tin nhắn user gửi, không animation cho tin nhắn từ người khác
+                    const shouldAnimate = isNewMessageSent.current;
+                    flatListRef.current?.scrollToEnd({ animated: shouldAnimate });
+
+                    if (isNewMessageSent.current) {
+                        isNewMessageSent.current = false; // Reset flag sau khi scroll
+                    }
+
+                    console.log('📱 Auto scroll to bottom:', {
+                        animated: shouldAnimate,
+                        messagesCount: messages.length
+                    });
+                }, 100);
+            } else {
+                // Reset load more flag sau khi load xong
+                isLoadingMore.current = false;
+                console.log('📱 Load more completed - maintaining scroll position');
+            }
         }
     }, [messages.length, messagesLoading]);
 
     // Load more messages khi scroll lên đầu
     const handleLoadMore = () => {
         if (!messagesLoading && hasMoreMessages && chatId) {
+            // ✅ Set flag để prevent auto scroll
+            isLoadingMore.current = true;
+
+            // ✅ Sử dụng message cũ nhất (đầu tiên) để load messages cũ hơn
+            // Vì array được sắp xếp: [message_cũ, ..., message_mới]
+            const oldestMessageId = messages.length > 0 ? messages[0].id : '';
+
+            console.log('🔄 Loading more messages before:', {
+                oldestMessageId,
+                totalMessages: messages.length,
+                firstMessage: messages[0]?.content?.substring(0, 30) + '...'
+            });
+
             dispatch(getMessages({
                 conversationId: chatId,
                 limit: 20,
-                before: messages.length > 0 ? messages[0].id : '' // Lấy messages cũ hơn tin nhắn đầu tiên
+                before: oldestMessageId
             }));
         }
     };
