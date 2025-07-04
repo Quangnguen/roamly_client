@@ -26,7 +26,6 @@ import { getMessages, addMessage, addOptimisticMessage, updateMessageStatus, set
 import { MessageResponseInterface } from "../../types/messageResponseInterface";
 import Toast from "react-native-toast-message";
 import { sendMessage } from "../redux/slices/chatSlice";
-import { socketService } from '@/src/services/socketService';
 
 type ChatDetailRouteProp = RouteProp<RootStackParamList, 'ChatDetailPage'>;
 
@@ -475,131 +474,10 @@ const ChatDetailPage: React.FC = () => {
         setSelectedImageUri(null);
     };
 
-    // WebSocket listener cho tin nhắn real-time
-    useEffect(() => {
-        if (!chatId || !selectedConversation?.id) return;
-
-
-
-        // Handler cho tin nhắn mới
-        const handleNewMessage = (data: any) => {
-            // Chỉ xử lý nếu tin nhắn thuộc về conversation hiện tại
-            if (data.conversationId === chatId || data.conversationId === selectedConversation.id) {
-                // Thêm message vào danh sách messages hiện tại
-                if (data.message) {
-                    dispatch(addMessage(data.message));
-
-                    // Auto scroll xuống tin nhắn mới (nếu không phải tin nhắn của mình)
-                    if (data.message.senderId !== currentUser?.id) {
-                        setTimeout(() => {
-                            flatListRef.current?.scrollToEnd({ animated: true });
-                        }, 100);
-                    }
-                }
-            }
-        };
-
-        // Handler cho typing indicator
-        const handleUserTyping = (data: any) => {
-            if (data.conversationId === chatId && data.userId !== currentUser?.id) {
-                // TODO: Hiển thị typing indicator
-            }
-        };
-
-        // Handler cho user online/offline
-        const handleUserOnline = (data: any) => {
-            // TODO: Cập nhật online status
-        };
-
-        const handleUserOffline = (data: any) => {
-            // TODO: Cập nhật offline status
-        };
-
-        // Đăng ký listeners
-        if (socketService.isConnected()) {
-            // Các event names có thể có
-            socketService.on('newMessage', handleNewMessage);
-            socketService.on('messageReceived', handleNewMessage);
-            socketService.on('new_message', handleNewMessage);
-            socketService.on('message', handleNewMessage);
-
-            // Typing events
-            socketService.on('userTyping', handleUserTyping);
-            socketService.on('user_typing', handleUserTyping);
-
-            // Online/offline events
-            socketService.on('userOnline', handleUserOnline);
-            socketService.on('userOffline', handleUserOffline);
-            socketService.on('user_online', handleUserOnline);
-            socketService.on('user_offline', handleUserOffline);
-
-            // Join conversation room (optional - nếu server support)
-            socketService.emit('joinConversation', {
-                conversationId: chatId,
-                userId: currentUser?.id
-            });
-
-        } else {
-            socketService.connect().then(() => {
-                // Register listeners after connection
-                socketService.on('newMessage', handleNewMessage);
-                socketService.on('messageReceived', handleNewMessage);
-                socketService.on('new_message', handleNewMessage);
-                socketService.on('message', handleNewMessage);
-                socketService.on('userTyping', handleUserTyping);
-                socketService.on('user_typing', handleUserTyping);
-                socketService.on('userOnline', handleUserOnline);
-                socketService.on('userOffline', handleUserOffline);
-                socketService.on('user_online', handleUserOnline);
-                socketService.on('user_offline', handleUserOffline);
-
-                // Join conversation room
-                socketService.emit('joinConversation', {
-                    conversationId: chatId,
-                    userId: currentUser?.id
-                });
-            }).catch(error => {
-                // Handle connection error silently
-            });
-        }
-
-        // Cleanup function
-        return () => {
-            // Leave conversation room
-            if (socketService.isConnected()) {
-                socketService.emit('leaveConversation', {
-                    conversationId: chatId,
-                    userId: currentUser?.id
-                });
-            }
-
-            // Remove listeners
-            socketService.off('newMessage', handleNewMessage);
-            socketService.off('messageReceived', handleNewMessage);
-            socketService.off('new_message', handleNewMessage);
-            socketService.off('message', handleNewMessage);
-            socketService.off('userTyping', handleUserTyping);
-            socketService.off('user_typing', handleUserTyping);
-            socketService.off('userOnline', handleUserOnline);
-            socketService.off('userOffline', handleUserOffline);
-            socketService.off('user_online', handleUserOnline);
-            socketService.off('user_offline', handleUserOffline);
-        };
-    }, [chatId, selectedConversation?.id, currentUser?.id, dispatch]); // Dependencies
-
     // Optional: Emit typing event khi user đang gõ
     const handleTextChange = (text: string) => {
         setNewMessage(text);
-
-        // Emit typing event
-        if (socketService.isConnected() && selectedConversation?.id) {
-            socketService.emit('userTyping', {
-                conversationId: selectedConversation.id,
-                userId: currentUser?.id,
-                username: currentUser?.username,
-                isTyping: text.length > 0
-            });
-        }
+        // Note: Typing events sẽ được handle trong future updates
     };
 
     return (
@@ -616,29 +494,8 @@ const ChatDetailPage: React.FC = () => {
                                 <Ionicons name="chevron-back" size={24} />
                             </TouchableOpacity>
                             <Text style={styles.headerTitle}>{name}</Text>
-                            <TouchableOpacity onPress={() => {
-                                // Add test message
-                                const testMessage: MessageResponseInterface = {
-                                    id: Date.now().toString(),
-                                    conversationId: chatId,
-                                    senderId: 'test-sender',
-                                    content: 'Đây là tin nhắn test để kiểm tra giao diện',
-                                    createdAt: new Date().toISOString(),
-                                    updatedAt: new Date().toISOString(),
-                                    deletedForAll: false,
-                                    seenBy: [],
-                                    mediaUrls: [],
-                                    mediaType: null,
-                                    pinned: false,
-                                    sender: {
-                                        id: 'test-sender',
-                                        username: 'Test User',
-                                        profilePic: ''
-                                    }
-                                };
-                                dispatch(addMessage(testMessage));
-                            }}>
-                                <Ionicons name="add-circle" size={24} />
+                            <TouchableOpacity>
+                                <Ionicons name="information-circle-outline" size={24} />
                             </TouchableOpacity>
                         </View>
                     </TouchableWithoutFeedback>

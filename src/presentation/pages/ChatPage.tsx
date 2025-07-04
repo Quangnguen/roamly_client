@@ -8,15 +8,29 @@ import { NavigationProp } from "@/src/utils/PropsNavigate"
 import { BACKGROUND } from "@/src/const/constants"
 import React, { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "../redux/hook"
-import { getConversations, handleSocketNewMessage, createConversation } from "../redux/slices/chatSlice"
+import { getConversations, createConversation } from "../redux/slices/chatSlice"
 import { ConversationResponseInterface } from "@/src/types/ConversationResponseInterface"
-import { socketService } from "@/src/services/socketService"
 import { getFollowersApi, getFollowingApi } from "@/src/data/api/followApi"
 import ConversationsSection from "../components/ConversationsSection"
 import FriendsSection from "../components/FriendsSection"
 
+// Helper function để tính thời gian
+const calculateTimeAgo = (dateString: string, currentTime: Date): string => {
+  const now = currentTime;
+  const date = new Date(dateString);
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) return "now";
+  if (diffInMinutes < 60) return `${diffInMinutes}m`;
+  if (diffInHours < 24) return `${diffInHours}h`;
+  return `${diffInDays}d`;
+};
+
 // Helper function để convert ConversationResponseInterface sang ChatItemType
-const convertConversationToChat = (conversation: ConversationResponseInterface, currentUserId: string): ChatItemType => {
+const convertConversationToChat = (conversation: ConversationResponseInterface, currentUserId: string, currentTime: Date): ChatItemType => {
   // Find other participant (not current user)
   const otherParticipant = conversation.participants.find((p: any) => p.userId !== currentUserId);
 
@@ -36,7 +50,7 @@ const convertConversationToChat = (conversation: ConversationResponseInterface, 
     // Nếu không có lastMessage hoặc lastMessage là string, dùng thời gian tạo nhóm
     timeToUse = conversation.createdAt;
   }
-  const timeAgo = calculateTimeAgo(timeToUse);
+  const timeAgo = calculateTimeAgo(timeToUse, currentTime);
 
   return {
     id: conversation.id,
@@ -49,21 +63,6 @@ const convertConversationToChat = (conversation: ConversationResponseInterface, 
     lastMessage: lastMessageText || "Chưa có tin nhắn",
     time: timeAgo,
   };
-};
-
-// Helper function để tính thời gian
-const calculateTimeAgo = (dateString: string): string => {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffInMs = now.getTime() - date.getTime();
-  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-  if (diffInMinutes < 1) return "now";
-  if (diffInMinutes < 60) return `${diffInMinutes}m`;
-  if (diffInHours < 24) return `${diffInHours}h`;
-  return `${diffInDays}d`;
 };
 
 // Interface cho friend item
@@ -85,7 +84,6 @@ const ChatPage: React.FC = () => {
   // Section state
   const [searchText, setSearchText] = React.useState("");
   const [currentTime, setCurrentTime] = React.useState(new Date());
-  const [socketConnected, setSocketConnected] = React.useState(false);
 
   // Friends state
   const [friends, setFriends] = React.useState<FriendItem[]>([]);
@@ -165,20 +163,6 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // ✅ Socket connection status check (không cần duplicate listeners)
-  useEffect(() => {
-    const checkConnection = () => {
-      setSocketConnected(socketService.isConnected());
-    };
-
-    checkConnection();
-
-    // Check connection status every few seconds
-    const interval = setInterval(checkConnection, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   // Update current time every minute for real-time "time ago" updates
   useEffect(() => {
     const interval = setInterval(() => {
@@ -187,6 +171,13 @@ const ChatPage: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // ✅ Update currentTime immediately when conversations change (new messages)
+  useEffect(() => {
+    if (conversations.length > 0) {
+      setCurrentTime(new Date());
+    }
+  }, [conversations]);
 
   // Convert conversations to chat items (remove sorting here)
   const chatData: ChatItemType[] = React.useMemo(() => {
@@ -199,7 +190,7 @@ const ChatPage: React.FC = () => {
 
     // Conversations are already sorted in Redux, just convert them
     return conversations.map(conversation =>
-      convertConversationToChat(conversation, currentUserId)
+      convertConversationToChat(conversation, currentUserId, currentTime)
     );
   }, [conversations, profile?.id, currentTime]);
 
@@ -213,48 +204,6 @@ const ChatPage: React.FC = () => {
 
   const handlePressOutside = () => {
     Keyboard.dismiss()
-  }
-
-  // Debug function để test WebSocket
-  const testWebSocket = () => {
-    // Test emit một event
-    if (socketService.isConnected()) {
-      socketService.emit('test_event', {
-        message: 'Test from ChatPage',
-        userId: profile?.id,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }
-
-  // Test function để simulate tin nhắn mới
-  const simulateNewMessage = () => {
-    if (conversations.length > 0) {
-      const testConversation = conversations[0];
-      const testMessage = {
-        id: Date.now().toString(),
-        conversationId: testConversation.id,
-        senderId: 'test-sender-id',
-        content: `Test message at ${new Date().toLocaleTimeString()}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        deletedForAll: false,
-        seenBy: [],
-        mediaUrls: [],
-        mediaType: null,
-        pinned: false,
-        sender: {
-          id: 'test-sender-id',
-          username: 'Test User',
-          profilePic: ''
-        }
-      };
-
-      dispatch(handleSocketNewMessage({
-        conversationId: testConversation.id,
-        message: testMessage
-      }));
-    }
   }
 
   // Function để handle bắt đầu chat với friend
@@ -297,8 +246,6 @@ const ChatPage: React.FC = () => {
   };
 
   return (
-
-
     <SafeAreaView style={styles.container} edges={[]}>
       <TouchableWithoutFeedback onPress={handlePressOutside}>
         <View style={styles.header}>
@@ -309,16 +256,13 @@ const ChatPage: React.FC = () => {
           <TouchableOpacity style={styles.userContainer}>
             <Text style={styles.username}>{profile?.username}</Text>
             <Ionicons name="chevron-down" size={18} />
-            {/* Socket connection indicator */}
-            <View style={[styles.connectionDot, { backgroundColor: socketConnected ? '#34C759' : '#FF3B30' }]} />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={simulateNewMessage}>
+          <TouchableOpacity>
             <Feather name="plus" size={24} />
           </TouchableOpacity>
         </View>
       </TouchableWithoutFeedback>
-
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -377,12 +321,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 18,
     marginRight: 4,
-  },
-  connectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginLeft: 8,
   },
   searchContainer: {
     paddingHorizontal: 16,

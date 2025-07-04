@@ -149,9 +149,21 @@ const chatSlice = createSlice({
             const conversationIndex = state.conversations.findIndex(conv => conv.id === conversationId);
 
             if (conversationIndex !== -1) {
-                const newLastMessage = message.content || message.text || "Tin nhắn mới";
-
-                state.conversations[conversationIndex].lastMessage = newLastMessage;
+                // ✅ Lưu toàn bộ Message object thay vì chỉ content
+                state.conversations[conversationIndex].lastMessage = {
+                    id: message.id,
+                    conversationId: message.conversationId,
+                    senderId: message.senderId,
+                    content: message.content || message.text || "Tin nhắn mới",
+                    createdAt: message.createdAt || new Date().toISOString(),
+                    updatedAt: message.updatedAt || new Date().toISOString(),
+                    deletedForAll: message.deletedForAll || false,
+                    seenBy: message.seenBy || [],
+                    mediaUrls: message.mediaUrls || [],
+                    mediaType: message.mediaType || undefined,
+                    pinned: message.pinned || false,
+                    sender: message.sender
+                };
 
                 // Move conversation to top of list
                 const conversation = state.conversations[conversationIndex];
@@ -161,7 +173,22 @@ const chatSlice = createSlice({
 
             // Update selected conversation if it matches
             if (state.selectedConversation?.id === conversationId) {
-                state.selectedConversation!.lastMessage = message.content || message.text || "Tin nhắn mới";
+                // ✅ Lưu toàn bộ Message object cho selected conversation
+                state.selectedConversation!.lastMessage = {
+                    id: message.id,
+                    conversationId: message.conversationId,
+                    senderId: message.senderId,
+                    content: message.content || message.text || "Tin nhắn mới",
+                    createdAt: message.createdAt || new Date().toISOString(),
+                    updatedAt: message.updatedAt || new Date().toISOString(),
+                    deletedForAll: message.deletedForAll || false,
+                    seenBy: message.seenBy || [],
+                    mediaUrls: message.mediaUrls || [],
+                    mediaType: message.mediaType || undefined,
+                    pinned: message.pinned || false,
+                    sender: message.sender
+                };
+
                 // Add message to current messages list chỉ nếu chưa tồn tại
                 const existingMessageIndex = state.messages.findIndex(msg => msg.id === message.id);
                 if (existingMessageIndex === -1) {
@@ -292,14 +319,42 @@ const chatSlice = createSlice({
 
                 // Cập nhật lastMessage của conversation hiện tại
                 if (state.selectedConversation) {
-                    state.selectedConversation.lastMessage = newMessage.content || "Tin nhắn mới";
+                    // ✅ Lưu toàn bộ Message object
+                    state.selectedConversation.lastMessage = {
+                        id: newMessage.id,
+                        conversationId: newMessage.conversationId,
+                        senderId: newMessage.senderId,
+                        content: newMessage.content || "Tin nhắn mới",
+                        createdAt: newMessage.createdAt,
+                        updatedAt: newMessage.updatedAt,
+                        deletedForAll: newMessage.deletedForAll || false,
+                        seenBy: newMessage.seenBy || [],
+                        mediaUrls: newMessage.mediaUrls || [],
+                        mediaType: newMessage.mediaType || undefined,
+                        pinned: newMessage.pinned || false,
+                        sender: newMessage.sender
+                    };
 
                     // Cập nhật conversation trong danh sách
                     const conversationIndex = state.conversations.findIndex(
                         conv => conv.id === state.selectedConversation?.id
                     );
                     if (conversationIndex !== -1) {
-                        state.conversations[conversationIndex].lastMessage = newMessage.content || "Tin nhắn mới";
+                        // ✅ Lưu toàn bộ Message object
+                        state.conversations[conversationIndex].lastMessage = {
+                            id: newMessage.id,
+                            conversationId: newMessage.conversationId,
+                            senderId: newMessage.senderId,
+                            content: newMessage.content || "Tin nhắn mới",
+                            createdAt: newMessage.createdAt,
+                            updatedAt: newMessage.updatedAt,
+                            deletedForAll: newMessage.deletedForAll || false,
+                            seenBy: newMessage.seenBy || [],
+                            mediaUrls: newMessage.mediaUrls || [],
+                            mediaType: newMessage.mediaType || undefined,
+                            pinned: newMessage.pinned || false,
+                            sender: newMessage.sender
+                        };
                         // Move conversation to top
                         const conversation = state.conversations[conversationIndex];
                         state.conversations.splice(conversationIndex, 1);
