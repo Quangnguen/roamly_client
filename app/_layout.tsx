@@ -155,6 +155,8 @@ function AppContent() {
           // ✅ Hiện toast notification cho người khác (không phải chính mình)
           if (data.comment && data.comment.authorId !== user.profile?.id) {
             showNotificationToast(data, 'comment');
+            dispatch(incrementUnreadNotifications());
+
           }
         });
       }

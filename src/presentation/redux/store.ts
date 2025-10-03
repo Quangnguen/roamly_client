@@ -8,6 +8,7 @@ import likeReducer from './slices/likeSlice'
 import notificationReducer from './slices/notificationSlice'
 import chatReducer from './slices/chatSlice'
 import commentReducer from './slices/commentSlice' // Thêm comment reducer
+import destinationReducer from './slices/destinationSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     notification: notificationReducer,
     chat: chatReducer,
     comment: commentReducer, // Thêm comment reducer vào store
+    destination: destinationReducer,
   },
 })
 

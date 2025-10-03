@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Dimensions, Touchable, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../redux/store';
@@ -24,6 +24,9 @@ interface CardProps {
   totalRaters?: number;
   onPress?: () => void;
   onFollowPress?: () => void;
+  isLiked?: boolean;
+  visitCount?: number;
+  reviewCount?: number;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -35,18 +38,22 @@ const Card: React.FC<CardProps> = ({
   rating,
   userId,
   achievements,
-  cardHeight = 230,
+  cardHeight = 350,
   totalFollowers,
   totalRaters,
   bio,
   isFollowing,
   onPress,
   onFollowPress,
+  isLiked,
+  visitCount,
+  reviewCount,
 }) => {
   const renderContent = () => {
     switch (type) {
       case 'address':
         return (
+          console.log("isLiked", isLiked),
           <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={[styles.card, { height: cardHeight }]}>
             <Image source={image} style={styles.cardImage} />
             <View style={styles.cardContent}>
@@ -55,30 +62,46 @@ const Card: React.FC<CardProps> = ({
                   <View>
                     <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
                   </View>
+
+                  {/* Visit Count */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
+                    <Ionicons name="eye" size={14} color="#666" />
+                    <Text style={styles.visitText}>   {(visitCount || 0).toString()} lượt truy cập</Text>
+                  </View>
+
+                  {/* Rating */}
+                  {rating && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                      <Ionicons name="star" size={14} color="#FFD700" />
+                      <Text style={styles.ratingText}>   {rating.toFixed(1)}</Text>
+                      <Text style={styles.ratingText}> ({(reviewCount || 0).toString()})</Text>
+                    </View>
+                  )}
+
+                  {/* Like Count */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                    <Ionicons name="people" size={16} color="#000" />
-                    <Text>   {totalFollowers}</Text>
+                    <Ionicons name="heart" size={14} color="#FF3B30" />
+                    <Text style={styles.likeText}>   {(totalFollowers || 0).toString()} lượt thích</Text>
                   </View>
                 </View>
+
+                {/* Favorite Button */}
                 <TouchableOpacity
                   style={[
-                    styles.followCard,
-                    isFollowing && styles.followingCard
+                    styles.favoriteCard,
+                    isLiked && styles.favoritedCard
                   ]}
                   onPress={onFollowPress}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={isFollowing ? styles.followingText : styles.followText}>
-                      {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                    <Ionicons
+                      name={isLiked ? "heart" : "heart-outline"}
+                      size={18}
+                      color={isLiked ? "#FF3B30" : "#666"}
+                    />
+                    <Text style={isLiked ? styles.favoritedText : styles.favoriteText}>
+                      {isLiked ? 'Đã yêu thích' : 'Yêu thích'}
                     </Text>
-                    {!isFollowing && (
-                      <Ionicons
-                        name="add"
-                        size={16}
-                        color="#fff"
-                        style={{ marginLeft: 2 }}
-                      />
-                    )}
                   </View>
                 </TouchableOpacity>
               </View>
@@ -279,6 +302,48 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 12,
     color: '#999',
+  },
+  visitText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  ratingText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  likeText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '400',
+  },
+  favoriteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    borderColor: '#DBDBDB',
+    minWidth: 90,
+  },
+  favoritedCard: {
+    backgroundColor: '#FFECEC',
+    borderColor: '#FF3B30',
+  },
+  favoriteText: {
+    color: '#666',
+    fontWeight: '600',
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  favoritedText: {
+    color: '#FF3B30',
+    fontWeight: '600',
+    fontSize: 12,
+    marginLeft: 4,
   },
 });
 

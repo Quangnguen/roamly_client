@@ -18,6 +18,8 @@ import { ChatUsecase } from "../domain/usecases/chatUsecase";
 import { ChatRepositoryImpl } from "../data/implements/chatRepositoryImpl";
 import { CommentRepositoryImpl } from "../data/implements/commentRepositoryImpl";
 import { CommentUsecase } from "../domain/usecases/commentUsecase";
+import { DestinationRepositoryImpl } from "../data/implements/destinationRepositoryImpl";
+import { DestinationUsecase } from "../domain/usecases/destinationUseCase";
 
 const authRepository = new LoginRepositoryImpl();
 const RegisterRepository = new RegisterRepositoryImpl();
@@ -29,6 +31,7 @@ const likeRepository = new LikeRepositoryImpl();
 const notificationRepository = new NotificationRepositoryImpl();
 const chatRepository = new ChatRepositoryImpl();
 const commentRepository = new CommentRepositoryImpl();
+const destinationRepository = new DestinationRepositoryImpl();
 
 export const dependencies = {
   loginUseCase: new LoginUseCase(authRepository),
@@ -41,4 +44,5 @@ export const dependencies = {
   notificationUsecase: new NotificationUsecase(notificationRepository),
   chatUsecase: new ChatUsecase(chatRepository),
   commentUsecase: new CommentUsecase(commentRepository),
+  destinationUsecase: new DestinationUsecase(destinationRepository),
 };
