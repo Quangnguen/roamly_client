@@ -29,7 +29,7 @@ interface CardProps {
   reviewCount?: number;
 }
 
-const Card: React.FC<CardProps> = ({
+const Card = React.memo<CardProps>(({
   type,
   image,
   avatar,
@@ -194,7 +194,7 @@ const Card: React.FC<CardProps> = ({
   };
 
   return renderContent();
-};
+});
 
 const styles = StyleSheet.create({
   followCard: {
@@ -346,5 +346,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 });
+
+Card.displayName = 'Card';
 
 export default Card;

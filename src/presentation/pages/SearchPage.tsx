@@ -103,7 +103,7 @@ const SearchPage: React.FC = () => {
       case 'Bài viết':
         return <PostTab searchText={searchText} />;
       case 'Địa điểm':
-        return <AddressTab />;
+        return <AddressTab searchText={searchText} />;
       case 'Nhà nghỉ':
         return <HomeStayTab />;
       case 'Người dùng':

@@ -1,32 +1,65 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Dimensions, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import Card from '../card';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useAppDispatch, useAppSelector } from '../../redux/hook';
-import { getPopularDestinations } from '../../redux/slices/destinationSlice';
+import { getPopularDestinations, searchDestinations, toggleFavoriteDestination, untoggleFavoriteDestination, clearSearchResults } from '../../redux/slices/destinationSlice';
 import { Destination } from '../../../types/DestinationInterface';
 
 const { width } = Dimensions.get('window');
 
-const AddressTab = () => {
+interface AddressTabProps {
+    searchText?: string;
+}
+
+const AddressTab = React.memo(({ searchText = '' }: AddressTabProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const dispatch = useAppDispatch();
 
-    // Redux state
-    const { destinations, loading, error } = useAppSelector(state => state.destination);
+    // Redux state - tách riêng để tối ưu re-render
+    const destinations = useAppSelector(state =>
+        state.destination.searchResults.length > 0
+            ? state.destination.searchResults
+            : state.destination.destinations
+    );
+    const loading = useAppSelector(state =>
+        state.destination.searchLoading || state.destination.loading
+    );
+    const error = useAppSelector(state =>
+        state.destination.searchError || state.destination.error
+    );
 
-    // Load popular destinations khi component mount
+    // Thêm state cho debounced search
+    const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
+
     useEffect(() => {
-        dispatch(getPopularDestinations());
-    }, [dispatch]);
+        const timeoutId = setTimeout(() => {
+            setDebouncedSearchText(searchText);
+        }, 500); // Debounce 500ms
 
-    // Handle favorite toggle
-    const handleFavoriteToggle = (destinationId: string, currentLiked: boolean) => {
-        // TODO: Implement favorite toggle API call
-        console.log(`Toggle favorite for destination ${destinationId}: ${currentLiked ? 'unlike' : 'like'}`);
-    };
+        return () => clearTimeout(timeoutId);
+    }, [searchText]);
+
+    useEffect(() => {
+        if (debouncedSearchText && debouncedSearchText.trim()) {
+            dispatch(searchDestinations({ params: { keyword: debouncedSearchText.trim(), page: 1, limit: 20 } }));
+        } else {
+            // Clear search results và load popular destinations khi không có search
+            dispatch(clearSearchResults());
+            dispatch(getPopularDestinations());
+        }
+    }, [debouncedSearchText, dispatch]);
+
+    // Handle favorite toggle - sử dụng useCallback để tránh tạo function mới
+    const handleFavoriteToggle = useCallback((destinationId: string, currentLiked: boolean) => {
+        if (currentLiked) {
+            dispatch(untoggleFavoriteDestination({ targetId: destinationId, type: 'destination' }));
+        } else {
+            dispatch(toggleFavoriteDestination({ targetId: destinationId, type: 'destination' }));
+        }
+    }, [dispatch]);
 
     // Loading state
     if (loading) {
@@ -52,31 +85,34 @@ const AddressTab = () => {
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            {destinations.length > 0 ? (
-                destinations.map((destination: Destination) => (
-                    <Card
-                        key={destination.id}
-                        type="address"
-                        image={destination.imageUrl.length > 0 ? { uri: destination.imageUrl[0] } : require('../../../../assets/images/natural2.jpg')}
-                        title={destination.title}
-                        description={destination.description}
-                        totalFollowers={destination.likeCount}
-                        visitCount={destination.visitCount}
-                        rating={destination.rating}
-                        reviewCount={destination.reviewCount}
-                        isLiked={destination.isLiked} // TODO: Implement favorite status from API
-                        onPress={() => navigation.navigate('AddressDetailPage', {
-                            id: destination.id,
-                        })}
-                        onFollowPress={() => handleFavoriteToggle(destination.id, false)}
-                    />
-                ))
+            {destinations && destinations.length > 0 ? (
+                destinations.map((destination: Destination, index: number) => {
+                    return (
+                        <Card
+                            key={destination.id || `destination-${index}`}
+                            type="address"
+                            image={destination.imageUrl && destination.imageUrl.length > 0 ? { uri: destination.imageUrl[0] } : require('../../../../assets/images/natural2.jpg')}
+                            title={destination.title || 'Không có tiêu đề'}
+                            description={destination.description || 'Không có mô tả'}
+                            totalFollowers={destination.likeCount || 0}
+                            visitCount={destination.visitCount || 0}
+                            rating={destination.rating || 0}
+                            reviewCount={destination.reviewCount || 0}
+                            isLiked={destination.isLiked || false}
+                            onPress={() => navigation.navigate('AddressDetailPage', {
+                                id: destination.id,
+                                destinationData: destination,
+                            })}
+                            onFollowPress={() => handleFavoriteToggle(destination.id, destination.isLiked || false)}
+                        />
+                    );
+                })
             ) : (
                 <Text style={styles.emptyText}>Không có địa điểm nào</Text>
             )}
         </ScrollView>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {
@@ -108,5 +144,7 @@ const styles = StyleSheet.create({
         marginTop: 50,
     },
 });
+
+AddressTab.displayName = 'AddressTab';
 
 export default AddressTab; 

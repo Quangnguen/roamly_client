@@ -1,7 +1,10 @@
-import { getDestinationsApi } from '../api/destinationApi';
 import { DestinationResponseInterface, DestinationSearchParams } from '@/src/types/responses/DestinationResponseInterface';
 
 export interface DestinationRepository {
-    getDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface>;
+    searchDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface>;
     getPopularDestinations(): Promise<DestinationResponseInterface>;
+    getFavoriteDestinations(): Promise<DestinationResponseInterface>;
+    getDestinationById(id: string): Promise<DestinationResponseInterface>;
+    toggleFavoriteDestination(targetId: string, type: string): Promise<any>;
+    untoggleFavoriteDestination(targetId: string, type: string): Promise<any>;
 }

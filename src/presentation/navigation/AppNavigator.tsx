@@ -25,6 +25,7 @@ import HomeStayDetailPage from '../pages/HomeStayDetailPage';
 import InfoAccPage from '../pages/InfoAccPage';
 import AddressDetailPage from '../pages/AddressDetailPage';
 import TravelPlaceDetailPage from '../pages/TravelPlaceDetailPage';
+import { Destination } from '../../types/DestinationInterface';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -54,6 +55,7 @@ export type RootStackParamList = {
   };
   AddressDetailPage: {
     id: string;
+    destinationData?: Destination; // Optional pre-loaded destination data
   };
   TravelPlaceDetailPage: {
     id: string;

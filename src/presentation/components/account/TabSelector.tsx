@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { MaterialIcons, Feather } from '@expo/vector-icons';
+import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 
 interface TabSelectorProps {
-    activeTab: 'grid' | 'list';
-    onTabChange: (tab: 'grid' | 'list') => void;
+    activeTab: 'grid' | 'list' | 'favorites';
+    onTabChange: (tab: 'grid' | 'list' | 'favorites') => void;
 }
 
 const TabSelector: React.FC<TabSelectorProps> = ({ activeTab, onTabChange }) => {
@@ -21,6 +21,12 @@ const TabSelector: React.FC<TabSelectorProps> = ({ activeTab, onTabChange }) => 
                 onPress={() => onTabChange('list')}
             >
                 <Feather name="user" size={24} color={activeTab === 'list' ? 'black' : 'gray'} />
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'favorites' && styles.activeTab]}
+                onPress={() => onTabChange('favorites')}
+            >
+                <Ionicons name="heart" size={24} color={activeTab === 'favorites' ? 'black' : 'gray'} />
             </TouchableOpacity>
         </View>
     );

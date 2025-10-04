@@ -1,14 +1,35 @@
-import { getDestinationsApi, getPopularDestinationsApi } from '../api/destinationApi';
+import { getPopularDestinationsApi } from '../api/destinationApi';
+import { searchDestinationsApi } from '../api/destinationApi';
+import { getDestinationByIdApi } from '../api/destinationApi';
+import { getFavoriteDestinationsApi } from '../api/destinationApi';
+import { toggleFavoriteDestinationApi } from '../api/destinationApi';
+import { untoggleFavoriteDestinationApi } from '../api/destinationApi';
 import { DestinationResponseInterface, DestinationSearchParams } from '@/src/types/responses/DestinationResponseInterface';
 import { DestinationRepository } from '../repositories/destinationRepository';
 
 export class DestinationRepositoryImpl implements DestinationRepository {
-    async getDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface> {
-        const response = await getDestinationsApi(params);
+    async searchDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface> {
+        const response = await searchDestinationsApi(params);
         return response;
     }
     async getPopularDestinations(): Promise<DestinationResponseInterface> {
         const response = await getPopularDestinationsApi();
+        return response;
+    }
+    async getFavoriteDestinations(): Promise<DestinationResponseInterface> {
+        const response = await getFavoriteDestinationsApi();
+        return response;
+    }
+    async getDestinationById(id: string): Promise<DestinationResponseInterface> {
+        const response = await getDestinationByIdApi(id);
+        return response;
+    }
+    async toggleFavoriteDestination(targetId: string, type: string): Promise<any> {
+        const response = await toggleFavoriteDestinationApi(targetId, type);
+        return response;
+    }
+    async untoggleFavoriteDestination(targetId: string, type: string): Promise<any> {
+        const response = await untoggleFavoriteDestinationApi(targetId, type);
         return response;
     }
 }

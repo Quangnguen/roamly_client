@@ -4,13 +4,38 @@ import { DestinationResponseInterface, DestinationSearchParams } from '@/src/typ
 export class DestinationUsecase {
     constructor(private destinationRepository: DestinationRepository) { }
 
-    async getDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface> {
-        const response = await this.destinationRepository.getDestinations(params);
+    async searchDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface> {
+        console.log('params', params);
+        const response = await this.destinationRepository.searchDestinations(params);
+        console.log('response', response);
         return response;
     }
 
     async getPopularDestinations(): Promise<DestinationResponseInterface> {
         const response = await this.destinationRepository.getPopularDestinations();
+        return response;
+    }
+
+    async getFavoriteDestinations(): Promise<DestinationResponseInterface> {
+        const response = await this.destinationRepository.getFavoriteDestinations();
+        return response;
+    }
+
+    async getDestinationById(id: string): Promise<DestinationResponseInterface> {
+        console.log('id', id);
+        const response = await this.destinationRepository.getDestinationById(id);
+        console.log('response getDestinationById');
+        console.log('response', response);
+        return response;
+    }
+
+    async toggleFavoriteDestination(targetId: string, type: string): Promise<any> {
+        const response = await this.destinationRepository.toggleFavoriteDestination(targetId, type);
+        return response;
+    }
+
+    async untoggleFavoriteDestination(targetId: string, type: string): Promise<any> {
+        const response = await this.destinationRepository.untoggleFavoriteDestination(targetId, type);
         return response;
     }
 }

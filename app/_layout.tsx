@@ -10,7 +10,7 @@ import React, { useEffect, useRef } from 'react';
 import { useSocketWithRetry } from '@/src/hook/useSocketWithRetry';
 import { socketService } from '@/src/services/socketService'; // ✅ Named import
 import * as Notifications from 'expo-notifications';
-import { AppState } from 'react-native';
+import { AppState, LogBox } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { incrementLikeFromSocket, decrementLikeFromSocket, incrementCommentCount } from '../src/presentation/redux/slices/postSlice';
 import { incrementUnreadNotifications } from '../src/presentation/redux/slices/authSlice';
@@ -29,6 +29,28 @@ function AppContent() {
 
   const listenersSetupRef = useRef(false);
   const testSentRef = useRef(false);
+
+  // Debug Text strings warning
+  useEffect(() => {
+    const originalWarn = console.warn;
+    console.warn = (...args) => {
+      const message = args.join(' ');
+      if (message.includes('Text strings must be rendered within a <Text> component')) {
+        console.error('🎯 TEXT WARNING DETECTED!');
+        console.error('Stack trace:', new Error().stack);
+        console.error('Warning message:', message);
+        console.error('Component tree:', args);
+      }
+      originalWarn.apply(console, args);
+    };
+
+    // Ignore the warning but still log it
+    LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component']);
+
+    return () => {
+      console.warn = originalWarn;
+    };
+  }, []);
 
   // ✅ Request notification permissions on app start
   useEffect(() => {
