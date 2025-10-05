@@ -22,10 +22,12 @@ export class DestinationUsecase {
     }
 
     async getDestinationById(id: string): Promise<DestinationResponseInterface> {
-        console.log('id', id);
         const response = await this.destinationRepository.getDestinationById(id);
-        console.log('response getDestinationById');
-        console.log('response', response);
+        return response;
+    }
+
+    async getDestinationsByUser(userId: string): Promise<DestinationResponseInterface> {
+        const response = await this.destinationRepository.getDestinationsByUser(userId);
         return response;
     }
 

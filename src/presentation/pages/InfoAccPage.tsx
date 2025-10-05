@@ -24,6 +24,8 @@ import { getPosts, getPostsByUserId } from '../redux/slices/postSlice';
 import { getConversations, createConversation } from '../redux/slices/chatSlice';
 import { dependencies } from '@/src/dependencies/dependencies';
 import { Post } from '@/src/domain/entities/post';
+import { getDestinationsByUser, toggleFavoriteDestination, untoggleFavoriteDestination } from '../redux/slices/destinationSlice'; // <-- added
+import Card from '../components/card'; // <-- added
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'InfoAccPage'>;
 type InfoAccPageRouteProp = RouteProp<RootStackParamList, 'InfoAccPage'>;
@@ -36,7 +38,7 @@ type StoryHighlight = {
 };
 
 const InfoAccPage: React.FC<InfoAccPageProps> = () => {
-  const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState<'user' | 'post' |  'heart'>('post');
   const dispatch = useDispatch<AppDispatch>();
   const { user, message, status } = useSelector((state: RootState) => state.user);
   const { following } = useSelector((state: RootState) => state.follow);
@@ -46,6 +48,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
   const route = useRoute<InfoAccPageRouteProp>();
   const { id } = route.params;
   const { postsByUserId, loading } = useSelector((state: RootState) => state.post);
+  const { userDestinations, userDestLoading } = useSelector((state: RootState) => state.destination); // <-- added
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
 
 
@@ -53,6 +56,7 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
     dispatch(getUserById(id));
     dispatch(getPostsByUserId(id));
     dispatch(getConversations());
+    dispatch(getDestinationsByUser(id)); // <-- fetch destinations for this user
   }, [dispatch, id]);
 
   useEffect(() => {
@@ -169,6 +173,22 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
     }
   };
 
+  const handleDestinationPress = (destination: any) => {
+    navigation.navigate('AddressDetailPage' as any, {
+      id: destination.id,
+      destinationData: destination,
+    });
+  };
+
+  const handleToggleDestinationFavorite = async (destination: any) => {
+    if (!destination) return;
+    if (destination.isLiked) {
+      dispatch(untoggleFavoriteDestination({ targetId: destination.id, type: 'destination' }));
+    } else {
+      dispatch(toggleFavoriteDestination({ targetId: destination.id, type: 'destination' }));
+    }
+  };
+
   const author = {
     username: user?.username || '',
     profilePic: user?.profilePic || '',
@@ -259,31 +279,70 @@ const InfoAccPage: React.FC<InfoAccPageProps> = () => {
             {/* Tab Selector */}
             <View style={styles.tabSelector}>
               <TouchableOpacity
-                style={[styles.tabButton, activeTab === 'grid' && styles.activeTab]}
-                onPress={() => setActiveTab('grid')}
+                style={[styles.tabButton, activeTab === 'post' && styles.activeTab]}
+                onPress={() => setActiveTab('post')}
               >
-                <MaterialIcons name="grid-on" size={24} color={activeTab === 'grid' ? 'black' : 'gray'} />
+                <MaterialIcons name="grid-on" size={24} color={activeTab === 'post' ? 'black' : 'gray'} />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.tabButton, activeTab === 'list' && styles.activeTab]}
-                onPress={() => setActiveTab('list')}
+                style={[styles.tabButton, activeTab === 'user' && styles.activeTab]}
+                onPress={() => setActiveTab('user')}
               >
-                <Feather name="user" size={24} color={activeTab === 'list' ? 'black' : 'gray'} />
+                <Feather name="user" size={24} color={activeTab === 'user' ? 'black' : 'gray'} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'heart' && styles.activeTab]}
+                onPress={() => setActiveTab('heart')}
+              >
+                <Feather name="heart" size={24} color={activeTab === 'heart' ? 'black' : 'gray'} />
               </TouchableOpacity>
             </View>
           </>
         }
         renderItem={null}
         ListFooterComponent={
-          activeTab === 'grid'
-            ? <PostList
+          activeTab === 'post' ? (
+            <PostList
               posts={postsByUserId}
               mini={true}
               expandedPostId={expandedPostId}
               onPostPress={(post) => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
               author={author}
             />
-            : <MemoriesGrid userId={user?.id ?? ''} />
+          ) : activeTab === 'heart' ? (
+            // Hiển thị destinations của user theo kiểu giống TabSelectorAccountPage favorites
+            userDestLoading ? (
+              <View style={{ padding: 16 }}>
+                <Text>Đang tải địa điểm...</Text>
+              </View>
+            ) : userDestinations && userDestinations.length > 0 ? (
+              <View style={{ padding: 10 }}>
+                {userDestinations.map((destination) => (
+                  <Card
+                    key={destination.id}
+                    type="address"
+                    image={destination.imageUrl && destination.imageUrl.length > 0 ? { uri: destination.imageUrl[0] } : require('../../../assets/images/natural2.jpg')}
+                    title={destination.title || 'Không có tiêu đề'}
+                    description={destination.description || 'Không có mô tả'}
+                    totalFollowers={destination.likeCount || 0}
+                    visitCount={destination.visitCount || 0}
+                    rating={destination.rating || 0}
+                    reviewCount={destination.reviewCount || 0}
+                    isLiked={destination.isLiked || false}
+                    onPress={() => handleDestinationPress(destination)}
+                    onFollowPress={() => handleToggleDestinationFavorite(destination)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={{ padding: 16 }}>
+                <Text>Người dùng chưa có địa điểm nào</Text>
+              </View>
+            )
+          ) : (
+            <MemoriesGrid userId={user?.id ?? ''} />
+          )
         }
       />
     </SafeAreaView>

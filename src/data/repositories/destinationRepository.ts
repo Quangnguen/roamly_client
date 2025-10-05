@@ -7,4 +7,5 @@ export interface DestinationRepository {
     getDestinationById(id: string): Promise<DestinationResponseInterface>;
     toggleFavoriteDestination(targetId: string, type: string): Promise<any>;
     untoggleFavoriteDestination(targetId: string, type: string): Promise<any>;
+    getDestinationsByUser(userId: string): Promise<DestinationResponseInterface>;
 }
