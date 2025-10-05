@@ -13,4 +13,5 @@ export default interface AddressDetails {
     reviewsCount: number;
     homestayes: Homestay[];
     travelPlaces: TravelPlace[];
+    numberLikes: number;
 }

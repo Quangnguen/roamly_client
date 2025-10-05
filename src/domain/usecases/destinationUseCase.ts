@@ -22,9 +22,13 @@ export class DestinationUsecase {
     }
 
     async getDestinationById(id: string): Promise<DestinationResponseInterface> {
-        console.log('id', id);
         const response = await this.destinationRepository.getDestinationById(id);
-        console.log('response getDestinationById');
+        return response;
+    }
+
+    async getReviewsByDestinationId(id: string): Promise<DestinationResponseInterface> {
+        console.log('id', id);
+        const response = await this.destinationRepository.getReviewsByDestinationId(id);
         console.log('response', response);
         return response;
     }
@@ -36,6 +40,11 @@ export class DestinationUsecase {
 
     async untoggleFavoriteDestination(targetId: string, type: string): Promise<any> {
         const response = await this.destinationRepository.untoggleFavoriteDestination(targetId, type);
+        return response;
+    }
+
+    async addReviewDestination(id: string, review: FormData): Promise<any> {
+        const response = await this.destinationRepository.addReviewDestination(id, review);
         return response;
     }
 }
