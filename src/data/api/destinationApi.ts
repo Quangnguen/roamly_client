@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '@/src/const/api';
 import { authorizedRequest } from '@/src/utils/authorizedRequest';
-import { DestinationResponseInterface, DestinationSearchParams } from '@/src/types/responses/DestinationResponseInterface';
+import { DestinationResponseInterface, DestinationSearchParams, Review } from '@/src/types/responses/DestinationResponseInterface';
 
 // API để lấy danh sách destinations
 export const getPopularDestinationsApi = async () => {
@@ -84,5 +84,22 @@ export const getDestinationsByUserApi = async (userId: string) => {
         headers: {
             'Content-Type': 'application/json',
         },
+    });
+}
+
+export const getReviewsDestinationApi = async (id: string) => {
+    return await authorizedRequest(`${API_BASE_URL}/destinations/${id}/reviews`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+};
+
+export const addReviewDestinationApi = async (id: string, formData: FormData) => {
+    return await authorizedRequest(`${API_BASE_URL}/destinations/${id}/reviews`, {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header - let browser set it with boundary for FormData
     });
 };

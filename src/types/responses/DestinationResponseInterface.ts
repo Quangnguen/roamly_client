@@ -14,11 +14,40 @@ export interface DestinationData {
     pagination: PaginationInfo;
 }
 
+// Interface cho review của destination
+export interface ReviewUser {
+    id: string;
+    username: string;
+    name: string;
+    profilePic: string | null;
+}
+
+export interface Review {
+    id: string;
+    destinationId: string;
+    userId: string;
+    rating: number;
+    comment: string;
+    imageUrl: string[];
+    visitDate: string;
+    isVerified: boolean;
+    createdAt: string;
+    updatedAt: string;
+    user: ReviewUser;
+}
+
+export interface AddReview {
+    rating: number;
+    comment: string;
+    visitDate: string;
+    imageUrl: string[];
+}
+
 export interface DestinationResponseInterface {
     message: string;
     statusCode: number;
     status: string;
-    data: Destination[] | DestinationData | Destination; // Support destinations list, paginated data, or single destination
+    data: Destination[] | DestinationData | Destination | Review[]; // Support destinations list, paginated data, single destination, or reviews array
 }
 
 // Interface cho search/filter params (nếu cần)
