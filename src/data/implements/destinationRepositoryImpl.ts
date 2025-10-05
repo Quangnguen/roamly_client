@@ -7,6 +7,7 @@ import { toggleFavoriteDestinationApi } from '../api/destinationApi';
 import { untoggleFavoriteDestinationApi } from '../api/destinationApi';
 import { DestinationResponseInterface, DestinationSearchParams } from '@/src/types/responses/DestinationResponseInterface';
 import { DestinationRepository } from '../repositories/destinationRepository';
+import { getDestinationsByUserApi } from '../api/destinationApi';
 
 export class DestinationRepositoryImpl implements DestinationRepository {
     async searchDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface> {
@@ -40,6 +41,11 @@ export class DestinationRepositoryImpl implements DestinationRepository {
     }
     async addReviewDestination(id: string, review: FormData): Promise<any> {
         const response = await addReviewDestinationApi(id, review);
+        return response;
+    }
+
+    async getDestinationsByUser(userId: string): Promise<DestinationResponseInterface> {
+        const response = await getDestinationsByUserApi(userId);
         return response;
     }
 }

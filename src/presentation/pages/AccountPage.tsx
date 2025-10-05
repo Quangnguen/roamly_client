@@ -45,10 +45,6 @@ type StoryHighlight = {
   image: string;
 };
 
-
-// Fake followers và following cho profile
-
-
 const AccountPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { profile, loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
@@ -126,11 +122,6 @@ const AccountPage: React.FC = () => {
     { id: '3', name: 'Thể thao', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
     { id: '4', name: 'Thiết kế', image: 'https://i.pinimg.com/474x/1f/61/95/1f61957319c9cddaec9b3250b721c82b.jpg' },
   ];
-
-  // const author = {
-  //   profilePic: user?.profilePic ?? '',
-  //   username: user?.username ?? '',
-  // }
 
 
   const handleOpenModal = (type: 'followers' | 'followings') => {

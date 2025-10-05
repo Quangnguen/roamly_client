@@ -78,6 +78,15 @@ export const getFavoriteDestinationsApi = async () => {
     });
 };
 
+export const getDestinationsByUserApi = async (userId: string) => {
+    return await authorizedRequest(`${API_BASE_URL}/destinations/user/${userId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+};
+
 export const getReviewsDestinationApi = async (id: string) => {
     return await authorizedRequest(`${API_BASE_URL}/destinations/${id}/reviews`, {
         method: 'GET',

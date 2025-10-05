@@ -34,6 +34,9 @@ interface DestinationState {
     reviewsError: string | null;
     addReviewLoading: boolean;
     addReviewError: string | null;
+    userDestinations: Destination[]; // <-- added: destinations by user id
+    userDestLoading: boolean;
+    userDestError: string | null;
 }
 
 const initialState: DestinationState = {
@@ -59,6 +62,9 @@ const initialState: DestinationState = {
     reviewsError: null,
     addReviewLoading: false,
     addReviewError: null,
+    userDestinations: [], // <-- added
+    userDestLoading: false,
+    userDestError: null,
 };
 
 // Async thunk để lấy destinations
@@ -82,6 +88,20 @@ export const getFavoriteDestinations = createAsyncThunk(
             return response;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to get favorite destinations');
+        }
+    }
+);
+
+// <-- new thunk: lấy destinations theo user id (API: /destinations/user/:id)
+export const getDestinationsByUser = createAsyncThunk(
+    'destination/getDestinationsByUser',
+    async (userId: string, { rejectWithValue }) => {
+        try {
+            // Assumes destinationUsecase has getDestinationsByUser(userId)
+            const response: DestinationResponseInterface = await dependencies.destinationUsecase.getDestinationsByUser(userId);
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to get destinations by user');
         }
     }
 );
@@ -262,6 +282,29 @@ const destinationSlice = createSlice({
                 state.favoriteLoading = false;
                 state.favoriteError = action.payload as string || 'Có lỗi xảy ra khi lấy danh sách địa điểm yêu thích';
             })
+            // <-- handlers for getDestinationsByUser
+            .addCase(getDestinationsByUser.pending, (state) => {
+                state.userDestLoading = true;
+                state.userDestError = null;
+            })
+            .addCase(getDestinationsByUser.fulfilled, (state, action) => {
+                state.userDestLoading = false;
+                // Handle Destination[], DestinationData, or single Destination
+                if (Array.isArray(action.payload.data)) {
+                    state.userDestinations = action.payload.data;
+                } else if ('destinations' in action.payload.data) {
+                    state.userDestinations = action.payload.data.destinations || [];
+                } else if (action.payload.data && typeof action.payload.data === 'object' && 'id' in action.payload.data) {
+                    state.userDestinations = [action.payload.data as Destination];
+                } else {
+                    state.userDestinations = [];
+                }
+                state.userDestError = null;
+            })
+            .addCase(getDestinationsByUser.rejected, (state, action) => {
+                state.userDestLoading = false;
+                state.userDestError = action.payload as string || 'Có lỗi xảy ra khi lấy địa điểm của người dùng';
+            })
             .addCase(toggleFavoriteDestination.pending, (state) => {
                 // Không set loading = true để tránh re-render không cần thiết
                 state.error = null;
@@ -295,6 +338,10 @@ const destinationSlice = createSlice({
                     // Update existing favorite destination
                     updateDestination(state.myDestinations[myDestIndex]);
                 }
+
+                // Also update userDestinations if present
+                const userDest = state.userDestinations.find(d => d.id === action.meta.arg.targetId);
+                updateDestination(userDest);
             })
             .addCase(toggleFavoriteDestination.rejected, (state, action) => {
                 // Có thể hiển thị error toast thay vì set error state
@@ -325,6 +372,12 @@ const destinationSlice = createSlice({
                 const myDestIndex = state.myDestinations.findIndex(d => d.id === action.meta.arg.targetId);
                 if (myDestIndex !== -1) {
                     state.myDestinations.splice(myDestIndex, 1);
+                }
+
+                // Also update/remove from userDestinations if present
+                const userIndex = state.userDestinations.findIndex(d => d.id === action.meta.arg.targetId);
+                if (userIndex !== -1) {
+                    state.userDestinations.splice(userIndex, 1);
                 }
             })
             .addCase(untoggleFavoriteDestination.rejected, (state, action) => {
