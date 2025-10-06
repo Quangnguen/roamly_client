@@ -193,9 +193,7 @@ export const addReviewDestination = createAsyncThunk<DestinationApiResponse, { i
                 }
             }
 
-            console.log('📤 addReviewDestination: Calling API with formData');
             const response: any = await dependencies.destinationUsecase.addReviewDestination(data.id, formData);
-            console.log('✅ addReviewDestination: Success', response);
             return response as unknown as DestinationApiResponse;
         } catch (error: any) {
             console.error('❌ addReviewDestination: Failed', error);

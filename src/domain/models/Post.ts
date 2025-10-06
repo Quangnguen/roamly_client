@@ -31,4 +31,5 @@ export interface Post {
     // Optional fields for UI state
     isOptimistic?: boolean;
     isLoading?: boolean;
+    taggedDestinations?: string[]; // Array of destination IDs tagged in the post
 }

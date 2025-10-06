@@ -5,9 +5,7 @@ export class DestinationUsecase {
     constructor(private destinationRepository: DestinationRepository) { }
 
     async searchDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface> {
-        console.log('params', params);
         const response = await this.destinationRepository.searchDestinations(params);
-        console.log('response', response);
         return response;
     }
 
@@ -32,9 +30,7 @@ export class DestinationUsecase {
     }
     
     async getReviewsByDestinationId(id: string): Promise<DestinationResponseInterface> {
-        console.log('id', id);
         const response = await this.destinationRepository.getReviewsByDestinationId(id);
-        console.log('response', response);
         return response;
     }
 

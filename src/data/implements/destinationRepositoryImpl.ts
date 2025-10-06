@@ -28,7 +28,6 @@ export class DestinationRepositoryImpl implements DestinationRepository {
     }
     async getReviewsByDestinationId(id: string): Promise<DestinationResponseInterface> {
         const response = await getReviewsDestinationApi(id);
-        console.log('response', response);
         return response;
     }
     async toggleFavoriteDestination(targetId: string, type: string): Promise<any> {

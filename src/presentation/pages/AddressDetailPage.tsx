@@ -62,6 +62,7 @@ const AddressDetailPage = () => {
     useEffect(() => {
         // Always fetch from API for latest data, but destinationData can provide immediate display
         dispatch(getDestinationById(id));
+        console.log('🚀 Fetching destination detail for ID:', destinationDetail);
     }, [dispatch, id]);
 
     // Update isFollowing state when destinationDetail or destinationData changes (sync with server)
@@ -124,8 +125,6 @@ const AddressDetailPage = () => {
         images: string[];
     }) => {
         try {
-            console.log('Submitting review:', reviewData);
-
             // Create FormData for API call
             const formData = new FormData();
             formData.append('rating', reviewData.rating.toString());
@@ -203,7 +202,7 @@ const AddressDetailPage = () => {
             rating: sub.rating,
             numberOfReviews: sub.reviewCount,
         })) || [],
-        travelPlaces: [],
+        subLocations: displayData.subLocations || [],
     } : {
         // Fallback khi chưa load được data
         id: id,
@@ -217,8 +216,10 @@ const AddressDetailPage = () => {
         reviewsCount: 0,
         numberLikes: 0,
         homestayes: [],
-        travelPlaces: [],
+        subLocations: [],
     };
+
+    console.log('🏷️ placeDetails:', destinationDetail);
 
 
     // 🎯 Tạo render function cho header content (tất cả content trừ posts)
@@ -264,7 +265,7 @@ const AddressDetailPage = () => {
                 {/* Sub-locations */}
                 <DestinationSubLocations
                     homestays={placeDetails.homestayes}
-                    travelPlaces={placeDetails.travelPlaces}
+                    travelPlaces={placeDetails.subLocations || []}
                 />
 
                 {/* Separator và tiêu đề cho phần posts */}

@@ -12,7 +12,6 @@ export class CommentRepositoryImpl implements CommentResponse {
      */
     async createComment(postId: string, content: string, parentId?: string): Promise<CommentResponseInterface> {
         try {
-            console.log('📝 Creating comment:', { postId, content, parentId });
             
             const result = await createCommentApi({
                 postId,
@@ -20,7 +19,6 @@ export class CommentRepositoryImpl implements CommentResponse {
                 parentId,
             });
             
-            console.log('✅ Comment created successfully:', result);
             return result;
         } catch (error) {
             console.error('❌ Failed to create comment:', error);
@@ -35,10 +33,8 @@ export class CommentRepositoryImpl implements CommentResponse {
      */
     async getComments(postId: string): Promise<CommentResponseInterface[]> {
         try {
-            console.log('📋 Fetching comments for post:', postId);
             
             const comments = await getCommentsApi(postId);
-            console.log('✅ Comments fetched successfully:', comments);
             return comments;
         } catch (error) {
             console.error('❌ Failed to fetch comments:', error);
@@ -53,10 +49,8 @@ export class CommentRepositoryImpl implements CommentResponse {
      */
     async deleteComment(commentId: string): Promise<{ success: boolean; message?: string }> {
         try {
-            console.log('🗑️ Deleting comment:', commentId);
             const result = await deleteCommentApi(commentId);
             
-            console.log('✅ Comment deleted successfully:', result);
             return result;
         } catch (error) {
             console.error('❌ Failed to delete comment:', error);

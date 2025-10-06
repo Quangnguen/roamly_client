@@ -16,6 +16,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Vibration,
+  Modal, // <-- added
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +28,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createPost, clearMessage, addOptimisticPost } from '../redux/slices/postSlice';
 import { AppDispatch, RootState } from '../redux/store';
 import Toast from 'react-native-toast-message';
+import { getPopularDestinations, searchDestinations, clearSearchResults } from '../redux/slices/destinationSlice'; // <-- added
 
 const { width } = Dimensions.get('window');
 
@@ -65,6 +67,42 @@ const CreatePostPage = () => {
   const { loading, error, message, status } = useSelector((state: RootState) => state.post);
   const { profile } = useSelector((state: RootState) => state.auth);
 
+  // destination modal / search state
+  const [destModalVisible, setDestModalVisible] = useState(false);
+  const [destinationQuery, setDestinationQuery] = useState('');
+  const [debouncedDestQuery, setDebouncedDestQuery] = useState('');
+  const [selectedDestinations, setSelectedDestinations] = useState<Array<{ id: string; title?: string }>>([]);
+
+  const destinations = useSelector((state: RootState) =>
+    (state.destination.searchResults && state.destination.searchResults.length > 0)
+      ? state.destination.searchResults
+      : state.destination.destinations
+  );
+  const destLoading = useSelector((state: RootState) => state.destination.searchLoading || state.destination.loading);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedDestQuery(destinationQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [destinationQuery]);
+
+  useEffect(() => {
+    if (debouncedDestQuery) {
+      dispatch(searchDestinations({ params: { keyword: debouncedDestQuery, page: 1, limit: 20 } }));
+    } else {
+      dispatch(clearSearchResults());
+      dispatch(getPopularDestinations());
+    }
+  }, [debouncedDestQuery, dispatch]);
+
+  const toggleSelectDestination = (dest: any) => {
+    const exists = selectedDestinations.find(d => d.id === dest.id);
+    if (exists) {
+      setSelectedDestinations(prev => prev.filter(d => d.id !== dest.id));
+    } else {
+      setSelectedDestinations(prev => [...prev, { id: dest.id, title: dest.title }]);
+    }
+  };
+
   useEffect(() => {
     if (message && status === 'success') {
       Toast.show({
@@ -102,12 +140,13 @@ const CreatePostPage = () => {
         Vibration.vibrate(100);
       }
 
-      // Thêm post tạm thời vào Redux store ngay lập tức
+      // Thêm post tạm thời vào Redux store ngay lập tức (include taggedDestinations)
       dispatch(addOptimisticPost({
         authorId: profile?.id || '',
         imageUrls: selectedImages.map(img => img.uri),
         caption: caption.trim(),
         location: location,
+        taggedDestinations: selectedDestinations.map(d => d.id), // <-- added
         author: {
           username: profile?.username || 'nam',
           profilePic: profile?.profilePic || null,
@@ -126,10 +165,12 @@ const CreatePostPage = () => {
       const currentCaption = caption.trim();
       const currentImages = [...selectedImages];
       const currentLocation = location;
+      const currentTagged = selectedDestinations.map(d => d.id); // <-- added
 
       setCaption('');
       setSelectedImages([]);
       setLocation(null);
+      setSelectedDestinations([]); // <-- clear selected destinations
 
       // Quay về home ngay lập tức
       navigation.goBack();
@@ -150,11 +191,22 @@ const CreatePostPage = () => {
         } as any);
       });
 
+      formData.append('caption', currentCaption);
+      if (currentLocation) formData.append('location', currentLocation);
+
+      // Append taggedDestinations as repeated multipart fields (optional)
+      if (currentTagged && currentTagged.length > 0) {
+        currentTagged.forEach(id => {
+          formData.append('taggedDestinations', id);
+        });
+      }
+
       // Dispatch action trong background - không await để không block UI
       dispatch(createPost({
         images: formData,
         caption: currentCaption,
-        location: currentLocation
+        location: currentLocation,
+        taggedDestinations: currentTagged, // <-- include array in thunk payload
       }));
 
     } catch (error) {
@@ -215,6 +267,93 @@ const CreatePostPage = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
+      {/* Modal: search & select destinations */}
+      <Modal
+        visible={destModalVisible}
+        animationType="slide"
+        onRequestClose={() => setDestModalVisible(false)}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5 }}>
+            <TouchableOpacity onPress={() => setDestModalVisible(false)} style={{ padding: 8 }}>
+              <Text>Đóng</Text>
+            </TouchableOpacity>
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <TextInput
+                value={destinationQuery}
+                onChangeText={setDestinationQuery}
+                placeholder="Tìm địa điểm..."
+                autoFocus
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#ddd',
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                }}
+              />
+            </View>
+            <TouchableOpacity onPress={() => { setDestinationQuery(''); }} style={{ padding: 8, marginLeft: 8 }}>
+              <Text>Xóa</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            {destLoading ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
+              </View>
+            ) : destinations && destinations.length > 0 ? (
+              <ScrollView contentContainerStyle={{ padding: 12 }}>
+                {destinations.map((dest: any) => {
+                  const selected = !!selectedDestinations.find(d => d.id === dest.id);
+                  return (
+                    <TouchableOpacity
+                      key={dest.id}
+                      onPress={() => toggleSelectDestination(dest)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 10,
+                        borderBottomWidth: 0.5,
+                        borderColor: '#eee',
+                      }}
+                    >
+                      <Image
+                        source={dest.imageUrl && dest.imageUrl.length > 0 ? { uri: dest.imageUrl[0] } : require('../../../assets/images/natural2.jpg')}
+                        style={{ width: 56, height: 56, borderRadius: 8, marginRight: 12 }}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: '600' }}>{dest.title || 'Địa điểm'}</Text>
+                        <Text style={{ color: '#666', marginTop: 2 }}>{dest.location || dest.city || ''}</Text>
+                      </View>
+                      {selected && (
+                        <View style={{ backgroundColor: '#000', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                          <Text style={{ color: '#fff', fontSize: 12 }}>Đã chọn</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: '#777' }}>Không tìm thấy địa điểm</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={{ padding: 12, borderTopWidth: 0.5 }}>
+            <TouchableOpacity
+              onPress={() => setDestModalVisible(false)}
+              style={{ backgroundColor: PRIMARY || '#333', paddingVertical: 12, borderRadius: 8, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#fff' }}>Xong</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPress}>
@@ -254,28 +393,27 @@ const CreatePostPage = () => {
                 <View style={styles.userInfo}>
                   <Text style={styles.username}>{profile?.username || 'nam'}</Text>
 
-                  {/* Thêm địa điểm */}
-                  {isEditingTopic ? (
-                    <TextInput
-                      style={styles.topicInput}
-                      value={location || ''}
-                      onChangeText={setLocation}
-                      onBlur={() => setIsEditingTopic(false)}
-                      placeholder="Nhập địa điểm..."
-                      placeholderTextColor="#777"
-                    />
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => {
-                        Keyboard.dismiss();
-                        setIsEditingTopic(true);
-                      }}
-                    >
-                      <Text style={styles.addTopic}>
-                        {location || 'Thêm địa điểm'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  {/* Thêm địa điểm - mở modal chọn */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setDestModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.addTopic}>
+                      {selectedDestinations.length > 0 ? selectedDestinations.map(d => d.title).join(', ') : (location || 'Thêm địa điểm')}
+                    </Text>
+                  </TouchableOpacity>
+                  {/* selected chips */}
+                  {/* {selectedDestinations.length > 0 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                      {selectedDestinations.map(d => (
+                        <View key={d.id} style={{ backgroundColor: '#eee', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, marginRight: 8 }}>
+                          <Text>{d.title}</Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )} */}
                 </View>
               </View>
 

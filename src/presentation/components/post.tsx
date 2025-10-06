@@ -12,6 +12,7 @@ import {
     NativeScrollEvent,
     Alert,
     ActivityIndicator,
+    ScrollView,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { BACKGROUND } from '@/src/const/constants';
@@ -91,6 +92,7 @@ const Post: React.FC<PostProps> = ({
     postId,
     authorId,
     isLike = false,
+    tags,
 }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isImageViewVisible, setIsImageViewVisible] = useState(false);
@@ -362,6 +364,30 @@ const Post: React.FC<PostProps> = ({
                     {caption}
                 </Text>
             </View>
+
+            {/* Tagged destinations (if any) */}
+            {((currentPost?.taggedDestinations && currentPost.taggedDestinations.length > 0) ||
+              (tags && tags.length > 0)) && (
+              <View style={styles.taggedContainer}>
+                <Text style={styles.taggedLabel}>Địa điểm gắn:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 12 }}>
+                  {((currentPost?.taggedDestinations?.length ? currentPost.taggedDestinations : tags) || []).map((t: any, i: number) => {
+                    // t may be string (title) or object { destination: { title } } or { title }
+                    const title =
+                      typeof t === 'string'
+                        ? t
+                        : t.destination
+                        ? t.destination.title
+                        : t.title || 'Địa điểm';
+                    return (
+                      <TouchableOpacity key={i} style={styles.tagItem}>
+                        <Text numberOfLines={1} style={styles.tagItemText}>{title}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
 
             {/* Image Carousel */}
             <View style={styles.imageContainer}>
@@ -644,6 +670,28 @@ const styles = StyleSheet.create({
         marginTop: 4,
         textAlign: 'center',
     },
+    taggedContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+    },
+    taggedLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginRight: 8,
+    },
+    tagItem: {
+        backgroundColor: '#f0f0f0',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+        marginRight: 8,
+    },
+    tagItemText: {
+        fontSize: 13,
+        color: '#333',
+    },
 });
 
-export default Post; 
+export default Post;

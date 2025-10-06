@@ -25,7 +25,6 @@ export class UserRepositoryImpl implements UserRepository {
     profilePic?: string;
     private?: boolean;
   }): Promise<UserApiResponse> {
-    console.log('Updating user profile with data:', userData);
     try {
       const response = await updateUserProfile(userData);
 
@@ -37,13 +36,10 @@ export class UserRepositoryImpl implements UserRepository {
   }
 
   async updatePassword(oldPassword: string, newPassword: string): Promise<void> {
-    console.log('Updating password...');
     try {
       const response = await changePassword({ oldPassword, newPassword });
-      console.log('updatePassword response:', response);
 
       if (response.statusCode === 200) {
-        console.log('Password updated successfully');
         return;
       } else {
         throw new Error('Failed to update password');
@@ -55,13 +51,10 @@ export class UserRepositoryImpl implements UserRepository {
   }
 
   async softDelete(): Promise<void> {
-    console.log('Soft deleting user...');
     try {
       const response = await changePassword({ oldPassword: '', newPassword: '' });
-      console.log('softDelete response:', response);
 
       if (response.status === 200) {
-        console.log('User soft deleted successfully');
         return;
       } else {
         throw new Error('Failed to soft delete user');
@@ -89,10 +82,8 @@ export class UserRepositoryImpl implements UserRepository {
   }
 
   async getUserById(userId: string): Promise<any> {
-    console.log('Fetching user by ID:', userId);
     try {
       const response = await getUserByIdApi(userId);
-      console.log('getUserById response:', response);
       if (response.statusCode === 200) {
         return response;
       }
@@ -114,10 +105,8 @@ export class UserRepositoryImpl implements UserRepository {
   }
 
   async searchUsers(params: SearchUserParams): Promise<SearchUserResponse> {
-    console.log('Searching users with params:', params);
     try {
       const response = await searchUserApi(params);
-      console.log('searchUsers response:', response);
 
       if (response.statusCode === 200) {
         return response;

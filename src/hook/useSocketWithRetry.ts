@@ -22,16 +22,12 @@ export const useSocketWithRetry = () => {
         try {
           const currentUserId = profile?.id;
           
-          console.log('🔍 Attempting connection for user:', currentUserId);
-          console.log('🔐 Is authenticated:', isAuthenticated);
           
           if (!currentUserId || !isAuthenticated) {
-            console.log('❌ No user or not authenticated');
             return;
           }
 
           if (hasConnectedRef.current && currentUserIdRef.current === currentUserId) {
-            console.log('🚫 Already connected for this user');
             return;
           }
 
@@ -42,29 +38,21 @@ export const useSocketWithRetry = () => {
 
           // ✅ Thử lấy token từ 2 nguồn
           let token = await getAccessToken();
-          console.log('🔑 getAccessToken():', token ? 'Found' : 'Not found');
 
           if (!token) {
-            console.log('🔄 Trying alternative method...');
             const { accessToken } = await getTokens();
             token = accessToken;
-            console.log('🔑 getTokens():', token ? 'Found' : 'Not found');
           }
 
           if (!token) {
             token = access_token; // ✅ Thêm fallback từ Redux state
-            console.log('🔑 access_token from Redux:', token ? 'Found' : 'Not found');
           }
 
           if (!token) {
-            console.log('❌ No token available from any method');
             isConnectingRef.current = false;
             return;
           }
 
-          console.log('✅ All conditions met, connecting...');
-          console.log('🔑 Using token:', token.substring(0, 20) + '...');
-          
           isConnectingRef.current = true;
           currentUserIdRef.current = currentUserId;
           
@@ -75,8 +63,6 @@ export const useSocketWithRetry = () => {
           
           hasConnectedRef.current = true;
           isConnectingRef.current = false;
-          
-          console.log('🎉 Socket connected successfully');
           
         } catch (error) {
           console.error('❌ Connection attempt failed:', error);
@@ -108,7 +94,6 @@ export const useSocketWithRetry = () => {
   // ✅ Cleanup khi component unmount
   useEffect(() => {
     return () => {
-      console.log('🧹 Component unmounting, cleaning up socket...');
       socketService.disconnect();
       setConnectionState('disconnected');
       setIsConnected(false);
@@ -120,10 +105,8 @@ export const useSocketWithRetry = () => {
 
   const connect = async () => {
     try {
-      console.log('🔄 Manual connect triggered...');
       
       if (hasConnectedRef.current && isConnected) {
-        console.log('🚫 Already connected, skipping manual connect');
         return;
       }
       
@@ -147,7 +130,6 @@ export const useSocketWithRetry = () => {
   };
 
   const disconnect = () => {
-    console.log('🔌 Manual disconnect triggered...');
     socketService.disconnect();
     setConnectionState('disconnected');
     setIsConnected(false);
@@ -157,7 +139,6 @@ export const useSocketWithRetry = () => {
   };
 
   const retry = () => {
-    console.log('🔄 Retrying socket connection...');
     hasConnectedRef.current = false;
     isConnectingRef.current = false;
     connect();

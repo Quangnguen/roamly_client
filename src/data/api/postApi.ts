@@ -5,6 +5,7 @@ import { PostSearchResponseInterface, SearchPostParams } from "@/src/types/respo
 
 // Tạo bài post mới
 export const createPostApi = async (formData: FormData) => {
+    console.log('Creating post with FormData (TS):', (formData as any)?._parts);
     return await authorizedRequest(`${API_BASE_URL}/posts`, {
         method: 'POST',
         body: formData

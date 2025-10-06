@@ -62,9 +62,9 @@ const updatePostLikeCount = (state: any, postId: string, countChange: number, is
     }
 };
 
-export const createPost = createAsyncThunk<PostApiResponse, { images: FormData, caption: string, location?: string | null }>(
+export const createPost = createAsyncThunk<PostApiResponse, { images: FormData, caption: string, location?: string | null, taggedDestinations: string[] }>(
     'post/createPost',
-    async (data: { images: FormData, caption: string, location?: string | null }, { rejectWithValue }) => {
+    async (data: { images: FormData, caption: string, location?: string | null, taggedDestinations: string[] }, { rejectWithValue }) => {
         try {
             const formData = new FormData();
 
@@ -78,6 +78,12 @@ export const createPost = createAsyncThunk<PostApiResponse, { images: FormData, 
             if (data.location) {
                 formData.append('location', data.location);
             }
+
+            // CHỈ thêm trường taggedDestinations khi có dữ liệu
+            if (data.taggedDestinations && data.taggedDestinations.length > 0) {
+                data.taggedDestinations.forEach((id) => formData.append('taggedDestinations', id));
+            }
+
             formData.append('isPublic', 'true');
 
             const response = await postUseCase.createPost(formData);
