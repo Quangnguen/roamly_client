@@ -196,9 +196,7 @@ const CreatePostPage = () => {
 
       // Append taggedDestinations as repeated multipart fields (optional)
       if (currentTagged && currentTagged.length > 0) {
-        currentTagged.forEach(id => {
-          formData.append('taggedDestinations', id);
-        });
+        formData.append('taggedDestinations', JSON.stringify(currentTagged));
       }
 
       // Dispatch action trong background - không await để không block UI

@@ -1,13 +1,33 @@
 import { API_BASE_URL } from "@/src/const/api";
-import { Post } from "@/src/domain/models/Post"
 import { authorizedRequest } from "@/src/utils/authorizedRequest";
 import { PostSearchResponseInterface, SearchPostParams } from "@/src/types/responses/PostSearchResponseInterface";
 
 // Tạo bài post mới
 export const createPostApi = async (formData: FormData) => {
+    
+    // Xử lý taggedDestinations
+    const processedFormData = new FormData();
+    const taggedDestinations: string[] = [];
+    
+    for (const [key, value] of formData.entries()) {
+        if (key === 'taggedDestinations') {
+            taggedDestinations.push(value as string);
+        } else {
+            processedFormData.append(key, value);
+        }
+    }
+    
+    // Gửi taggedDestinations dưới dạng array notation
+    if (taggedDestinations.length > 0) {
+        taggedDestinations.forEach(destination => {
+            processedFormData.append('taggedDestinations[]', destination);
+        });
+    }
+    
+    
     return await authorizedRequest(`${API_BASE_URL}/posts`, {
         method: 'POST',
-        body: formData
+        body: processedFormData
     });
 };
 

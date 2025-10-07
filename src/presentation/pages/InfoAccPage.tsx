@@ -14,9 +14,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { BACKGROUND } from '@/src/const/constants';
 import PostList from '../components/postList';
-import MemoriesGrid from '../components/memories/memory';
+import MemoriesGrid from '../components/memories/Memory';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearUser, fetchUserProfile, getUserById } from '../redux/slices/userSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
 import { getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
@@ -26,6 +25,7 @@ import { dependencies } from '@/src/dependencies/dependencies';
 import { Post } from '@/src/domain/entities/post';
 import { getDestinationsByUser, toggleFavoriteDestination, untoggleFavoriteDestination } from '../redux/slices/destinationSlice'; // <-- added
 import Card from '../components/card'; // <-- added
+import { getUserById } from '../redux/slices/userSlice';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'InfoAccPage'>;
 type InfoAccPageRouteProp = RouteProp<RootStackParamList, 'InfoAccPage'>;

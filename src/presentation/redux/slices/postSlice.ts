@@ -67,6 +67,7 @@ export const createPost = createAsyncThunk<PostApiResponse, { images: FormData, 
     'post/createPost',
     async (data: { images: FormData, caption: string, location?: string | null, taggedDestinations: string[] }, { rejectWithValue }) => {
         try {
+            console.log('Data received in createPost thunk:', data);
             const formData = new FormData();
 
             // Lấy images từ FormData đã được tạo sẵn

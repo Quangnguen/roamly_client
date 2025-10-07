@@ -66,6 +66,35 @@ interface PostProps {
     tags?: string[];
 }
 
+// Thêm function format time ở đầu component hoặc tạo utility function
+const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const createdTime = new Date(dateString);
+    const diffInSeconds = Math.floor((now.getTime() - createdTime.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) {
+        return `${diffInSeconds}s`;
+    } else if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        return `${minutes}m`;
+    } else if (diffInSeconds < 86400) {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours}h`;
+    } else if (diffInSeconds < 604800) {
+        const days = Math.floor(diffInSeconds / 86400);
+        return `${days}d`;
+    } else if (diffInSeconds < 2592000) {
+        const weeks = Math.floor(diffInSeconds / 604800);
+        return `${weeks}w`;
+    } else {
+        // Hiển thị ngày/tháng nếu quá lâu
+        return createdTime.toLocaleDateString('vi-VN', { 
+            day: '2-digit', 
+            month: '2-digit' 
+        });
+    }
+};
+
 const Post: React.FC<PostProps> = ({
     username = 'joshua_J',
     isVerified = true,
@@ -93,12 +122,15 @@ const Post: React.FC<PostProps> = ({
     authorId,
     isLike = false,
     tags,
+    createdAt
 }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isImageViewVisible, setIsImageViewVisible] = useState(false);
     const [isOptionsMenuVisible, setIsOptionsMenuVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [isCommentsModalVisible, setIsCommentsModalVisible] = useState(false);
+    const [isExpandedCaption, setIsExpandedCaption] = useState(false);
+    const [shouldShowSeeMore, setShouldShowSeeMore] = useState(false);
 
     const flatListRef = useRef<FlatList>(null);
     const [isScrolling, setIsScrolling] = useState(false);
@@ -118,6 +150,7 @@ const Post: React.FC<PostProps> = ({
         return myPost;
     });
 
+
     const isLiked = currentPost?.isLike ?? isLike ?? false;
     const currentLikeCount = currentPost?._count?.likes ?? currentPost?.likeCount ?? likeCount;
     const currentCommentCount = currentPost?._count?.comments ?? currentPost?.commentCount ?? commentCount;
@@ -129,15 +162,6 @@ const Post: React.FC<PostProps> = ({
         }
     }, [dispatch, postId, isLiked]);
 
-    const goToImage = useCallback((index: number) => {
-        if (index >= 0 && index < images.length) {
-            flatListRef.current?.scrollToOffset({
-                offset: index * width,
-                animated: true
-            });
-            setActiveImageIndex(index);
-        }
-    }, [images.length]);
 
     const handleImagePress = useCallback((index: number) => {
         setActiveImageIndex(index);
@@ -262,6 +286,51 @@ const Post: React.FC<PostProps> = ({
         uri: typeof img.uri === 'string' ? img.uri : Image.resolveAssetSource(img.uri).uri
     }));
 
+    const handleCaptionTextLayout = useCallback((event: any) => {
+        const { lines } = event.nativeEvent;
+        if (lines.length > 3) {
+            setShouldShowSeeMore(true);
+        }
+    }, []);
+
+    const toggleCaptionExpansion = useCallback(() => {
+        setIsExpandedCaption(!isExpandedCaption);
+    }, [isExpandedCaption]);
+
+    const renderCaption = () => {
+        if (!shouldShowSeeMore) {
+            return (
+                <Text style={styles.caption} onTextLayout={handleCaptionTextLayout}>
+                    {caption}
+                </Text>
+            );
+        }
+
+        if (isExpandedCaption) {
+            return (
+                <Text style={styles.caption}>
+                    {caption}
+                    <Text style={styles.seeMoreText} onPress={toggleCaptionExpansion}>
+                        {' '}Thu gọn
+                    </Text>
+                </Text>
+            );
+        }
+
+        // Truncate caption for collapsed state
+        const truncatedCaption = caption.length > 100 ? 
+            caption.substring(0, 100) + '...' : caption;
+
+        return (
+            <Text style={styles.caption}>
+                {truncatedCaption}
+                <Text style={styles.seeMoreText} onPress={toggleCaptionExpansion}>
+                    {' '}Xem thêm
+                </Text>
+            </Text>
+        );
+    };
+
     return (
         <View style={styles.container}>
             {/* Loading Overlay */}
@@ -309,7 +378,9 @@ const Post: React.FC<PostProps> = ({
                                 </View>
                             )}
                         </View>
-                        <Text style={styles.location}>{location}</Text>
+                        <Text style={styles.location}>
+                            {createdAt ? formatTimeAgo(createdAt) : ''}
+                        </Text>
                     </View>
                 </TouchableOpacity>
                 <View style={styles.optionsContainer}>
@@ -360,27 +431,48 @@ const Post: React.FC<PostProps> = ({
 
             {/* Caption */}
             <View style={styles.captionContainer}>
-                <Text style={styles.caption}>
-                    {caption}
-                </Text>
+                {renderCaption()}
             </View>
 
             {/* Tagged destinations (if any) */}
             {((currentPost?.taggedDestinations && currentPost.taggedDestinations.length > 0) ||
               (tags && tags.length > 0)) && (
               <View style={styles.taggedContainer}>
-                <Text style={styles.taggedLabel}>Địa điểm gắn:</Text>
+                <Feather name="map-pin" size={16} color="#262626" accessibilityLabel="Địa điểm gắn" />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 12 }}>
                   {((currentPost?.taggedDestinations?.length ? currentPost.taggedDestinations : tags) || []).map((t: any, i: number) => {
-                    // t may be string (title) or object { destination: { title } } or { title }
                     const title =
                       typeof t === 'string'
                         ? t
                         : t.destination
                         ? t.destination.title
                         : t.title || 'Địa điểm';
+                        
+                    // Get destination data and id
+                    const destinationData = typeof t === 'string' ? null : (t.destination || t);
+                    const destinationId = destinationData?.id;
+                    const parentId = destinationData?.parentId;
+                    
+                    const handleTagPress = () => {
+                      if (!destinationId) return; // Skip if no ID available
+                      
+                      if (!parentId || parentId === null) {
+                        // Navigate to AddressDetailPage
+                        navigation.navigate('AddressDetailPage' as any, { 
+                          id: destinationId, 
+                          destinationData: destinationData 
+                        });
+                      } else {
+                        // Navigate to TravelPlaceDetailPage
+                        navigation.navigate('TravelPlaceDetailPage' as any, { 
+                          id: destinationId, 
+                          destinationData: destinationData 
+                        });
+                      }
+                    };
+                    
                     return (
-                      <TouchableOpacity key={i} style={styles.tagItem}>
+                      <TouchableOpacity key={i} onPress={handleTagPress} style={styles.tagItemContainer}>
                         <Text numberOfLines={1} style={styles.tagItemText}>{title}</Text>
                       </TouchableOpacity>
                     );
@@ -688,9 +780,26 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         marginRight: 8,
     },
+    tagItemContainer: {
+        // backgroundColor: '#f8f9fa',
+        borderWidth: 1,
+        borderColor: '#000',
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        marginRight: 8,
+    },
     tagItemText: {
         fontSize: 13,
-        color: '#333',
+        color: '#000',
+        fontWeight: '500',
+        textAlign: 'center',
+        opacity: 0.6,
+    },
+    seeMoreText: {
+        fontSize: 14,
+        color: '#8e8e8e',
+        fontWeight: '500',
     },
 });
 

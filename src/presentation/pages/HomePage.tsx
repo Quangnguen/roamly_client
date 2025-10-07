@@ -165,6 +165,7 @@ const HomePage = () => {
     </View>
   );
 
+
   const renderItem = ({ item: post }: { item: PostType }) => (
     <Post
       key={post.id}
