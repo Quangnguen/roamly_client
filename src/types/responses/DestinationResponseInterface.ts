@@ -43,6 +43,7 @@ export interface AddReview {
     imageUrl: string[];
 }
 
+
 export interface DestinationResponseInterface {
     message: string;
     statusCode: number;

@@ -291,7 +291,13 @@ const destinationSlice = createSlice({
                 state.userDestLoading = false;
                 // Handle Destination[], DestinationData, or single Destination
                 if (Array.isArray(action.payload.data)) {
-                    state.userDestinations = action.payload.data;
+                    // Only assign if array contains Destination objects (has 'title' property)
+                    const firstItem = action.payload.data[0];
+                    if (firstItem && typeof firstItem === 'object' && 'title' in firstItem) {
+                        state.userDestinations = action.payload.data as Destination[];
+                    } else {
+                        state.userDestinations = [];
+                    }
                 } else if ('destinations' in action.payload.data) {
                     state.userDestinations = action.payload.data.destinations || [];
                 } else if (action.payload.data && typeof action.payload.data === 'object' && 'id' in action.payload.data) {

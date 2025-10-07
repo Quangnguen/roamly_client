@@ -47,4 +47,8 @@ export class DestinationUsecase {
         const response = await this.destinationRepository.addReviewDestination(id, review);
         return response;
     }
+    async getDestinationsByUser(userId: string): Promise<DestinationResponseInterface> {
+        const response = await this.destinationRepository.getDestinationsByUser(userId);
+        return response;
+    }
 }

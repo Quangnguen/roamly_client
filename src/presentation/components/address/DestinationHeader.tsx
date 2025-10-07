@@ -19,7 +19,7 @@ const DestinationHeader: React.FC<DestinationHeaderProps> = ({
     return (
         <View style={styles.imageContainer}>
             <Image
-                source={imageUrl ? { uri: imageUrl } : require('../../../assets/images/natural2.jpg')}
+                source={imageUrl ? { uri: imageUrl } : { uri: 'https://i.pinimg.com/1200x/d7/78/7f/d7787f49f64cb6a8450ed7b7d0f30b57.jpg' }}
                 style={styles.image}
                 resizeMode="cover"
             />
