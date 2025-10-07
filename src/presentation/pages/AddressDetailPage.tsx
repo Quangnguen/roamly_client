@@ -11,7 +11,7 @@ import { getDestinationById, toggleFavoriteDestination, untoggleFavoriteDestinat
 import { useAppSelector } from '../redux/hook';
 import { Destination } from '@/src/types/DestinationInterface';
 import ReviewsModal from '../components/ReviewsModal';
-import AddReviewModal from '../components/AddReviewModal';
+import AddReviewModal from '../components/modals/AddReviewModal';
 import DestinationHeader from '../components/address/DestinationHeader';
 import DestinationInfo from '../components/address/DestinationInfo';
 import DestinationActions from '../components/address/DestinationActions';
@@ -62,7 +62,6 @@ const AddressDetailPage = () => {
     useEffect(() => {
         // Always fetch from API for latest data, but destinationData can provide immediate display
         dispatch(getDestinationById(id));
-        console.log('🚀 Fetching destination detail for ID:', destinationDetail);
     }, [dispatch, id]);
 
     // Update isFollowing state when destinationDetail or destinationData changes (sync with server)
@@ -219,7 +218,6 @@ const AddressDetailPage = () => {
         subLocations: [],
     };
 
-    console.log('🏷️ placeDetails:', destinationDetail);
 
 
     // 🎯 Tạo render function cho header content (tất cả content trừ posts)

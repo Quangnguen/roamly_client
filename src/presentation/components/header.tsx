@@ -50,7 +50,6 @@ export const Header: React.FC<headerProps> = ({
 
     if (!result.canceled) {
       const imageUri = result.assets[0].uri;
-      console.log("Ảnh đã chụp:", imageUri);
       // Bạn có thể lưu imageUri vào state hoặc xử lý tiếp
     }
   };

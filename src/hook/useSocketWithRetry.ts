@@ -32,7 +32,6 @@ export const useSocketWithRetry = () => {
           }
 
           if (isConnectingRef.current) {
-            console.log('🚫 Connection in progress');
             return;
           }
 

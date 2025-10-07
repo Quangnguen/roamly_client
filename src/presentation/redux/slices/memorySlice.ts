@@ -61,7 +61,6 @@ export const createMemory = createAsyncThunk(
     async (memoryData: CreateMemoryInterface, { rejectWithValue }) => {
         try {
             const response = await dependencies.MemoryUseCase.createMemory(memoryData);
-            console.log('Create memory response:', response);
             return response;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to create memory');

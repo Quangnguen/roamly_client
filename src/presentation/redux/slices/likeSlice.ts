@@ -58,9 +58,7 @@ const likeSlice = createSlice({
 
             if (!state.likedPosts.includes(postId)) {
                 state.likedPosts.push(postId);
-            } else {
-                console.log(`📱 [LIKE_SLICE] Post ${postId} already in likedPosts`);
-            }
+            } 
         },
 
         handleSocketPostUnliked: (state, action) => {

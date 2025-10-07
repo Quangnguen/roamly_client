@@ -19,7 +19,6 @@ export const loginApi = async (email: string, password: string) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.log('errorData', errorData);
       throw new Error('Đăng nhập thất bại..', errorData.message);
     }
 

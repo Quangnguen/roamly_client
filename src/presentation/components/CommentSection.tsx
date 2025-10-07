@@ -124,7 +124,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                 setReplyingTo(null);
                 setReplyingToUsername('');
 
-                console.log('✅ Comment process completed');
                 Toast.show({
                     type: 'success',
                     text1: 'Đã thêm bình luận',

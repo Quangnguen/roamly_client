@@ -66,7 +66,6 @@ export class UserRepositoryImpl implements UserRepository {
   }
 
   async getUsers(params?: GetUsersParams): Promise<any> {
-    console.log('Fetching all users with params:', params);
     try {
       const response = await getUsers(params);
 

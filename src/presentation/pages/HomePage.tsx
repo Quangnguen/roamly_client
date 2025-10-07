@@ -10,7 +10,9 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { getPostsFeed } from '../redux/slices/postSlice';
+import { getPopularDestinations, toggleFavoriteDestination, untoggleFavoriteDestination } from '../redux/slices/destinationSlice'; // <-- added
 import Post from '../components/post';
+import Card from '../components/card'; // <-- added
 import { BACKGROUND } from '@/src/const/constants';
 import { Header } from '../components/header';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -49,6 +51,11 @@ const HomePage = () => {
   const navigation: NavigationProp<'Home' | 'WeatherPage'> = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
   const { feedPosts, feedLoading } = useSelector((state: RootState) => state.post);
+  // Destinations for the top slider
+  const popularDestinations = useSelector((state: RootState) =>
+    state.destination.searchResults.length > 0 ? state.destination.searchResults : state.destination.destinations
+  );
+  const destLoading = useSelector((state: RootState) => state.destination.loading || state.destination.searchLoading);
   const user = useSelector((state: RootState) => state.auth.profile);
 
   // State cho pagination
@@ -66,7 +73,17 @@ const HomePage = () => {
     setHasNextPage(true);
     setIsLoadingMore(false);
     dispatch(getPostsFeed({ page: 1, limit: POSTS_PER_PAGE }));
+    // load popular destinations for top slider
+    dispatch(getPopularDestinations());
   }, [dispatch]);
+
+  const handleDestFavoriteToggle = (destinationId: string, currentLiked: boolean) => {
+    if (currentLiked) {
+      dispatch(untoggleFavoriteDestination({ targetId: destinationId, type: 'destination' }));
+    } else {
+      dispatch(toggleFavoriteDestination({ targetId: destinationId, type: 'destination' }));
+    }
+  };
 
   // Chỉ refresh khi focus nếu không có optimistic posts
   useFocusEffect(
@@ -110,6 +127,43 @@ const HomePage = () => {
         });
     }
   };
+
+  // Header component for FlatList: popular destinations slider
+  const renderHeader = () => (
+    <View style={styles.destHeaderWrapper}>
+      <Text style={styles.destHeaderTitle}>Gợi ý địa điểm</Text>
+      {destLoading ? (
+        <ActivityIndicator style={{ marginVertical: 12 }} />
+      ) : popularDestinations && popularDestinations.length > 0 ? (
+        <FlatList
+          horizontal
+          data={popularDestinations}
+          keyExtractor={(item) => item.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}
+          renderItem={({ item }) => (
+            <View style={{ marginRight: 12 }}>
+              <Card
+                type="address"
+                image={item.imageUrl && item.imageUrl.length > 0 ? { uri: item.imageUrl[0] } : require('../../../assets/images/natural2.jpg')}
+                title={item.title || 'Địa điểm'}
+                description={item.location || item.city || ''}
+                totalFollowers={item.likeCount || 0}
+                visitCount={item.visitCount || 0}
+                rating={item.rating || 0}
+                reviewCount={item.reviewCount || 0}
+                isLiked={item.isLiked || false}
+                onPress={() => navigation.navigate('AddressDetailPage' as any, { id: item.id, destinationData: item })}
+                onFollowPress={() => handleDestFavoriteToggle(item.id, item.isLiked || false)}
+              />
+            </View>
+          )}
+        />
+      ) : (
+        <Text style={styles.destEmptyText}>Không có địa điểm gợi ý</Text>
+      )}
+    </View>
+  );
 
   const renderItem = ({ item: post }: { item: PostType }) => (
     <Post
@@ -163,6 +217,7 @@ const HomePage = () => {
       />
       <FlatList
         data={feedPosts}
+        ListHeaderComponent={renderHeader}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         refreshControl={
@@ -188,6 +243,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BACKGROUND,
+  },
+  destHeaderWrapper: {
+    paddingTop: 12,
+    paddingBottom: 6,
+    backgroundColor: 'transparent',
+  },
+  destHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    paddingLeft: 16,
+    marginBottom: 8,
+  },
+  destEmptyText: {
+    paddingLeft: 16,
+    color: '#666',
   },
   header: {
     padding: 16,

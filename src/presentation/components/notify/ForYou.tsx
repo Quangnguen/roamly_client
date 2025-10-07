@@ -153,13 +153,11 @@ const You = () => {
         setShowPostModal(false)
       }
     }
-    console.log(notification.id);
     dispatch(markNotificationAsRead(notification.id))
     dispatch(markAsRead(notification.id))
   }
 
   const handleCloseModal = () => {
-    console.log('Closing modal')
     setShowPostModal(false)
   }
 

@@ -10,7 +10,6 @@ export class MemoryUseCase {
     async createMemory(memoryData: CreateMemoryInterface): Promise<any> {
         try {
             // Validate dữ liệu trước khi tạo
-            console.log('Creating memory with data:', memoryData);
             this.validateMemoryData(memoryData);
             
             // Gọi repository để tạo memory

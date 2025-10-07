@@ -48,12 +48,10 @@ class SocialNetworkNotificationService {
   async connect(providedToken?: string) {
     try {
       if (this.socket && this.socket.connected) {
-        console.log('🚫 Socket already connected, skipping...');
         return this.socket;
       }
 
       if (this.socket) {
-        console.log('🔌 Disconnecting existing socket...');
         this.socket.disconnect();
         this.socket = null;
       }
@@ -61,7 +59,6 @@ class SocialNetworkNotificationService {
       let accessToken = providedToken;
 
       if (!accessToken) {
-        console.log('🔍 No token provided, getting from storage...');
         const tokenFromStorage = await getAccessToken();
         accessToken = tokenFromStorage === null ? undefined : tokenFromStorage;
 
@@ -69,15 +66,12 @@ class SocialNetworkNotificationService {
           const { accessToken: token } = await getTokens();
           accessToken = token === null ? undefined : token;
         }
-      } else {
-        console.log('✅ Using provided token');
-      }
+      } 
 
       if (!accessToken) {
         throw new Error('No access token found');
       }
 
-      console.log('🔑 Token preview:', accessToken.substring(0, 20) + '...');
 
       this.socket = io(API_BASE_URL, {
         auth: {
@@ -91,7 +85,6 @@ class SocialNetworkNotificationService {
 
       return this.socket;
     } catch (error) {
-      console.error('❌ Socket connection failed:', error);
       throw error;
     }
   }
@@ -104,7 +97,6 @@ class SocialNetworkNotificationService {
       } else {
         this.socket.removeAllListeners(event);
       }
-      console.log(`🔇 Removed listener for event: ${event}`);
     }
   }
 
@@ -112,7 +104,6 @@ class SocialNetworkNotificationService {
   on(event: string, listener: (...args: any[]) => void) {
     if (this.socket) {
       this.socket.on(event, listener);
-      console.log(`🔊 Added listener for event: ${event}`);
     }
   }
 
@@ -120,9 +111,6 @@ class SocialNetworkNotificationService {
   emit(event: string, data: any) {
     if (this.socket && this.socket.connected) {
       this.socket.emit(event, data);
-      console.log(`📤 Emitted event: ${event}`, data);
-    } else {
-      console.log(`❌ Cannot emit ${event} - socket not connected`);
     }
   }
 
@@ -139,7 +127,6 @@ class SocialNetworkNotificationService {
   // ✅ MISSING: disconnect method
   disconnect() {
     if (this.socket) {
-      console.log('🔌 Disconnecting socket...');
 
       // ✅ Clear notification queues
       this.notificationBatches.clear();
@@ -157,7 +144,6 @@ class SocialNetworkNotificationService {
   // ✅ MISSING: requestNotificationPermissions method
   async requestNotificationPermissions() {
     try {
-      console.log('🔔 Requesting LOCAL notification permissions...');
 
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
@@ -178,11 +164,9 @@ class SocialNetworkNotificationService {
       }
 
       if (finalStatus !== 'granted') {
-        console.log('❌ Local notification permission denied');
         return false;
       }
 
-      console.log('✅ Local notification permission granted');
       return true;
     } catch (error) {
       console.error('❌ Failed to request notification permissions:', error);
@@ -197,7 +181,6 @@ class SocialNetworkNotificationService {
       if (Platform.OS === 'ios') {
         await Notifications.setBadgeCountAsync(0);
       }
-      console.log('🧹 All notifications cleared');
     } catch (error) {
       console.error('❌ Failed to clear notifications:', error);
     }
@@ -209,7 +192,6 @@ class SocialNetworkNotificationService {
       priority: 'urgent' as const,
       title: '💌 Tin nhắn mới',
       bodyTemplate: (data: any) => {
-        console.log('🔍 Message data:', data.username);
         const senderName = data.username || 'Ai đó';
         const messageText = data.message || data.content || '';
         if (messageText.length > 50) {
@@ -408,13 +390,6 @@ class SocialNetworkNotificationService {
   onNewNotification(callback?: (data: any) => void) {
     if (this.socket) {
       this.socket.on('new_notification', async (data: any) => {
-        console.log('📢 NEW NOTIFICATION RECEIVED:', data);
-
-        console.log('🔍 Raw notification data:', JSON.stringify(data, null, 2));
-      console.log('🔍 Available keys:', Object.keys(data));
-      console.log('🔍 Username field:', data.username);
-      console.log('🔍 User object:', data.user);
-      console.log('🔍 Sender object:', data.sender);
 
         if (callback) {
           callback(data);
@@ -430,13 +405,7 @@ class SocialNetworkNotificationService {
           ? this.NOTIFICATION_TEMPLATES[normalizedType as keyof typeof this.NOTIFICATION_TEMPLATES]
           : this.NOTIFICATION_TEMPLATES['notification'];
 
-        // ✅ STEP 3: Debug logging
-        console.log('🔍 Type processing:', {
-          raw: rawType,
-          normalized: normalizedType,
-          hasTemplate,
-          selectedTemplate: template.title
-        });
+       
 
         // ✅ STEP 4: Generate notification
         const notification: NotificationConfig = {
@@ -496,7 +465,6 @@ class SocialNetworkNotificationService {
   onNewComment(callback?: (data: any) => void) {
     if (this.socket) {
       this.socket.on('new_comment', async (data: any) => {
-        console.log('💬 NEW COMMENT RECEIVED:', data);
 
         if (callback) {
           callback(data);
@@ -523,7 +491,6 @@ class SocialNetworkNotificationService {
   onNewFollower(callback?: (data: any) => void) {
     if (this.socket) {
       this.socket.on('new_follower', async (data: any) => {
-        console.log('👥 NEW FOLLOWER RECEIVED:', data);
 
         if (callback) {
           callback(data);
@@ -549,7 +516,6 @@ class SocialNetworkNotificationService {
   onNewMessage(callback?: (data: any) => void) {
     if (this.socket) {
       this.socket.on('new_message', async (data: any) => {
-        console.log('💌 NEW MESSAGE RECEIVED:', data);
 
         if (callback) {
           callback(data);
@@ -595,13 +561,11 @@ class SocialNetworkNotificationService {
 
     // Check user preferences
     if (!this.userPreferences.enabledTypes.includes(notification.type)) {
-      console.log(`🚫 Notification type ${notification.type} disabled by user`);
       return;
     }
 
     // Check quiet hours
     if (this.isQuietHours()) {
-      console.log('🔇 Quiet hours - suppressing notification');
       return;
     }
 
@@ -624,7 +588,6 @@ class SocialNetworkNotificationService {
     const priorityConfig = this.PRIORITY_CONFIG[notification.priority];
 
     if (timestamp - lastTime < priorityConfig.throttle) {
-      console.log(`⏸️ Throttling ${type} notification`);
       return;
     }
 
@@ -635,8 +598,6 @@ class SocialNetworkNotificationService {
   // ✅ Show local notification
   private async showLocalNotification(notification: NotificationConfig) {
     try {
-      console.log('📱 Showing notification:', notification.title);
-
       await Notifications.scheduleNotificationAsync({
         content: {
           title: notification.title,
@@ -651,8 +612,6 @@ class SocialNetworkNotificationService {
         },
         trigger: null,
       });
-
-      console.log('✅ Notification sent:', notification.title);
 
     } catch (error) {
       console.error('❌ Failed to show notification:', error);
@@ -685,22 +644,18 @@ class SocialNetworkNotificationService {
       return;
     }
 
-    console.log('📡 Setting up socket event listeners...');
     this.isSettingUpListeners = true;
 
     this.socket.on('connect', () => {
-      console.log('✅ Socket connected with ID:', this.socket?.id);
       this.reconnectAttempts = 0;
       this.isSettingUpListeners = false;
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('❌ Socket disconnected:', reason);
       this.isSettingUpListeners = false;
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('🔴 Socket connection error:', error);
       this.isSettingUpListeners = false;
     });
   }

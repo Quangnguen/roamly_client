@@ -19,6 +19,12 @@ import DestinationActions from '../components/address/DestinationActions';
 import DestinationDescription from '../components/address/DestinationDescription';
 import DestinationMedia from '../components/address/DestinationMedia';
 import DestinationSubLocations from '../components/address/DestinationSubLocations';
+// Reviews / Add review (same behavior as AddressDetailPage)
+import ReviewsModal from '../components/ReviewsModal';
+import AddReviewModal from '../components/modals/AddReviewModal';
+import { toggleFavoriteDestination, untoggleFavoriteDestination, getReviewsByDestinationId, addReviewDestination } from '../redux/slices/destinationSlice';
+import { useAppSelector } from '../redux/hook';
+import { de } from 'date-fns/locale';
 
 const { width } = Dimensions.get('window');
 
@@ -46,6 +52,23 @@ const TravelPlaceDetailPage = () => {
       destinationDetailLoading: state.destination.destinationDetailLoading,
       destinationDetailError: state.destination.destinationDetailError,
     }));
+
+    const {
+      reviews,
+      reviewsLoading,
+      reviewsError,
+      addReviewLoading,
+      addReviewError
+    } = useAppSelector(state => ({
+      reviews: state.destination.reviews,
+      reviewsLoading: state.destination.reviewsLoading,
+      reviewsError: state.destination.reviewsError,
+      addReviewLoading: state.destination.addReviewLoading,
+      addReviewError: state.destination.addReviewError
+    }));
+
+    const [isReviewsModalVisible, setIsReviewsModalVisible] = useState(false);
+    const [isAddReviewModalVisible, setIsAddReviewModalVisible] = useState(false);
 
     // fetch destination detail + related posts
     useEffect(() => {
@@ -88,9 +111,75 @@ const TravelPlaceDetailPage = () => {
       if (display) setIsFavorite(!!display.isLiked);
     }, [display]);
 
+    const openReviewsModal = () => {
+      setIsReviewsModalVisible(true);
+      if (reviews.length === 0 && !reviewsLoading) {
+        dispatch(getReviewsByDestinationId(id));
+      }
+    };
+
+    const closeReviewsModal = () => setIsReviewsModalVisible(false);
+    const openAddReviewModal = () => {
+      setIsAddReviewModalVisible(true);
+      setIsReviewsModalVisible(false);
+    };
+    const closeAddReviewModal = () => setIsAddReviewModalVisible(false);
+
+    const handleSubmitReview = async (reviewData: {
+      rating: number;
+      comment: string;
+      visitDate: string;
+      images: string[];
+    }) => {
+      try {
+        const formData = new FormData();
+        formData.append('rating', reviewData.rating.toString());
+        formData.append('comment', reviewData.comment);
+        formData.append('visitDate', reviewData.visitDate);
+
+        if (reviewData.images && reviewData.images.length > 0) {
+          for (let i = 0; i < reviewData.images.length; i++) {
+            const imageUri = reviewData.images[i];
+            try {
+              const response = await fetch(imageUri);
+              const blob = await response.blob();
+              const fileName = `image_${i + 1}.jpg`;
+              formData.append('images', {
+                uri: imageUri,
+                type: blob.type || 'image/jpeg',
+                name: fileName,
+              } as any);
+            } catch (error) {
+              console.error('Error processing review image:', imageUri, error);
+            }
+          }
+        }
+
+        await dispatch(addReviewDestination({
+          id: display?.id || id,
+          images: formData,
+          rating: reviewData.rating,
+          comment: reviewData.comment,
+          visitDate: reviewData.visitDate
+        })).unwrap();
+
+        // refresh destination & reviews
+        dispatch(getDestinationById(id));
+        dispatch(getReviewsByDestinationId(id));
+        setIsAddReviewModalVisible(false);
+      } catch (e) {
+        console.error('Failed to submit review', e);
+      }
+    };
+
     const toggleFavorite = () => {
-        setIsFavorite(prev => !prev);
-        // optionally dispatch toggleFavoriteDestination here if you import it
+        const newVal = !isFavorite;
+        setIsFavorite(newVal);
+        if (newVal) {
+          dispatch(toggleFavoriteDestination({ targetId: id, type: 'destination' }));
+        } else {
+          dispatch(untoggleFavoriteDestination({ targetId: id, type: 'destination' }));
+        }
     };
 
     if (destinationDetailLoading) {
@@ -133,8 +222,8 @@ const TravelPlaceDetailPage = () => {
                     onToggleLike={toggleFavorite}
                     rating={placeDetails.rating}
                     reviewCount={placeDetails.reviewsCount}
-                    onViewReviews={() => {}}
-                    onAddReview={() => {}}
+                    onViewReviews={openReviewsModal}
+                    onAddReview={openAddReviewModal}
                 />
                 <DestinationDescription
                     description={placeDetails.description}
@@ -178,6 +267,26 @@ const TravelPlaceDetailPage = () => {
                   ))}
                 </View>
             </View>
+
+            {/* Reviews Modal */}
+            <ReviewsModal
+                visible={isReviewsModalVisible}
+                onClose={closeReviewsModal}
+                reviews={reviews}
+                loading={reviewsLoading}
+                error={reviewsError}
+                destinationName={placeDetails.name}
+                onRetry={() => dispatch(getReviewsByDestinationId(id))}
+                onAddReview={openAddReviewModal}
+            />
+
+            <AddReviewModal
+                visible={isAddReviewModalVisible}
+                onClose={closeAddReviewModal}
+                onSubmit={handleSubmitReview}
+                destinationName={placeDetails.name}
+                loading={addReviewLoading}
+            />
         </ScrollView>
     );
 };

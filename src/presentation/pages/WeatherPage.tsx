@@ -196,7 +196,6 @@ const getAddressFromCoordinates = async (latitude: number, longitude: number) =>
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // Tăng timeout lên 10 giây
 
-        console.log(`Fetching address for coordinates: ${latitude}, ${longitude}`);
 
         // Thêm nhiều headers hơn và thông tin user-agent chi tiết để tránh bị chặn
         const response = await fetch(
@@ -215,7 +214,6 @@ const getAddressFromCoordinates = async (latitude: number, longitude: number) =>
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-            console.log(`Nominatim API error status: ${response.status}`);
             throw new Error(`Nominatim API error: ${response.status}`);
         }
 
@@ -248,13 +246,10 @@ const getAddressFromCoordinates = async (latitude: number, longitude: number) =>
             country: data.address?.country || "Việt Nam"
         };
 
-        console.log('Resolved location:', result);
         return result;
     } catch (error) {
-        console.log("Error getting address from Nominatim:", error);
 
         // Trả về giá trị mặc định nếu không lấy được thông tin
-        console.log("Using default location");
         return {
             city: "Hà Nội",
             country: "Việt Nam"
@@ -476,7 +471,6 @@ export default function WeatherPage() {
                         // Kiểm tra nếu cache còn hợp lệ hoặc có dữ liệu
                         if ((Date.now() - weatherCache.timestamp < CACHE_EXPIRY) ||
                             (weatherCache.data && forecastCache.data)) {
-                            console.log('Using cached data');
 
                             // Hiển thị dữ liệu từ cache ngay lập tức
                             setWeatherData(weatherCache.data);

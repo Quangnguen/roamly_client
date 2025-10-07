@@ -61,7 +61,6 @@ export const getUserById = createAsyncThunk(
   'user/getUserById',
   async (userId: string, thunkAPI) => {
     try {
-      console.log('userId:', userId);
       const response = await dependencies.userUsecase.getUserById(userId);
       return response as UserApiResponse; // Chuyển đổi kiểu dữ liệu
     } catch (error: any) {

@@ -72,7 +72,6 @@ const PostTab: React.FC<PostTabProps> = ({ searchText = '' }) => {
                     limit: 20
                 })).unwrap();
 
-                console.log('Loaded more search results for page:', nextPage);
             } catch (error) {
                 console.error('Error loading more results:', error);
             } finally {

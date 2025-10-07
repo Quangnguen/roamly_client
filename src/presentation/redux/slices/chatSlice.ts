@@ -296,12 +296,7 @@ const chatSlice = createSlice({
                     state.messages = [...sortedOlderMessages, ...state.messages];
                     state.currentPage += 1;
 
-                    console.log('📥 Load more completed:', {
-                        newMessages: sortedOlderMessages.length,
-                        totalMessages: state.messages.length,
-                        oldestNew: sortedOlderMessages[0]?.content?.substring(0, 30) + '...',
-                        newestNew: sortedOlderMessages[sortedOlderMessages.length - 1]?.content?.substring(0, 30) + '...'
-                    });
+                   
                 } else {
                     // ✅ Sort messages cho first load (oldest first)
                     const sortedMessages = [...messages].sort((a, b) =>
@@ -312,11 +307,7 @@ const chatSlice = createSlice({
                     state.messages = sortedMessages;
                     state.currentPage = 1;
 
-                    console.log('📥 First load completed:', {
-                        totalMessages: sortedMessages.length,
-                        oldest: sortedMessages[0]?.content?.substring(0, 30) + '...',
-                        newest: sortedMessages[sortedMessages.length - 1]?.content?.substring(0, 30) + '...'
-                    });
+                  
                 }
 
                 // Check if we have more messages to load

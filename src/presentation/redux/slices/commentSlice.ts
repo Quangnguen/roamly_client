@@ -53,7 +53,6 @@ export const getComments = createAsyncThunk(
     async (postId: string, thunkAPI) => {
         try {
             const response = await dependencies.commentUsecase.getComments(postId);
-            console.log('Comments fetched:', response);
             return response as unknown as responseData; // Assuming the response is of type responseData
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.message || 'Không thể lấy danh sách bình luận');
@@ -117,18 +116,15 @@ export const commentSlice = createSlice({
         },
         updateCommentCount: (state, action) => {
             state.countComments = action.payload;
-            console.log('✅ Updated comment count in commentSlice:', action.payload);
         },
 
         clearCommentsOnly: (state) => {
             state.comments = [];
             // Không reset countComments
-            console.log('🧹 Cleared comments but kept count:', state.countComments);
         },
         clearAll: (state) => {
             state.comments = [];
             state.countComments = 0;
-            console.log('🧹 Cleared all comments and count');
         },
         // ✅ Thêm real-time comment từ socket
         addRealTimeComment: (state, action: PayloadAction<any>) => {
@@ -137,7 +133,6 @@ export const commentSlice = createSlice({
             if (!existingComment) {
                 state.comments?.unshift(action.payload);
             }
-            console.log('✅ Added real-time comment:', action.payload);
         },
         // ✅ Remove comment từ socket
         removeComment: (state, action: PayloadAction<string>) => {
@@ -214,7 +209,6 @@ export const commentSlice = createSlice({
             })
             .addCase(likeComment.fulfilled, (state, action) => {
                 // Không update state ở đây, để refetch xử lý
-                console.log('✅ Like comment API success, waiting for refetch...');
             })
             .addCase(likeComment.rejected, (state, action) => {
                 state.error = action.payload as string;
@@ -227,7 +221,6 @@ export const commentSlice = createSlice({
             })
             .addCase(unlikeComment.fulfilled, (state, action) => {
                 // Không update state ở đây, để refetch xử lý
-                console.log('✅ Unlike comment API success, waiting for refetch...');
             })
             .addCase(unlikeComment.rejected, (state, action) => {
                 state.error = action.payload as string;

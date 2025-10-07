@@ -22,6 +22,9 @@ interface TravelPlace {
     name: string;
     imageUri: string;
     numberOfLikes: number;
+    rating: number;
+    visitCount: number;
+    isLiked: boolean;
 }
 
 interface SubLocation {
@@ -31,6 +34,9 @@ interface SubLocation {
     imageUrl?: string;
     rating?: number;
     reviewCount?: number;
+    visitCount?: number;
+    likeCount?: number;
+    isLiked?: boolean;
 }
 
 interface DestinationSubLocationsProps {
@@ -43,8 +49,6 @@ const DestinationSubLocations: React.FC<DestinationSubLocationsProps> = ({
     travelPlaces
 }) => {
     const navigation = useNavigation<NavigationProp>();
-
-    console.log('Rendering DestinationSubLocations with props:', { homestays, travelPlaces });
 
     return (
         <View>
@@ -60,6 +64,7 @@ const DestinationSubLocations: React.FC<DestinationSubLocationsProps> = ({
                                 name={place.title}
                                 id={place.id}
                                 numberOfVisits={place.visitCount}
+                                numberOfLikes={place.likeCount}
                                 rating={place.rating}
                                 type='place'
                                 onPress={() => navigation.navigate('TravelPlaceDetailPage', {

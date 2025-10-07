@@ -192,7 +192,6 @@ function AppContent() {
       // ✅ Message listener với Alert
       if (socketService && typeof socketService.onNewMessage === 'function') {
         socketService.onNewMessage((data: any) => {
-          console.log('💌 New message received:', data);
 
           // ✅ QUAN TRỌNG: Dispatch Redux action để cập nhật ChatPage
           dispatch(handleSocketNewMessage({
@@ -201,22 +200,12 @@ function AppContent() {
           }));
 
           const navigateToChat = () => {
-            console.log('🔍 Navigation function called!');
-            console.log('🔍 Navigation object:', !!navigation);
 
             const conversationId = data.conversationId;
             const senderName = data.username || data.sender?.username || 'Unknown';
 
             if (conversationId) {
-              console.log('🔄 About to navigate to ChatDetailPage:', {
-                conversationId,
-                senderName,
-                params: {
-                  chatId: conversationId,
-                  name: senderName,
-                  avatar: data.sender?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg'
-                }
-              });
+              
 
               try {
                 navigation.navigate('ChatDetailPage', {
@@ -224,7 +213,6 @@ function AppContent() {
                   name: senderName,
                   avatar: data.sender?.profilePic || 'https://randomuser.me/api/portraits/men/10.jpg'
                 });
-                console.log('✅ Navigation call completed');
               } catch (error) {
                 console.error('❌ Navigation error:', error);
               }
@@ -234,7 +222,6 @@ function AppContent() {
           };
 
           // ✅ Test navigation function immediately
-          console.log('🧪 Testing navigation function...');
           // navigateToChat(); // Uncomment để test
 
           showNotificationToast(data, 'message', navigateToChat);

@@ -17,7 +17,6 @@ export const getUserProfile = async () => {
 
 // Cập nhật thông tin người dùng
 export const updateUserProfile = async (userData: UserUpdateInterface) => {
-  console.log('change acc', userData);
 
   return await authorizedRequest(`${API_BASE_URL}/users/me`, {
     method: 'PATCH',
