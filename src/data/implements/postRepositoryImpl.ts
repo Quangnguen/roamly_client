@@ -48,4 +48,9 @@ export class PostRepositoryImpl implements PostRepository {
         const response = await postApi.searchPostsApi(params);
         return response;
     }
+
+    async getPostByDestinationId(destinationId: string): Promise<Post[]> {
+        const response = await postApi.getPostByDestinationIdApi(destinationId);
+        return response;
+    }
 }

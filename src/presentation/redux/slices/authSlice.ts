@@ -53,7 +53,6 @@ export const login = createAsyncThunk(
   async ({ email, password }: { email: string; password: string }, thunkAPI) => {
     try {
       const response = await dependencies.loginUseCase.execute(email, password);
-      console.log('login thunk:', response);
       return response as unknown as AuthResponse;
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.message || "Đăng nhập thất bại");
@@ -82,7 +81,6 @@ export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { dispatch }) => {
     try {
-      console.log('🔄 Logging out user...');
 
       // 1. Call API logout if available
       try {
@@ -103,7 +101,6 @@ export const logout = createAsyncThunk(
       dispatch({ type: 'comment/clearComments' });
       dispatch({ type: 'post/clearPosts' });
 
-      console.log('✅ Logout completed');
 
       return true;
     } catch (error) {

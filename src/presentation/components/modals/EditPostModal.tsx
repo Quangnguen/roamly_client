@@ -115,8 +115,6 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
                 formData.append('removedImages', imageUrl);
             });
 
-            console.log("removedImages", removedImages);
-
             // Gọi API cập nhật bài viết
             const result = await dispatch(updatePost({ postId, formData }));
 
@@ -167,7 +165,6 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
                 setNewImages([...newImages, ...selectedImages]);
             }
         } catch (error) {
-            console.log('Error picking image:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Không thể chọn ảnh',

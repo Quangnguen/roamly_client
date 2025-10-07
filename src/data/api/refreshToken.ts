@@ -6,10 +6,6 @@ import { navigateToLogin } from '../../services/navigationService';
 export const refreshAccessToken = async () => {
   const { accessToken, refreshToken, tokenExpiry } = await getTokens();
 
-  console.log('Token check - Access Token exists:', !!accessToken);
-  console.log('Token check - Refresh Token exists:', !!refreshToken);
-  console.log('Token check - Token Expiry:', tokenExpiry ? new Date(tokenExpiry).toISOString() : 'No expiry');
-  console.log('Token check - Current time:', new Date().toISOString());
 
   // ✅ Kiểm tra nếu không có access token - logout và chuyển về login
   if (!accessToken) {
@@ -20,7 +16,6 @@ export const refreshAccessToken = async () => {
 
   // Kiểm tra nếu token đã hết hạn
   if (tokenExpiry && Date.now() > tokenExpiry) {
-    console.log('⚠️ Token expired, attempting to refresh...');
 
     if (!refreshToken) {
       console.error('❌ No refresh token available for refresh - logging out user');
@@ -54,7 +49,6 @@ export const refreshAccessToken = async () => {
 
       const { access_token, refresh_token, expires_in } = data.data;
       
-      console.log('✅ Token refreshed successfully');
       await saveTokens(access_token, refresh_token, expires_in);
       return access_token;
       
@@ -65,7 +59,6 @@ export const refreshAccessToken = async () => {
     }
   }
 
-  console.log('✅ Using existing access token');
   return accessToken;
 };
 
@@ -83,7 +76,6 @@ const handleLogoutFlow = async () => {
       navigateToLogin();
     }, 100); // Small delay to ensure state is updated
     
-    console.log('🔄 User logged out and redirected to login');
     
   } catch (error) {
     console.error('❌ Error during logout flow:', error);

@@ -29,14 +29,14 @@ interface DestinationState {
     destinationDetail: Destination | null;
     destinationDetailLoading: boolean;
     destinationDetailError: string | null;
+    userDestinations: Destination[]; // <-- added: destinations by user id
+    userDestLoading: boolean;
+    userDestError: string | null;
     reviews: Review[];
     reviewsLoading: boolean;
     reviewsError: string | null;
     addReviewLoading: boolean;
     addReviewError: string | null;
-    userDestinations: Destination[]; // <-- added: destinations by user id
-    userDestLoading: boolean;
-    userDestError: string | null;
 }
 
 const initialState: DestinationState = {
@@ -57,14 +57,14 @@ const initialState: DestinationState = {
     destinationDetail: null,
     destinationDetailLoading: false,
     destinationDetailError: null,
+    userDestinations: [], // <-- added
+    userDestLoading: false,
+    userDestError: null,
     reviews: [],
     reviewsLoading: false,
     reviewsError: null,
     addReviewLoading: false,
     addReviewError: null,
-    userDestinations: [], // <-- added
-    userDestLoading: false,
-    userDestError: null,
 };
 
 // Async thunk để lấy destinations
@@ -169,10 +169,8 @@ export const getReviewsByDestinationId = createAsyncThunk(
 export const addReviewDestination = createAsyncThunk<DestinationApiResponse, { id: string, images: FormData, rating: number, comment: string, visitDate: string }>(
     'destination/addReviewDestination',
     async (data: { id: string, images?: FormData, rating: number, comment?: string, visitDate?: string }, { rejectWithValue }) => {
+        console.log('🌟 addReviewDestination called with data:', data);
         try {
-            console.log('🔍 addReviewDestination: Checking dependencies...', typeof dependencies.destinationUsecase.addReviewDestination);
-            console.log('🔍 addReviewDestination: Dependencies keys:', Object.keys(dependencies));
-            console.log('🔍 addReviewDestination: destinationUsecase methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(dependencies.destinationUsecase)));
 
             if (!dependencies.destinationUsecase.addReviewDestination) {
                 throw new Error('addReviewDestination method not found in destinationUsecase');
@@ -193,9 +191,7 @@ export const addReviewDestination = createAsyncThunk<DestinationApiResponse, { i
                 }
             }
 
-            console.log('📤 addReviewDestination: Calling API with formData');
             const response: any = await dependencies.destinationUsecase.addReviewDestination(data.id, formData);
-            console.log('✅ addReviewDestination: Success', response);
             return response as unknown as DestinationApiResponse;
         } catch (error: any) {
             console.error('❌ addReviewDestination: Failed', error);

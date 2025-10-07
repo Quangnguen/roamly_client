@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import SquareCard from '../squareCardForHomeStay';
+import { Destination } from '@/src/types/DestinationInterface';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,6 +22,9 @@ interface TravelPlace {
     name: string;
     imageUri: string;
     numberOfLikes: number;
+    rating: number;
+    visitCount: number;
+    isLiked: boolean;
 }
 
 interface SubLocation {
@@ -30,11 +34,14 @@ interface SubLocation {
     imageUrl?: string;
     rating?: number;
     reviewCount?: number;
+    visitCount?: number;
+    likeCount?: number;
+    isLiked?: boolean;
 }
 
 interface DestinationSubLocationsProps {
     homestays: Homestay[];
-    travelPlaces: TravelPlace[];
+    travelPlaces: Destination[];
 }
 
 const DestinationSubLocations: React.FC<DestinationSubLocationsProps> = ({
@@ -53,10 +60,12 @@ const DestinationSubLocations: React.FC<DestinationSubLocationsProps> = ({
                         {travelPlaces.map((place) => (
                             <SquareCard
                                 key={place.id}
-                                imageUri={place.imageUri}
-                                name={place.name}
+                                imageUri={place.imageUrl[0]} // Assuming imageUrl is an array
+                                name={place.title}
                                 id={place.id}
-                                numberOfLikes={place.numberOfLikes}
+                                numberOfVisits={place.visitCount}
+                                numberOfLikes={place.likeCount}
+                                rating={place.rating}
                                 type='place'
                                 onPress={() => navigation.navigate('TravelPlaceDetailPage', {
                                     id: place.id,
@@ -68,7 +77,7 @@ const DestinationSubLocations: React.FC<DestinationSubLocationsProps> = ({
             )}
 
             {/* Homestays */}
-            {homestays.length > 0 && (
+            {/* {homestays.length > 0 && (
                 <View>
                     <Text style={styles.sectionTitle}>Homestay</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollView}>
@@ -89,7 +98,7 @@ const DestinationSubLocations: React.FC<DestinationSubLocationsProps> = ({
                         ))}
                     </ScrollView>
                 </View>
-            )}
+            )} */}
         </View>
     );
 };

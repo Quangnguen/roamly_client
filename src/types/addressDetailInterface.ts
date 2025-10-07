@@ -1,3 +1,4 @@
+import { Destination } from "./DestinationInterface";
 import Homestay from "./homestayInterface";
 import TravelPlace from "./travelPlaceInterface";
 
@@ -12,6 +13,6 @@ export default interface AddressDetails {
     rating: number; // Đánh giá của địa điểm
     reviewsCount: number;
     homestayes: Homestay[];
-    travelPlaces: TravelPlace[];
+    subLocations: Destination[];
     numberLikes: number;
 }

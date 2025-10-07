@@ -15,7 +15,6 @@ interface PostModalProps {
 
 const PostModal: React.FC<PostModalProps> = ({ visible, onClose, loading, post }) => {
     const profile = useSelector((state: RootState) => state.auth.profile);
-    console.log(profile?.username);
     const author = {
         username: profile?.username || post.author.username || post.author.name || '',
         profilePic: profile?.profilePic || post.author.profilePic || '',

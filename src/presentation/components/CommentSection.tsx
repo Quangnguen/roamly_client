@@ -106,17 +106,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
             try {
                 // Gửi comment và đợi kết quả
-                console.log('🚀 Creating comment:', { postId, content: commentText, parentId });
                 const result = await dispatch(createComment({
                     postId: postId,
                     content: commentText,
                     parentId: parentId || undefined
                 })).unwrap();
 
-                console.log('✅ Comment created successfully:', result);
 
                 // API thành công - refetch comments để đảm bảo hiển thị đúng
-                console.log('🔄 Refetching comments...');
                 await dispatch(getComments(postId));
                 dispatch(incrementCommentCount({ postId: postId }));
 
@@ -127,7 +124,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                 setReplyingTo(null);
                 setReplyingToUsername('');
 
-                console.log('✅ Comment process completed');
                 Toast.show({
                     type: 'success',
                     text1: 'Đã thêm bình luận',
@@ -179,7 +175,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
     const handleCommentLike = useCallback(async (commentId: string, isCurrentlyLiked: boolean) => {
         try {
-            console.log(`🚀 ${isCurrentlyLiked ? 'Unlike' : 'Like'} comment:`, commentId);
 
             // API call - không dùng optimistic update
             if (isCurrentlyLiked) {
@@ -188,13 +183,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                 await dispatch(likeComment(commentId)).unwrap();
             }
 
-            console.log('✅ API call completed, waiting before refetch...');
 
             // Delay nhỏ để server kịp update database  
             setTimeout(async () => {
-                console.log('🔄 Refetching comments...');
                 await dispatch(getComments(postId));
-                console.log('✅ Refetch completed');
             }, 200);
 
         } catch (error) {

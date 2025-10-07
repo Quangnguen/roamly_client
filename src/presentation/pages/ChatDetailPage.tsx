@@ -122,15 +122,10 @@ const ChatDetailPage: React.FC = () => {
                         isNewMessageSent.current = false; // Reset flag sau khi scroll
                     }
 
-                    console.log('📱 Auto scroll to bottom:', {
-                        animated: shouldAnimate,
-                        messagesCount: messages.length
-                    });
                 }, 100);
             } else {
                 // Reset load more flag sau khi load xong
                 isLoadingMore.current = false;
-                console.log('📱 Load more completed - maintaining scroll position');
             }
         }
     }, [messages.length, messagesLoading]);
@@ -145,11 +140,6 @@ const ChatDetailPage: React.FC = () => {
             // Vì array được sắp xếp: [message_cũ, ..., message_mới]
             const oldestMessageId = messages.length > 0 ? messages[0].id : '';
 
-            console.log('🔄 Loading more messages before:', {
-                oldestMessageId,
-                totalMessages: messages.length,
-                firstMessage: messages[0]?.content?.substring(0, 30) + '...'
-            });
 
             dispatch(getMessages({
                 conversationId: chatId,

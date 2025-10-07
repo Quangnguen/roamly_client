@@ -9,6 +9,7 @@ interface SquareCardProps {
     rating?: number;
     numberOfReviews?: number;
     numberOfLikes?: number;
+    numberOfVisits?: number;
     id: string;
     type: 'homestay' | 'place';
     onPress?: () => void;
@@ -69,6 +70,7 @@ const SquareCard: React.FC<SquareCardProps> = ({
     rating,
     numberOfReviews,
     numberOfLikes,
+    numberOfVisits,
     type,
     onPress,
 }) => {
@@ -97,7 +99,7 @@ const SquareCard: React.FC<SquareCardProps> = ({
                     <Text style={styles.locationText} numberOfLines={1}>{address}</Text>
                 </View>
             )}
-            {rating && type === 'homestay' && (
+            {rating && (
                 <View style={styles.ratingContainer}>
                     <StarRating rating={rating} />
                     <Text style={styles.ratingText}>({numberOfReviews})</Text>
@@ -107,6 +109,13 @@ const SquareCard: React.FC<SquareCardProps> = ({
                 <View style={styles.placeContainer}>
                     <Ionicons name="heart" size={16} color="red" />
                     <Text>{numberOfLikes}</Text>
+                </View>
+            )}
+
+             {type === 'place' && (
+                <View style={styles.placeContainer}>
+                    <Ionicons name="people" size={16} color="red" />
+                    <Text>{numberOfVisits}</Text>
                 </View>
             )}
         </TouchableOpacity>

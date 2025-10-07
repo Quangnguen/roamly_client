@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, SafeAreaView, FlatList } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { BACKGROUND, PRIMARY } from '@/src/const/constants';
@@ -7,29 +7,27 @@ import ImageViewing from 'react-native-image-viewing';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import Post from '../components/post';
+// Redux & destination helpers
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
-import { getPosts } from '../redux/slices/postSlice';
+import { getPostByDestinationId, getPosts } from '../redux/slices/postSlice';
+import { getDestinationById } from '../redux/slices/destinationSlice';
+// Reuse AddressDetailPage subcomponents for consistent UI
+import DestinationHeader from '../components/address/DestinationHeader';
+import DestinationInfo from '../components/address/DestinationInfo';
+import DestinationActions from '../components/address/DestinationActions';
+import DestinationDescription from '../components/address/DestinationDescription';
+import DestinationMedia from '../components/address/DestinationMedia';
+import DestinationSubLocations from '../components/address/DestinationSubLocations';
+// Reviews / Add review (same behavior as AddressDetailPage)
+import ReviewsModal from '../components/ReviewsModal';
+import AddReviewModal from '../components/modals/AddReviewModal';
+import { toggleFavoriteDestination, untoggleFavoriteDestination, getReviewsByDestinationId, addReviewDestination } from '../redux/slices/destinationSlice';
+import { useAppSelector } from '../redux/hook';
+import { de } from 'date-fns/locale';
 
 const { width } = Dimensions.get('window');
 
-interface TravelPlaceDetails {
-    id: string;
-    name: string;
-    description: string;
-    address: string;
-    rating: number;
-    reviewsCount: number;
-    images: Array<{ uri: string }>;
-    openTime: string;
-    closeTime: string;
-    ticketPrice: string;
-    features: Array<{
-        id: string;
-        icon: string;
-        name: string;
-    }>;
-}
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -42,185 +40,253 @@ const TravelPlaceDetailPage = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
-    const { posts, loading } = useSelector((state: RootState) => state.post);
+    const { destinationPosts, loading } = useSelector((state: RootState) => state.post);
 
-    // Mock data cho địa điểm du lịch
-    const placeDetails: TravelPlaceDetails = {
+    // destination detail from store (use same selectors as AddressDetailPage)
+    const {
+      destinationDetail,
+      destinationDetailLoading,
+      destinationDetailError
+    } = useSelector((state: RootState) => ({
+      destinationDetail: state.destination.destinationDetail,
+      destinationDetailLoading: state.destination.destinationDetailLoading,
+      destinationDetailError: state.destination.destinationDetailError,
+    }));
+
+    const {
+      reviews,
+      reviewsLoading,
+      reviewsError,
+      addReviewLoading,
+      addReviewError
+    } = useAppSelector(state => ({
+      reviews: state.destination.reviews,
+      reviewsLoading: state.destination.reviewsLoading,
+      reviewsError: state.destination.reviewsError,
+      addReviewLoading: state.destination.addReviewLoading,
+      addReviewError: state.destination.addReviewError
+    }));
+
+    const [isReviewsModalVisible, setIsReviewsModalVisible] = useState(false);
+    const [isAddReviewModalVisible, setIsAddReviewModalVisible] = useState(false);
+
+    // fetch destination detail + related posts
+    useEffect(() => {
+        dispatch(getDestinationById(id));
+        dispatch(getPostByDestinationId(id)); // keep fetching posts if you still want related posts
+    }, [dispatch, id]);
+
+    // build placeDetails from destinationDetail if available, otherwise fallback to previous mock
+    const display = destinationDetail;
+
+    const placeDetails = display ? {
+        id: display.id,
+        name: display.title,
+        description: display.description,
+        address: [display.location, display.city, display.country].filter(Boolean).join(', '),
+        rating: display.rating ?? 0,
+        reviewsCount: display.reviewCount ?? 0,
+        images: (display.imageUrl || []).map((u: string) => ({ uri: u })),
+        openTime:  '',
+        closeTime:  '',
+        ticketPrice: display.entryFee ?? '',
+        features: display.facilities?.map((f: any, i:number) => ({ id: String(i), icon: 'map-signs', name: f })) || [],
+    } : {
+        // fallback mock (keeps previous UI until data loads)
         id,
-        name: "Chùa Cầu Hội An",
-        description: "Chùa Cầu (Cầu Nhật Bản) là một trong những biểu tượng nổi tiếng nhất của phố cổ Hội An. Được xây dựng vào cuối thế kỷ 16 bởi cộng đồng người Nhật, cây cầu này không chỉ là một công trình kiến trúc độc đáo mà còn là cầu nối văn hóa giữa hai cộng đồng thương nhân Nhật Bản và Trung Hoa thời bấy giờ. Cây cầu có mái che và một ngôi chùa nhỏ thờ thần Bắc Đế Trấn Võ - vị thần bảo hộ cho khách thương và dân chúng.",
-        address: "Nguyễn Thị Minh Khai, Phường Minh An, Hội An, Quảng Nam",
-        rating: 4.8,
-        reviewsCount: 1234,
-        images: [
-            { uri: 'https://cdnphoto.dantri.com.vn/OlQas4uqcc3xWeWc6mAEKgov26A=/thumb_w/960/2020/04/24/venice-italya-1587703892898.jpeg' }, // Ảnh cảnh biển từ Pixabay
-            { uri: 'https://visalinks.com.vn/wp-content/uploads/2023/07/Cac-dia-danh-tren-ho-chieu-moi-Viet-Nam-3-1.jpg' }, // Ảnh núi rừng từ Unsplash
-            { uri: 'https://icdn.dantri.com.vn/thumb_w/960/c05a76d21c/2017/01/30/img20170130120951023-1402d.jpg' }, // Ảnh cánh đồng hoa hướng dương từ Wikimedia Commons
-            { uri: 'https://cdn.24h.com.vn/upload/3-2021/images/2021-07-06/1-1625565279-612-width650height436.jpg' }, // Ảnh bình minh trên biển từ Unsplash
-        ],
-        openTime: "08:00",
-        closeTime: "21:00",
-        ticketPrice: "20.000 VNĐ",
-        features: [
-            { id: '1', icon: 'clock-o', name: 'Mở cửa cả tuần' },
-            { id: '2', icon: 'camera', name: 'Địa điểm chụp ảnh' },
-            { id: '3', icon: 'history', name: 'Di tích lịch sử' },
-            { id: '4', icon: 'map-signs', name: 'Có hướng dẫn viên' },
-            { id: '5', icon: 'wheelchair', name: 'Thân thiện người khuyết tật' },
-            { id: '6', icon: 'umbrella', name: 'Có mái che' },
-        ],
+        name: "Loading...",
+        description: "",
+        address: "",
+        rating: 0,
+        reviewsCount: 0,
+        images: [],
+        openTime: "",
+        closeTime: "",
+        ticketPrice: "",
+        features: [],
     };
 
-    React.useEffect(() => {
-        dispatch(getPosts());
-    }, [dispatch]);
+    // sync favorite button state with loaded data
+    useEffect(() => {
+      if (display) setIsFavorite(!!display.isLiked);
+    }, [display]);
+
+    const openReviewsModal = () => {
+      setIsReviewsModalVisible(true);
+      if (reviews.length === 0 && !reviewsLoading) {
+        dispatch(getReviewsByDestinationId(id));
+      }
+    };
+
+    const closeReviewsModal = () => setIsReviewsModalVisible(false);
+    const openAddReviewModal = () => {
+      setIsAddReviewModalVisible(true);
+      setIsReviewsModalVisible(false);
+    };
+    const closeAddReviewModal = () => setIsAddReviewModalVisible(false);
+
+    const handleSubmitReview = async (reviewData: {
+      rating: number;
+      comment: string;
+      visitDate: string;
+      images: string[];
+    }) => {
+      try {
+        const formData = new FormData();
+        formData.append('rating', reviewData.rating.toString());
+        formData.append('comment', reviewData.comment);
+        formData.append('visitDate', reviewData.visitDate);
+
+        if (reviewData.images && reviewData.images.length > 0) {
+          for (let i = 0; i < reviewData.images.length; i++) {
+            const imageUri = reviewData.images[i];
+            try {
+              const response = await fetch(imageUri);
+              const blob = await response.blob();
+              const fileName = `image_${i + 1}.jpg`;
+              formData.append('images', {
+                uri: imageUri,
+                type: blob.type || 'image/jpeg',
+                name: fileName,
+              } as any);
+            } catch (error) {
+              console.error('Error processing review image:', imageUri, error);
+            }
+          }
+        }
+
+        await dispatch(addReviewDestination({
+          id: display?.id || id,
+          images: formData,
+          rating: reviewData.rating,
+          comment: reviewData.comment,
+          visitDate: reviewData.visitDate
+        })).unwrap();
+
+        // refresh destination & reviews
+        dispatch(getDestinationById(id));
+        dispatch(getReviewsByDestinationId(id));
+        setIsAddReviewModalVisible(false);
+      } catch (e) {
+        console.error('Failed to submit review', e);
+      }
+    };
 
     const toggleFavorite = () => {
-        setIsFavorite(prev => !prev);
+        const newVal = !isFavorite;
+        setIsFavorite(newVal);
+        if (newVal) {
+          dispatch(toggleFavoriteDestination({ targetId: id, type: 'destination' }));
+        } else {
+          dispatch(untoggleFavoriteDestination({ targetId: id, type: 'destination' }));
+        }
     };
+
+    if (destinationDetailLoading) {
+        return (
+            <SafeAreaView style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={PRIMARY} />
+                <Text style={styles.loadingText}>Đang tải thông tin địa điểm...</Text>
+            </SafeAreaView>
+        );
+    }
+
+    if (destinationDetailError) {
+        return (
+            <SafeAreaView style={styles.errorContainer}>
+                <Text style={styles.errorText}>Không thể tải thông tin địa điểm</Text>
+                <Text style={styles.errorSubtext}>{destinationDetailError}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(getDestinationById(id))}>
+                  <Text style={styles.retryButtonText}>Thử lại</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <ScrollView style={styles.container}>
-            {/* Ảnh cover và nút back */}
-            <View style={styles.imageContainer}>
-                <Image
-                    source={{ uri: placeDetails.images[0].uri }}
-                    style={styles.coverImage}
-                    resizeMode="cover"
-                />
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="arrow-back" size={24} color="#fff" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.favoriteButton}
-                    onPress={toggleFavorite}
-                >
-                    <Ionicons
-                        name={isFavorite ? "heart" : "heart-outline"}
-                        size={24}
-                        color={isFavorite ? "#FF385C" : "#fff"}
-                    />
-                </TouchableOpacity>
-            </View>
-
+            {/* Use same header/components as AddressDetailPage for consistent layout */}
+            <DestinationHeader
+                imageUrl={placeDetails.images.length > 0 ? placeDetails.images[0].uri : undefined}
+                title={placeDetails.name}
+            />
             <View style={styles.contentContainer}>
-                {/* Thông tin cơ bản */}
-                <Text style={styles.title}>{placeDetails.name}</Text>
-                <View style={styles.ratingContainer}>
-                    <View style={styles.stars}>
-                        <Ionicons name='heart' size={21} color={PRIMARY} />
-                        <Text style={{ fontSize: 16 }}> 100 lượt yêu thích</Text>
-                    </View>
-                </View>
-
-                <View style={styles.addressContainer}>
-                    <Ionicons name='location' size={21} color={PRIMARY} />
-                    <Text style={styles.addressText}>{placeDetails.address}</Text>
-                </View>
-
-                {/* Thời gian và giá vé */}
-                <View style={styles.infoBox}>
-                    <View style={styles.infoRow}>
-                        <View style={styles.infoItem}>
-                            <FontAwesome name="clock-o" size={20} color={PRIMARY} />
-                            <View style={styles.infoTextContainer}>
-                                <Text style={styles.infoLabel}>Giờ mở cửa</Text>
-                                <Text style={styles.infoValue}>{placeDetails.openTime} - {placeDetails.closeTime}</Text>
-                            </View>
-                        </View>
-                        <View style={styles.infoItem}>
-                            <FontAwesome name="ticket" size={20} color={PRIMARY} />
-                            <View style={styles.infoTextContainer}>
-                                <Text style={styles.infoLabel}>Giá vé</Text>
-                                <Text style={styles.infoValue}>{placeDetails.ticketPrice}</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Mô tả */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Giới thiệu</Text>
-                    <Text
-                        style={styles.description}
-                        numberOfLines={isExpanded ? undefined : 3}
-                    >
-                        {placeDetails.description}
-                    </Text>
-                    <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-                        <Text style={styles.readMoreText}>
-                            {isExpanded ? 'Thu gọn' : 'Xem thêm...'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Tiện ích */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Tiện ích</Text>
-                    <View style={styles.featuresGrid}>
-                        {placeDetails.features.map((feature) => (
-                            <View key={feature.id} style={styles.featureItem}>
-                                <FontAwesome name={feature.icon as any} size={20} color={PRIMARY} />
-                                <Text style={styles.featureText}>{feature.name}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Ảnh */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Ảnh</Text>
-                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-                        {placeDetails.images.map((image, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                onPress={() => {
-                                    setCurrentIndex(index);
-                                    setIsVisible(true);
-                                }}
-                            >
-                                <Image
-                                    source={{ uri: image.uri }}
-                                    style={styles.galleryImage}
-                                />
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* Image Viewer */}
-                <ImageViewing
-                    images={placeDetails.images}
-                    imageIndex={currentIndex}
-                    visible={isVisible}
-                    onRequestClose={() => setIsVisible(false)}
+                <DestinationInfo
+                    title={placeDetails.name}
+                    visitCount={display?.visitCount ?? 0}
+                    likeCount={display?.likeCount ?? 0}
+                    address={placeDetails.address}
+                />
+                <DestinationActions
+                    isLiked={isFavorite}
+                    onToggleLike={toggleFavorite}
+                    rating={placeDetails.rating}
+                    reviewCount={placeDetails.reviewsCount}
+                    onViewReviews={openReviewsModal}
+                    onAddReview={openAddReviewModal}
+                />
+                <DestinationDescription
+                    description={placeDetails.description}
+                    openingHours={display?.openingHours}
+                    entryFee={display?.entryFee}
+                    bestTimeToVisit={display?.bestTimeToVisit}
+                    facilities={display?.facilities}
+                />
+                <DestinationMedia images={placeDetails.images.map((i: any) => i.uri)} />
+                <DestinationSubLocations
+                    homestays={display?.subLocations?.map((s:any) => ({
+                        id: s.id,
+                        name: s.title,
+                        address: s.location,
+                        imageUri: s.imageUrl?.[0] || '',
+                        rating: s.rating,
+                        numberOfReviews: s.reviewCount,
+                    })) || []}
+                    travelPlaces={display?.subLocations || []}
                 />
 
-                {/* Bài viết */}
-                <Text style={styles.sectionTitle}>Bài viết</Text>
+                <View style={styles.postsSection}>
+                    <Text style={styles.sectionTitle}>Bài viết liên quan</Text>
+                </View>
 
+                <View style={{ marginBottom: 30 }}>
+                  {destinationPosts.map((post) => (
+                      <Post
+                          key={post.id}
+                          username={post.author.username}
+                          location={post.location}
+                          images={post.imageUrl.map((url: string, index: number) => ({ id: index.toString(), uri: url }))}
+                          commentCount={post.commentCount}
+                          likeCount={post.likeCount}
+                          sharedCount={post.sharedCount}
+                          caption={post.caption}
+                          author={post.author}
+                          isPublic={post.isPublic}
+                          isVerified={false}
+                      />
+                  ))}
+                </View>
+            </View>
 
-            </View>
-            <View style={styles.section}>
-                {posts.map((post) => (
-                    <Post
-                        key={post.id}
-                        username={post.author.username}
-                        location={post.location}
-                        images={post.imageUrl.map((url, index) => ({ id: index.toString(), uri: url }))}
-                        commentCount={post.commentCount}
-                        likeCount={post.likeCount}
-                        sharedCount={post.sharedCount}
-                        caption={post.caption}
-                        author={post.author}
-                        isPublic={post.isPublic}
-                        isVerified={false}
-                    />
-                ))}
-            </View>
+            {/* Reviews Modal */}
+            <ReviewsModal
+                visible={isReviewsModalVisible}
+                onClose={closeReviewsModal}
+                reviews={reviews}
+                loading={reviewsLoading}
+                error={reviewsError}
+                destinationName={placeDetails.name}
+                onRetry={() => dispatch(getReviewsByDestinationId(id))}
+                onAddReview={openAddReviewModal}
+            />
+
+            <AddReviewModal
+                visible={isAddReviewModalVisible}
+                onClose={closeAddReviewModal}
+                onSubmit={handleSubmitReview}
+                destinationName={placeDetails.name}
+                loading={addReviewLoading}
+            />
         </ScrollView>
     );
 };
@@ -369,6 +435,51 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginRight: 8,
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: BACKGROUND,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 16,
+        color: '#666',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: BACKGROUND,
+    },
+    errorText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#FF385C',
+    },
+    errorSubtext: {
+        marginTop: 8,
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        paddingHorizontal: 24,
+    },
+    retryButton: {
+        marginTop: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+        backgroundColor: PRIMARY,
+    },
+    retryButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#fff',
+    },
+    postsSection: {
+        marginTop: 32,
+        marginBottom: 16,
+    },
 });
 
-export default TravelPlaceDetailPage; 
+export default TravelPlaceDetailPage;

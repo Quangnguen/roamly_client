@@ -212,8 +212,6 @@ const InAppNavigator = () => {
 const AppNavigator: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
-  console.log('🔐 Navigation - Is authenticated:', isAuthenticated);
-
   return (
     <View style={styles.container}>
       <Stack.Navigator

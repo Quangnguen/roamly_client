@@ -20,6 +20,8 @@ export interface Destination {
     tags: string[];
     visitCount: number;
     likeCount: number;
+    open: string;
+    close: string;
     reviewCount: number;
     rating: number;
     bestTimeToVisit: string;

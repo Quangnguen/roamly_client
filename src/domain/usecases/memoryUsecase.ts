@@ -10,7 +10,6 @@ export class MemoryUseCase {
     async createMemory(memoryData: CreateMemoryInterface): Promise<any> {
         try {
             // Validate dữ liệu trước khi tạo
-            console.log('Creating memory with data:', memoryData);
             this.validateMemoryData(memoryData);
             
             // Gọi repository để tạo memory
@@ -136,7 +135,7 @@ export class MemoryUseCase {
             // Lọc theo thời gian
             if (filters.dateFrom || filters.dateTo) {
                 filteredMemories = filteredMemories.filter((memory: CreateMemoryInterface) => {
-                    const memoryDate = new Date(memory.startDate);
+                    const memoryDate = new Date(memory.startDate ?? "");
                     const fromDate = filters.dateFrom ? new Date(filters.dateFrom) : null;
                     const toDate = filters.dateTo ? new Date(filters.dateTo) : null;
 

@@ -25,12 +25,11 @@ import { fetchUserProfile, clearMessage, uploadProfilePicture } from '../redux/s
 import { logout } from '../redux/slices/authSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';
-import MemoriesGrid from '../components/memories/memory';
+import MemoriesGrid from '../components/memories/Memory';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { getFollowers, getFollowing, followUser, unfollowUser } from '../redux/slices/followSlice';
 import { getMyPosts, getPosts } from '../redux/slices/postSlice';
-import Post from '../components/post';
 import AccountHeader from '../components/account/AccountHeader';
 import ProfileInfo from '../components/account/ProfileInfo';
 import TabSelector from '../components/account/TabSelector';
@@ -185,12 +184,7 @@ const AccountPage: React.FC = () => {
           type: mimeType,
         } as any);
 
-        console.log('FormData for upload:', {
-          uri: fileUri,
-          name: fileName,
-          type: mimeType,
-        });
-
+     
         // Dispatch action để upload ảnh đại diện
         const uploadResult = await dispatch(uploadProfilePicture(formData));
 
@@ -344,7 +338,6 @@ const AccountPage: React.FC = () => {
                       setShowChangePassword(true);
                     }
                     if (item.label === 'Đăng xuất') {
-                      console.log('Log Out');
                       dispatch(logout());
                       navigation.replace('Auth');
                     }

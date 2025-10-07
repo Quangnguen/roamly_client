@@ -53,7 +53,6 @@ const Card = React.memo<CardProps>(({
     switch (type) {
       case 'address':
         return (
-          console.log("isLiked", isLiked),
           <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={[styles.card, { height: cardHeight }]}>
             <Image source={image} style={styles.cardImage} />
             <View style={styles.cardContent}>

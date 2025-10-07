@@ -23,7 +23,6 @@ export const registerApi = async (
 ): Promise<AuthResponse> => {
 
   try {
-    console.log('registerApi', email, password, name, username, phoneNumber)
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
@@ -46,7 +45,6 @@ export const registerApi = async (
       } catch {
         errorData = { message: text };
       }
-      console.log(errorData);
       throw new Error(errorData.message || 'Đăng ký thất bại');
     }
 

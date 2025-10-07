@@ -5,9 +5,7 @@ export class DestinationUsecase {
     constructor(private destinationRepository: DestinationRepository) { }
 
     async searchDestinations(params?: DestinationSearchParams): Promise<DestinationResponseInterface> {
-        console.log('params', params);
         const response = await this.destinationRepository.searchDestinations(params);
-        console.log('response', response);
         return response;
     }
 
