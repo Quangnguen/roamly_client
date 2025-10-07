@@ -38,13 +38,14 @@ export class DestinationRepositoryImpl implements DestinationRepository {
         const response = await untoggleFavoriteDestinationApi(targetId, type);
         return response;
     }
-    async addReviewDestination(id: string, review: FormData): Promise<any> {
-        const response = await addReviewDestinationApi(id, review);
-        return response;
-    }
 
     async getDestinationsByUser(userId: string): Promise<DestinationResponseInterface> {
         const response = await getDestinationsByUserApi(userId);
+        return response;
+    }
+
+    async addReviewDestination(id: string, review: FormData): Promise<any> {
+        const response = await addReviewDestinationApi(id, review);
         return response;
     }
 }

@@ -8,6 +8,6 @@ export interface DestinationRepository {
     getReviewsByDestinationId(id: string): Promise<DestinationResponseInterface>;
     toggleFavoriteDestination(targetId: string, type: string): Promise<any>;
     untoggleFavoriteDestination(targetId: string, type: string): Promise<any>;
-    addReviewDestination(id: string, review: FormData): Promise<any>;
     getDestinationsByUser(userId: string): Promise<DestinationResponseInterface>;
+    addReviewDestination(id: string, review: FormData): Promise<any>;
 }
