@@ -68,3 +68,9 @@ export const searchPostsApi = async (params: SearchPostParams): Promise<PostSear
         method: 'GET',
     });
 };
+
+export const getPostByDestinationIdApi = async (destinationId: string) => {
+    return await authorizedRequest(`${API_BASE_URL}/posts/by-destination?destinationId=${destinationId}`, {
+        method: 'GET',
+    });
+}

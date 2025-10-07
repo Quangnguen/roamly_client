@@ -135,7 +135,7 @@ export class MemoryUseCase {
             // Lọc theo thời gian
             if (filters.dateFrom || filters.dateTo) {
                 filteredMemories = filteredMemories.filter((memory: CreateMemoryInterface) => {
-                    const memoryDate = new Date(memory.startDate);
+                    const memoryDate = new Date(memory.startDate ?? "");
                     const fromDate = filters.dateFrom ? new Date(filters.dateFrom) : null;
                     const toDate = filters.dateTo ? new Date(filters.dateTo) : null;
 

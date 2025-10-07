@@ -5,6 +5,7 @@ import { PostRepositoryImpl } from '@/src/data/implements/postRepositoryImpl';
 import { ResponseInterface } from '@/src/types/ResponseInterface';
 import { PostSearchResponseInterface, SearchPostParams } from '@/src/types/responses/PostSearchResponseInterface';
 import { likePost, unlikePost, initializeLikeStatus } from './likeSlice';
+import { dependencies } from "../../../dependencies/dependencies";
 
 // Định nghĩa interface cho response API
 interface PostApiResponse extends ResponseInterface<Post> { }
@@ -202,6 +203,18 @@ export const loadMoreSearchPosts = createAsyncThunk<PostSearchResponseInterface,
     }
 );
 
+export const getPostByDestinationId = createAsyncThunk<PostsApiResponse, string>(
+    'post/getPostByDestinationId',
+    async (destinationId: string, { rejectWithValue }) => {
+        try {
+            const response = await dependencies.postUsecase.getPostByDestinationId(destinationId);
+            return response as unknown as PostsApiResponse;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Có lỗi khi tải bài viết theo địa điểm');
+        }
+    }
+);
+
 const initialState = {
     posts: [] as Post[],
     postsByUserId: [] as Post[],
@@ -216,6 +229,7 @@ const initialState = {
     message: null as string | null,
     status: null as 'success' | 'error' | null,
     currentPost: null as Post | null,
+    destinationPosts: [] as Post[], // Posts by destination ID
 };
 
 const postSlice = createSlice({
@@ -626,6 +640,23 @@ const postSlice = createSlice({
                 state.message = action.payload as string;
                 state.status = 'error';
             })
+
+            // getPostByDestinationId
+            .addCase(getPostByDestinationId.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getPostByDestinationId.fulfilled, (state, action) => {
+                state.loading = false;
+                state.destinationPosts = action.payload.data;
+                state.error = null;
+            })
+            .addCase(getPostByDestinationId.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                state.message = action.payload as string;
+                state.status = 'error';
+            });
     },
 });
 

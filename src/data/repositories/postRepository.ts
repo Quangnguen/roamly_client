@@ -11,4 +11,5 @@ export interface PostRepository {
     updatePost(postId: string, formData: FormData): Promise<Post>;
     getPostsFeed(page: number, limit: number): Promise<Post[]>;
     searchPosts(params: SearchPostParams): Promise<PostSearchResponseInterface>;
+    getPostByDestinationId(destinationId: string): Promise<Post[]>;
 }

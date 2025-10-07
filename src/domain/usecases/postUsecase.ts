@@ -40,4 +40,8 @@ export class PostUseCase {
   async searchPosts(params: SearchPostParams): Promise<PostSearchResponseInterface> {
     return await this.repo.searchPosts(params)
   }
+
+  async getPostByDestinationId(destinationId: string): Promise<Post[]> {
+    return await this.repo.getPostByDestinationId(destinationId)
+  }
 }

@@ -10,7 +10,7 @@ import Post from '../components/post';
 // Redux & destination helpers
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
-import { getPosts } from '../redux/slices/postSlice';
+import { getPostByDestinationId, getPosts } from '../redux/slices/postSlice';
 import { getDestinationById } from '../redux/slices/destinationSlice';
 // Reuse AddressDetailPage subcomponents for consistent UI
 import DestinationHeader from '../components/address/DestinationHeader';
@@ -40,7 +40,7 @@ const TravelPlaceDetailPage = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
-    const { posts, loading } = useSelector((state: RootState) => state.post);
+    const { destinationPosts, loading } = useSelector((state: RootState) => state.post);
 
     // destination detail from store (use same selectors as AddressDetailPage)
     const {
@@ -73,7 +73,7 @@ const TravelPlaceDetailPage = () => {
     // fetch destination detail + related posts
     useEffect(() => {
         dispatch(getDestinationById(id));
-        dispatch(getPosts()); // keep fetching posts if you still want related posts
+        dispatch(getPostByDestinationId(id)); // keep fetching posts if you still want related posts
     }, [dispatch, id]);
 
     // build placeDetails from destinationDetail if available, otherwise fallback to previous mock
@@ -250,7 +250,7 @@ const TravelPlaceDetailPage = () => {
                 </View>
 
                 <View style={{ marginBottom: 30 }}>
-                  {posts.map((post) => (
+                  {destinationPosts.map((post) => (
                       <Post
                           key={post.id}
                           username={post.author.username}

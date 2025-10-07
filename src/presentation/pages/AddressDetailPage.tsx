@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, FlatList, SafeAreaView, Alert, TouchableOpacity, Dimensions } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { BACKGROUND, PRIMARY } from '@/src/const/constants';
 import AddressDetails from '@/src/types/addressDetailInterface';
 import Post from '../components/post';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
-import { getPosts } from '../redux/slices/postSlice';
 import { getDestinationById, toggleFavoriteDestination, untoggleFavoriteDestination, getReviewsByDestinationId, addReviewDestination } from '../redux/slices/destinationSlice';
 import { useAppSelector } from '../redux/hook';
 import { Destination } from '@/src/types/DestinationInterface';
@@ -18,6 +17,7 @@ import DestinationActions from '../components/address/DestinationActions';
 import DestinationDescription from '../components/address/DestinationDescription';
 import DestinationMedia from '../components/address/DestinationMedia';
 import DestinationSubLocations from '../components/address/DestinationSubLocations';
+import { getPostByDestinationId } from '../redux/slices/postSlice';
 
 const { width } = Dimensions.get('window');
 
@@ -28,10 +28,9 @@ type ImageItem = {
 
 const AddressDetailPage = () => {
     const route = useRoute();
-    const navigation = useNavigation();
     const { id, destinationData } = route.params as { id: string; destinationData?: Destination };
     const dispatch = useDispatch<AppDispatch>();
-    const { posts, loading } = useSelector((state: RootState) => state.post);
+    const { destinationPosts, loading } = useSelector((state: RootState) => state.post);
 
     // Select destination detail state FIRST
     const {
@@ -41,8 +40,7 @@ const AddressDetailPage = () => {
         reviews,
         reviewsLoading,
         reviewsError,
-        addReviewLoading,
-        addReviewError
+        addReviewLoading
     } = useAppSelector(state => ({
         destinationDetail: state.destination.destinationDetail,
         destinationDetailLoading: state.destination.destinationDetailLoading,
@@ -62,6 +60,7 @@ const AddressDetailPage = () => {
     useEffect(() => {
         // Always fetch from API for latest data, but destinationData can provide immediate display
         dispatch(getDestinationById(id));
+        dispatch(getPostByDestinationId(id));
     }, [dispatch, id]);
 
     // Update isFollowing state when destinationDetail or destinationData changes (sync with server)
@@ -72,14 +71,14 @@ const AddressDetailPage = () => {
         }
     }, [destinationDetail, destinationData]);
 
-    // Handle API errors - revert optimistic updates if needed
-    useEffect(() => {
-        if (destinationDetailError) {
-            console.error('Destination API error:', destinationDetailError);
-            // Note: For now, we rely on Redux to handle state consistency
-            // If needed, we can add more sophisticated error handling here
-        }
-    }, [destinationDetailError]);
+    // // Handle API errors - revert optimistic updates if needed
+    // useEffect(() => {
+    //     if (destinationDetailError) {
+    //         console.error('Destination API error:', destinationDetailError);
+    //         // Note: For now, we rely on Redux to handle state consistency
+    //         // If needed, we can add more sophisticated error handling here
+    //     }
+    // }, [destinationDetailError]);
 
 
     const toggleFollow = () => {
@@ -337,7 +336,7 @@ const AddressDetailPage = () => {
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
-                data={posts}
+                data={destinationPosts}
                 renderItem={renderPost}
                 keyExtractor={(item) => item.id}
                 ListHeaderComponent={renderHeader}
