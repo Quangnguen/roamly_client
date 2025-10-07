@@ -4,6 +4,7 @@ import Post from '../post';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
 import { searchPosts, loadMoreSearchPosts } from '../../redux/slices/postSlice';
+import { useNavigation } from '@react-navigation/native';
 
 interface PostData {
     id: string;
@@ -16,10 +17,12 @@ interface PostData {
     isPublic: boolean;
     author: {
         username: string;
+        name?: string;
         profilePic: string | null;
     };
     authorId: string;
     isLike?: boolean;
+    createdAt: string;
 }
 
 interface PostTabProps {
@@ -29,6 +32,7 @@ interface PostTabProps {
 const PostTab: React.FC<PostTabProps> = ({ searchText = '' }) => {
     const [loadingMore, setLoadingMore] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
+    const navigation = useNavigation(); // Import useNavigation nếu chưa có
 
     const {
         posts,
@@ -37,22 +41,33 @@ const PostTab: React.FC<PostTabProps> = ({ searchText = '' }) => {
         searchLoading
     } = useSelector((state: RootState) => state.post);
 
+    // Đảm bảo tab bar luôn hiển thị
+    React.useEffect(() => {
+        navigation.getParent()?.setOptions({
+            tabBarStyle: { display: 'flex' }
+        });
+    }, [navigation]);
+
     const renderPost = ({ item: post }: { item: PostData }) => (
         <Post
             key={post.id}
             postId={post.id}
-            username={post.author.username}
+            username={post.author.name || post.author.username || ''} // Đổi thứ tự ưu tiên
             location={post.location}
             images={post.imageUrl.map((url: string, index: number) => ({ id: index.toString(), uri: url }))}
             commentCount={post.commentCount}
             likeCount={post.likeCount}
             sharedCount={post.sharedCount}
             caption={post.caption}
-            author={post.author}
+            author={{
+                username: post.author.name || post.author.username || '', // Cũng cập nhật ở đây
+                profilePic: post.author.profilePic
+            }}
             isPublic={post.isPublic}
             isVerified={false}
             authorId={post.authorId}
             isLike={post.isLike}
+            createdAt={post.createdAt}
         />
     );
 
@@ -238,4 +253,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default PostTab; 
+export default PostTab;

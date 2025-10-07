@@ -61,6 +61,7 @@ const AddressDetailPage = () => {
         // Always fetch from API for latest data, but destinationData can provide immediate display
         dispatch(getDestinationById(id));
         dispatch(getPostByDestinationId(id));
+        dispatch(getReviewsByDestinationId(id));
     }, [dispatch, id]);
 
     // Update isFollowing state when destinationDetail or destinationData changes (sync with server)
@@ -361,7 +362,6 @@ const AddressDetailPage = () => {
                 }
             />
 
-            {/* Reviews Modal */}
             <ReviewsModal
                 visible={isReviewsModalVisible}
                 onClose={closeReviewsModal}
