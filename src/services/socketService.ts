@@ -1,7 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { io, Socket } from 'socket.io-client';
 import { AppState, Platform } from 'react-native';
-import { getAccessToken, getTokens } from '../utils/tokenStorage';
 import { API_BASE_URL } from '../const/api';
 
 // Define NotificationConfig interface
@@ -44,47 +43,41 @@ class SocialNetworkNotificationService {
     low: { showImmediate: false, throttle: 10000 }     // Likes
   };
 
-  // ✅ MISSING: Basic socket methods
-  async connect(providedToken?: string) {
+  // ✅ Basic socket methods
+  async connect(userId: string) {
     try {
+      console.log('🔌 [SocketService] Starting connection attempt for userId:', userId);
+
       if (this.socket && this.socket.connected) {
+        console.log('🔌 [SocketService] Socket already connected, returning existing socket');
         return this.socket;
       }
 
       if (this.socket) {
+        console.log('🔌 [SocketService] Disconnecting existing socket before reconnecting');
         this.socket.disconnect();
         this.socket = null;
       }
 
-      let accessToken = providedToken;
-
-      if (!accessToken) {
-        const tokenFromStorage = await getAccessToken();
-        accessToken = tokenFromStorage === null ? undefined : tokenFromStorage;
-
-        if (!accessToken) {
-          const { accessToken: token } = await getTokens();
-          accessToken = token === null ? undefined : token;
-        }
-      } 
-
-      if (!accessToken) {
-        throw new Error('No access token found');
+      if (!userId) {
+        console.log('🔌 [SocketService] No userId provided, throwing error');
+        throw new Error('No userId provided');
       }
 
-
+      console.log('🔌 [SocketService] Creating new socket connection to:', API_BASE_URL);
       this.socket = io(API_BASE_URL, {
-        auth: {
-          token: accessToken,
-        },
+        query: { userId: userId },
         transports: ['websocket', 'polling'],
         forceNew: true,
       });
 
+      console.log('🔌 [SocketService] Setting up event listeners...');
       this.setupEventListeners();
 
+      console.log('🔌 [SocketService] Connection setup completed');
       return this.socket;
     } catch (error) {
+      console.error('🔌 [SocketService] Connection failed:', error);
       throw error;
     }
   }
@@ -405,7 +398,7 @@ class SocialNetworkNotificationService {
           ? this.NOTIFICATION_TEMPLATES[normalizedType as keyof typeof this.NOTIFICATION_TEMPLATES]
           : this.NOTIFICATION_TEMPLATES['notification'];
 
-       
+
 
         // ✅ STEP 4: Generate notification
         const notification: NotificationConfig = {
@@ -641,23 +634,30 @@ class SocialNetworkNotificationService {
 
   private setupEventListeners() {
     if (!this.socket || this.isSettingUpListeners) {
+      console.log('🔌 [SocketService] Skipping setupEventListeners - socket null or already setting up');
       return;
     }
 
+    console.log('🔌 [SocketService] Setting up socket event listeners...');
     this.isSettingUpListeners = true;
 
     this.socket.on('connect', () => {
+      console.log('🔌 [SocketService] Socket connected successfully!');
       this.reconnectAttempts = 0;
       this.isSettingUpListeners = false;
     });
 
     this.socket.on('disconnect', (reason) => {
+      console.log('🔌 [SocketService] Socket disconnected, reason:', reason);
       this.isSettingUpListeners = false;
     });
 
     this.socket.on('connect_error', (error) => {
+      console.error('🔌 [SocketService] Socket connection error:', error);
       this.isSettingUpListeners = false;
     });
+
+    console.log('🔌 [SocketService] Event listeners setup completed');
   }
 
   // ✅ Add stub methods for batching (can implement later)

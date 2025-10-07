@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { BACKGROUND } from '@/src/const/constants';
 import PostList from '../components/postList';
-import MemoriesGrid from '../components/memories/Memory';
+import MemoriesGrid from '../components/memories/memory';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearUser, fetchUserProfile, getUserById } from '../redux/slices/userSlice';
 import { RootState, AppDispatch } from '../redux/store';
@@ -38,7 +38,7 @@ type StoryHighlight = {
 };
 
 const InfoAccPage: React.FC<InfoAccPageProps> = () => {
-  const [activeTab, setActiveTab] = useState<'user' | 'post' |  'heart'>('post');
+  const [activeTab, setActiveTab] = useState<'user' | 'post' | 'heart'>('post');
   const dispatch = useDispatch<AppDispatch>();
   const { user, message, status } = useSelector((state: RootState) => state.user);
   const { following } = useSelector((state: RootState) => state.follow);

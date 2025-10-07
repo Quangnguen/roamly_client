@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { socketService } from '@/src/services/socketService';
-import { getAccessToken, getTokens } from '@/src/utils/tokenStorage';
 import { RootState } from '@/src/presentation/redux/store';
 
 export const useSocketWithRetry = () => {
   const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [isConnected, setIsConnected] = useState(false);
-  const { profile, isAuthenticated, access_token } = useSelector((state: RootState) => state.auth); // ✅ Thêm isAuthenticated
-  
+  const { profile, isAuthenticated } = useSelector((state: RootState) => state.auth); // ✅ Thêm isAuthenticated
+
   // ✅ Track connection state với ref
   const hasConnectedRef = useRef(false);
   const isConnectingRef = useRef(false);
@@ -21,50 +20,40 @@ export const useSocketWithRetry = () => {
       setTimeout(async () => {
         try {
           const currentUserId = profile?.id;
-          
-          
+          console.log('🔌 [useSocketWithRetry] Starting connection attempt for user:', currentUserId);
+
           if (!currentUserId || !isAuthenticated) {
+            console.log('🔌 [useSocketWithRetry] Skipping - no userId or not authenticated');
             return;
           }
 
           if (hasConnectedRef.current && currentUserIdRef.current === currentUserId) {
+            console.log('🔌 [useSocketWithRetry] Already connected for this user, skipping');
             return;
           }
 
           if (isConnectingRef.current) {
+            console.log('🔌 [useSocketWithRetry] Connection already in progress, skipping');
             return;
           }
 
-          // ✅ Thử lấy token từ 2 nguồn
-          let token = await getAccessToken();
+          console.log('🔌 [useSocketWithRetry] User authenticated, proceeding with connection...');
 
-          if (!token) {
-            const { accessToken } = await getTokens();
-            token = accessToken;
-          }
-
-          if (!token) {
-            token = access_token; // ✅ Thêm fallback từ Redux state
-          }
-
-          if (!token) {
-            isConnectingRef.current = false;
-            return;
-          }
-
+          console.log('🔌 [useSocketWithRetry] Starting socket connection...');
           isConnectingRef.current = true;
           currentUserIdRef.current = currentUserId;
-          
+
           setConnectionState('connecting');
-          await socketService.connect(token);
+          await socketService.connect(currentUserId);
+          console.log('🔌 [useSocketWithRetry] Socket connection successful!');
           setConnectionState('connected');
           setIsConnected(true);
-          
+
           hasConnectedRef.current = true;
           isConnectingRef.current = false;
-          
+
         } catch (error) {
-          console.error('❌ Connection attempt failed:', error);
+          console.error('🔌 [useSocketWithRetry] Connection attempt failed:', error);
           setConnectionState('disconnected');
           setIsConnected(false);
           hasConnectedRef.current = false;
@@ -74,16 +63,19 @@ export const useSocketWithRetry = () => {
     };
 
     if (profile?.id && isAuthenticated) {
+      console.log('🔌 [useSocketWithRetry] User authenticated, attempting connection...');
       attemptConnection();
     } else {
+      console.log('🔌 [useSocketWithRetry] User not authenticated or no profile, disconnecting...');
       // Reset khi logout
       setConnectionState('disconnected');
       setIsConnected(false);
       hasConnectedRef.current = false;
       isConnectingRef.current = false;
       currentUserIdRef.current = null;
-      
+
       if (socketService.isConnected()) {
+        console.log('🔌 [useSocketWithRetry] Disconnecting socket...');
         socketService.disconnect();
       }
     }
@@ -92,33 +84,41 @@ export const useSocketWithRetry = () => {
 
   // ✅ Cleanup khi component unmount
   useEffect(() => {
+    console.log('🔌 [useSocketWithRetry] Component mounted, will cleanup on unmount');
     return () => {
+      console.log('🔌 [useSocketWithRetry] Component unmounting, cleaning up...');
       socketService.disconnect();
       setConnectionState('disconnected');
       setIsConnected(false);
       hasConnectedRef.current = false;
       isConnectingRef.current = false;
       currentUserIdRef.current = null;
+      console.log('🔌 [useSocketWithRetry] Cleanup completed');
     };
   }, []); // Empty dependency - chỉ chạy khi unmount
 
   const connect = async () => {
     try {
-      
+      const userId = profile?.id;
+      if (!userId) {
+        console.error('❌ Manual connect failed: No userId available');
+        return;
+      }
+
       if (hasConnectedRef.current && isConnected) {
         return;
       }
-      
+
       isConnectingRef.current = true;
-      
+
       setConnectionState('connecting');
-      await socketService.connect();
+      await socketService.connect(userId);
       setConnectionState('connected');
       setIsConnected(true);
-      
+
       hasConnectedRef.current = true;
       isConnectingRef.current = false;
-      
+
     } catch (error) {
       console.error('❌ Manual connect failed:', error);
       setConnectionState('disconnected');

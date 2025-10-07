@@ -27,6 +27,8 @@ function AppContent() {
   const user = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
+  console.log('🔌 [_layout] AppContent render - connectionState:', connectionState, 'isConnected:', isConnected, 'userId:', user.profile?.id);
+
   const listenersSetupRef = useRef(false);
   const testSentRef = useRef(false);
 
@@ -69,16 +71,18 @@ function AppContent() {
 
   // ✅ Setup socket listeners with enhanced notifications
   useEffect(() => {
+    console.log('🔌 [_layout] Checking if should setup listeners:', { isConnected, userId: user.profile?.id, listenersSetup: listenersSetupRef.current });
     if (isConnected && user.profile?.id && !listenersSetupRef.current) {
+      console.log('🔌 [_layout] Setting up socket listeners...');
       // ✅ Clean up existing listeners
       if (socketService && typeof socketService.off === 'function') {
+        console.log('🔌 [_layout] Cleaning up existing listeners...');
         socketService.off('new_notification');
         socketService.off('post_liked');
         socketService.off('post_unliked');
         socketService.off('new_comment');
         socketService.off('new_follower');
         socketService.off('new_message');
-
       }
 
       // ✅ UNIFIED: Single handler cho tất cả notifications
@@ -89,7 +93,10 @@ function AppContent() {
         var formattedBody = data.message || data.content || template.bodyTemplate(data);
 
         if (type === 'message') {
-          formattedBody = `${data.username || 'Ai đó'}: ${formattedBody}`;
+          formattedBody = `${data.username || 'Ai đó'}: ${data.content}`;
+        }
+        if (type === 'comment') {
+          formattedBody = `${data.username || 'Ai đó'} comment: ${data.content}`;
         }
 
         // ✅ Determine toast type based on notification priority
@@ -205,7 +212,7 @@ function AppContent() {
             const senderName = data.username || data.sender?.username || 'Unknown';
 
             if (conversationId) {
-              
+
 
               try {
                 navigation.navigate('ChatDetailPage', {
@@ -289,6 +296,9 @@ function AppContent() {
       // }
 
       listenersSetupRef.current = true;
+      console.log('🔌 [_layout] Socket listeners setup completed');
+    } else {
+      console.log('🔌 [_layout] Skipping listener setup - conditions not met');
     }
   }, [isConnected, user.profile?.id, dispatch, navigation]); // ✅ Add navigation to deps
 
