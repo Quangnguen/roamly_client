@@ -19,7 +19,8 @@ export const registerApi = async (
   password: string,
   name: string,
   username: string,
-  phoneNumber: string
+  phoneNumber: string,
+  otp: string
 ): Promise<AuthResponse> => {
 
   try {
@@ -33,7 +34,8 @@ export const registerApi = async (
         password,
         name,
         username,
-        phoneNumber
+        phoneNumber,
+        otp
       }),
     });
 
@@ -61,7 +63,6 @@ export const registerApi = async (
       },
     };
   } catch (error) {
-    console.error(error)
     if (error instanceof Error) {
       if (error.message.includes('Email hoặc tên đăng nhập đã tồn tại')) {
         throw new Error('Email hoặc tên đăng nhập đã tồn tại');

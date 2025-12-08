@@ -64,11 +64,11 @@ export const login = createAsyncThunk(
 export const register = createAsyncThunk(
   "auth/register",
   async (
-    { email, password, name, username, phoneNumber }: { email: string; password: string; name: string; username: string; phoneNumber: string },
+    { email, password, name, username, phoneNumber, otp }: { email: string; password: string; name: string; username: string; phoneNumber: string; otp: string },
     thunkAPI
   ) => {
     try {
-      const response = await dependencies.registerUseCase.execute(email, password, name, username, phoneNumber);
+      const response = await dependencies.registerUseCase.execute(email, password, name, username, phoneNumber, otp);
       return response as unknown as AuthResponse;
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.message || "Đăng ký thất bại");

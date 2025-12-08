@@ -13,6 +13,7 @@ import { BACKGROUND } from '../../const/constants';
 import LoginPage from '../pages/LoginPage';
 import HomePage from '../pages/HomePage';
 import RegisterPage from '../pages/RegisterPage';
+import OtpVerificationPage from '../pages/OtpVerificationPage';
 import SearchPage from '../pages/SearchPage';
 import CreatePostPage from '../pages/CreatePostPage';
 import NotifyPage from '../pages/NotifyPage';
@@ -31,6 +32,18 @@ export type RootStackParamList = {
   Login: undefined;
   Home: undefined;
   Register: undefined;
+  OtpVerification: {
+    email: string;
+    password?: string;
+    name?: string;
+    username?: string;
+    phoneNumber?: string;
+    type: 'REGISTER' | 'FORGOT_PASSWORD';
+  };
+  ResetPassword: {
+    email: string;
+    otp: string;
+  };
   Auth: undefined;
   InApp: { screen?: keyof TabParamList } | undefined;
   EditProfilePage: undefined;
@@ -102,6 +115,7 @@ const AuthNavigator = () => {
     >
       <Stack.Screen name="Login" component={LoginPage} />
       <Stack.Screen name="Register" component={RegisterPage} />
+      <Stack.Screen name="OtpVerification" component={OtpVerificationPage} />
     </Stack.Navigator>
   );
 };

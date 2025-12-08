@@ -5,7 +5,7 @@ import { User } from '../models/User'
 export class RegisterUseCase {
   constructor(private registerRepo: RegisterRepository) { }
 
-  async execute(email: string, password: string, name: string, username: string, phoneNumber: string): Promise<User> {
-    return await this.registerRepo.register(email, password, name, username, phoneNumber)
+  async execute(email: string, password: string, name: string, username: string, phoneNumber: string, otp: string): Promise<User> {
+    return await this.registerRepo.register(email, password, name, username, phoneNumber, otp)
   }
 }

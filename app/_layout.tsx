@@ -47,7 +47,10 @@ function AppContent() {
     };
 
     // Ignore the warning but still log it
-    LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component']);
+    LogBox.ignoreLogs([
+      'Text strings must be rendered within a <Text> component',
+      'expo-notifications: Android Push notifications'
+    ]);
 
     return () => {
       console.warn = originalWarn;
