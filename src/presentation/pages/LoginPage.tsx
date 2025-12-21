@@ -139,6 +139,14 @@ export default function LoginPage({ navigation }: Props) {
             showCountdown={false}
           />
           {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            disabled={loading}
+            style={styles.forgotPasswordContainer}
+          >
+            <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -285,5 +293,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#2196F3',
     fontWeight: 'bold',
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginTop: -5,
+    marginBottom: 10,
+  },
+  forgotPasswordText: {
+    color: '#2196F3',
+    fontSize: 14,
+    fontWeight: '500',
   },
 })

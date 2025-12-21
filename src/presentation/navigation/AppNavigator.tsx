@@ -26,12 +26,15 @@ import HomeStayDetailPage from '../pages/HomeStayDetailPage';
 import InfoAccPage from '../pages/InfoAccPage';
 import AddressDetailPage from '../pages/AddressDetailPage';
 import TravelPlaceDetailPage from '../pages/TravelPlaceDetailPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 import { Destination } from '../../types/DestinationInterface';
 
 export type RootStackParamList = {
   Login: undefined;
   Home: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
   OtpVerification: {
     email: string;
     password?: string;
@@ -115,6 +118,8 @@ const AuthNavigator = () => {
     >
       <Stack.Screen name="Login" component={LoginPage} />
       <Stack.Screen name="Register" component={RegisterPage} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
       <Stack.Screen name="OtpVerification" component={OtpVerificationPage} />
     </Stack.Navigator>
   );

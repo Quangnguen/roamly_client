@@ -39,8 +39,9 @@ const RegisterScreen = ({ navigation }: Props) => {
   };
 
   const validatePassword = (password: string) => {
-    // At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+    // At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char (@$!%*?&)
+    // Phải khớp với regex ở backend
+    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return re.test(password);
   };
 
@@ -83,7 +84,7 @@ const RegisterScreen = ({ navigation }: Props) => {
     try {
       // Step 1: Send OTP
       await sendOtpApi(email, 'REGISTER');
-      
+
       // Step 2: Navigate to OTP Verification Page
       navigation.navigate('OtpVerification', {
         email,

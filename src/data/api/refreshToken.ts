@@ -1,11 +1,12 @@
-import { saveTokens, getTokens, clearTokens } from '../../utils/tokenStorage';
+import { getToken, getRefreshToken, setToken, setRefreshToken, clearTokens } from '../../utils/tokenStorage';
 import { store } from '../../presentation/redux/store';
 import { logout } from '../../presentation/redux/slices/authSlice';
 import { navigateToLogin } from '../../services/navigationService';
+import { API_BASE_URL } from '../../const/api';
 
 export const refreshAccessToken = async () => {
-  const { accessToken, refreshToken, tokenExpiry } = await getTokens();
-
+  const accessToken = await getToken();
+  const refreshToken = await getRefreshToken();
 
   // ✅ Kiểm tra nếu không có access token - logout và chuyển về login
   if (!accessToken) {
@@ -14,50 +15,11 @@ export const refreshAccessToken = async () => {
     throw new Error('No access token available');
   }
 
-  // Kiểm tra nếu token đã hết hạn
-  if (tokenExpiry && Date.now() > tokenExpiry) {
-
-    if (!refreshToken) {
-      console.error('❌ No refresh token available for refresh - logging out user');
-      await handleLogoutFlow();
-      throw new Error('No refresh token available');
-    }
-
-    try {
-      const response = await fetch('http://192.168.100.236:3000/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      if (!response.ok) {
-        console.error('❌ Refresh token failed with status:', response.status);
-        await handleLogoutFlow();
-        throw new Error('Làm mới token thất bại');
-      }
-
-      const data = await response.json();
-      
-      // ✅ Kiểm tra response structure
-      if (!data.success || !data.data) {
-        console.error('❌ Invalid refresh response structure');
-        await handleLogoutFlow();
-        throw new Error('Invalid refresh response');
-      }
-
-      const { access_token, refresh_token, expires_in } = data.data;
-      
-      await saveTokens(access_token, refresh_token, expires_in);
-      return access_token;
-      
-    } catch (error) {
-      console.error('❌ Error refreshing token:', error);
-      await handleLogoutFlow();
-      throw error;
-    }
-  }
+  // Note: Token expiry check removed as we no longer store expiry time in SecureStore.
+  // Proactive refresh is disabled. Rely on 401 interceptors or manual refresh if needed.
+  
+  // If you need to force refresh, you can implement a separate function or logic here.
+  // For now, we just return the current access token.
 
   return accessToken;
 };

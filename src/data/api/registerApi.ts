@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/src/const/api";
+import { setToken, setRefreshToken } from '../../utils/tokenStorage';
 
 interface User {
   id: string;
@@ -51,6 +52,11 @@ export const registerApi = async (
     }
 
     const data = await response.json();
+
+    // Lưu token vào SecureStore
+    await setToken(data.access_token);
+    await setRefreshToken(data.refresh_token);
+
     return {
       access_token: data.access_token,
       refresh_token: data.refresh_token,

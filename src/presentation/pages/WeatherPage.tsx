@@ -18,6 +18,7 @@ import * as Location from "expo-location";
 import { useNavigation } from "@react-navigation/native";
 import { NavigationProp } from "@/src/utils/PropsNavigate";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SecureStorage } from '@/src/utils/secureStorage';
 
 /**
  * Định nghĩa props cho WeatherInfoCard
@@ -178,7 +179,8 @@ const setCachedData = async <T,>(key: string, data: T): Promise<void> => {
             data,
             timestamp: Date.now(),
         };
-        await AsyncStorage.setItem(key, JSON.stringify(cacheData));
+        // Sử dụng SecureStorage để mã hóa dữ liệu trước khi lưu
+        await SecureStorage.encryptAndStore(key, cacheData);
     } catch (error) {
         console.log('Cache save error:', error);
     }
@@ -452,9 +454,15 @@ export default function WeatherPage() {
                 setError(null);
 
                 // 2. KIỂM TRA CACHE
-                const cached = await AsyncStorage.getItem(WEATHER_CACHE_KEY);
-                const cachedForecastData = await AsyncStorage.getItem(FORECAST_CACHE_KEY);
-                const cachedLocation = await AsyncStorage.getItem('cached_location');
+                // Sử dụng SecureStorage để lấy và giải mã dữ liệu cache
+                const weatherCache = await SecureStorage.getAndDecrypt<CacheData<WeatherType>>(WEATHER_CACHE_KEY);
+                const forecastCache = await SecureStorage.getAndDecrypt<CacheData<ForecastItem[]>>(FORECAST_CACHE_KEY);
+                const cachedLocationData = await SecureStorage.getAndDecrypt<{
+                    latitude: number;
+                    longitude: number;
+                    city: string;
+                    country: string;
+                }>('cached_location');
                 const lastFetchTime = await AsyncStorage.getItem('last_weather_fetch_time');
                 const currentTime = Date.now();
 
@@ -462,19 +470,17 @@ export default function WeatherPage() {
                 let parsedLocation = null;
 
                 // Nếu có cache hợp lệ, hiển thị ngay
-                if (cached && cachedForecastData && cachedLocation) {
+                if (weatherCache && forecastCache && cachedLocationData) {
                     try {
-                        const weatherCache = JSON.parse(cached) as CacheData<WeatherType>;
-                        const forecastCache = JSON.parse(cachedForecastData) as CacheData<ForecastItem[]>;
-                        parsedLocation = JSON.parse(cachedLocation);
+                        parsedLocation = cachedLocationData;
 
                         // Kiểm tra nếu cache còn hợp lệ hoặc có dữ liệu
                         if ((Date.now() - weatherCache.timestamp < CACHE_EXPIRY) ||
                             (weatherCache.data && forecastCache.data)) {
 
-                            // Hiển thị dữ liệu từ cache ngay lập tức
+                            // Hiển thị dữ liệu từ cache đã được giải mã
                             setWeatherData(weatherCache.data);
-                            setDailyForecast(forecastCache.data);
+                            setDailyForecast(forecastCache.data as ForecastItem[]);
                             setLocation(parsedLocation);
 
                             // Cho phép hiển thị UI sớm
@@ -538,7 +544,8 @@ export default function WeatherPage() {
                         fetchLon = defaultLocation.longitude;
 
                         // Cache vị trí
-                        await AsyncStorage.setItem('cached_location', JSON.stringify(defaultLocation));
+                        // Lưu vị trí với mã hóa
+                        await SecureStorage.encryptAndStore('cached_location', defaultLocation);
                     } else {
                         // 5. LẤY ĐỊA CHỈ TỪ TỌA ĐỘ
                         const address = await getAddressFromCoordinates(latitude, longitude);
@@ -552,7 +559,8 @@ export default function WeatherPage() {
                         fetchLon = longitude;
 
                         // Cache vị trí
-                        await AsyncStorage.setItem('cached_location', JSON.stringify(newLocation));
+                        // Lưu vị trí với mã hóa
+                        await SecureStorage.encryptAndStore('cached_location', newLocation);
                     }
                 }
 

@@ -1,39 +1,88 @@
+import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const ACCESS_TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
-const TOKEN_EXPIRY_KEY = 'token_expiry';
+// SecureStore hoạt động trên iOS và Android. 
+// Trên Web, nó không được hỗ trợ, nên cần fallback về AsyncStorage hoặc localStorage.
+const isSecureStoreAvailable = Platform.OS !== 'web';
 
-// Lưu token
-export const saveTokens = async (accessToken: string, refreshToken: string, expiresIn: number) => {
-  const expiryTime = Date.now() + expiresIn * 1000; // Thời gian hết hạn (ms)
-  await AsyncStorage.multiSet([
-    [ACCESS_TOKEN_KEY, accessToken],
-    [REFRESH_TOKEN_KEY, refreshToken],
-    [TOKEN_EXPIRY_KEY, expiryTime.toString()],
-  ]);
+export const setToken = async (token: string) => {
+  try {
+    if (isSecureStoreAvailable) {
+      await SecureStore.setItemAsync('accessToken', token);
+    } else {
+      await AsyncStorage.setItem('accessToken', token);
+    }
+  } catch (error) {
+    console.error('Error setting token:', error);
+  }
 };
 
-export const getAccessToken = async () => {
+export const getToken = async () => {
   try {
-    return await AsyncStorage.getItem('accessToken');
+    if (isSecureStoreAvailable) {
+      return await SecureStore.getItemAsync('accessToken');
+    } else {
+      return await AsyncStorage.getItem('accessToken');
+    }
   } catch (error) {
-    console.error('Failed to get access token:', error);
+    console.error('Error getting token:', error);
     return null;
   }
 };
 
-// Lấy token
-export const getTokens = async () => {
-  const tokens = await AsyncStorage.multiGet([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TOKEN_EXPIRY_KEY]);
-  return {
-    accessToken: tokens[0][1],
-    refreshToken: tokens[1][1],
-    tokenExpiry: tokens[2][1] ? parseInt(tokens[2][1], 10) : null,
-  };
+export const removeToken = async () => {
+  try {
+    if (isSecureStoreAvailable) {
+      await SecureStore.deleteItemAsync('accessToken');
+    } else {
+      await AsyncStorage.removeItem('accessToken');
+    }
+  } catch (error) {
+    console.error('Error removing token:', error);
+  }
 };
 
-// Xóa token
+// Thêm các hàm cho Refresh Token (Quan trọng hơn Access Token)
+export const setRefreshToken = async (token: string) => {
+  try {
+    if (isSecureStoreAvailable) {
+      await SecureStore.setItemAsync('refreshToken', token);
+    } else {
+      await AsyncStorage.setItem('refreshToken', token);
+    }
+  } catch (error) {
+    console.error('Error setting refresh token:', error);
+  }
+};
+
+export const getRefreshToken = async () => {
+  try {
+    if (isSecureStoreAvailable) {
+      return await SecureStore.getItemAsync('refreshToken');
+    } else {
+      return await AsyncStorage.getItem('refreshToken');
+    }
+  } catch (error) {
+    console.error('Error getting refresh token:', error);
+    return null;
+  }
+};
+
+export const removeRefreshToken = async () => {
+  try {
+    if (isSecureStoreAvailable) {
+      await SecureStore.deleteItemAsync('refreshToken');
+    } else {
+      await AsyncStorage.removeItem('refreshToken');
+    }
+  } catch (error) {
+    console.error('Error removing refresh token:', error);
+  }
+};
+
+// Hàm clear tất cả token khi logout
 export const clearTokens = async () => {
-  await AsyncStorage.multiRemove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TOKEN_EXPIRY_KEY]);
+  await removeToken();
+  await removeRefreshToken();
 };
