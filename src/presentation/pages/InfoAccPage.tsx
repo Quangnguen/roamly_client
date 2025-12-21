@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { BACKGROUND } from '@/src/const/constants';
 import PostList from '../components/postList';
-import MemoriesGrid from '../components/memories/Memory';
+import MemoriesGrid from '../components/memories/memory';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
 import Toast from 'react-native-toast-message';

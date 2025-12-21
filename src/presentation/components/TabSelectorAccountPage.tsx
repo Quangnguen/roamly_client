@@ -1,6 +1,6 @@
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from "react-native"
 import TabSelector from "./account/TabSelector";
-import MemoriesGrid from "./memories/Memory";
+import MemoriesGrid from "./memories/memory";
 import PostList from "./postList";
 import Card from "./card";
 import { useNavigation } from "@react-navigation/native";
