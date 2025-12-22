@@ -28,6 +28,7 @@ import AddressDetailPage from '../pages/AddressDetailPage';
 import TravelPlaceDetailPage from '../pages/TravelPlaceDetailPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
+import TwoFactorAuthPage from '../pages/TwoFactorAuthPage';
 import { Destination } from '../../types/DestinationInterface';
 
 export type RootStackParamList = {
@@ -46,6 +47,10 @@ export type RootStackParamList = {
   ResetPassword: {
     email: string;
     otp: string;
+  };
+  TwoFactorAuth: {
+    email: string;
+    message: string;
   };
   Auth: undefined;
   InApp: { screen?: keyof TabParamList } | undefined;
@@ -121,6 +126,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
       <Stack.Screen name="OtpVerification" component={OtpVerificationPage} />
+      <Stack.Screen name="TwoFactorAuth" component={TwoFactorAuthPage} />
     </Stack.Navigator>
   );
 };

@@ -1,7 +1,8 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { dependencies } from "../../../dependencies/dependencies";
 import { clearTokens } from "@/src/utils/tokenStorage";
 import { socketService } from "@/src/services/socketService";
+import { loginApi, verifyTwoFactorApi, LoginApiResponse, LoginSuccessResponse } from "../../../data/api/loginApi";
 
 // Define the shape of the nested user data
 interface User {
@@ -9,16 +10,16 @@ interface User {
   email: string;
   username: string;
   name: string;
-  phoneNumber: string;
-  profilePic: string;
-  followersCount: number;
-  followingCount: number;
-  postCount: number;
-  private: boolean;
-  verified: boolean;
-  role: string;
-  bio: string;
-  unreadNotifications: number;
+  phoneNumber?: string;
+  profilePic?: string;
+  followersCount?: number;
+  followingCount?: number;
+  postCount?: number;
+  private?: boolean;
+  verified?: boolean;
+  role?: number;
+  bio?: string;
+  unreadNotifications?: number;
 }
 
 // Define the state shape
@@ -26,9 +27,13 @@ interface AuthState {
   profile: User | null;
   loading: boolean;
   error: string | null;
-  access_token: string | null; // Thêm access_token
-  refreshToken: string | null; // Thêm refreshToken
-  isAuthenticated: boolean; // Thêm isAuthenticated
+  access_token: string | null;
+  refreshToken: string | null;
+  isAuthenticated: boolean;
+  // 2FA states
+  requiresTwoFactor: boolean;
+  twoFactorEmail: string | null;
+  twoFactorMessage: string | null;
 }
 
 interface AuthResponse {
@@ -42,20 +47,45 @@ const initialState: AuthState = {
   profile: null,
   loading: false,
   error: null,
-  access_token: null, // Khởi tạo access_token
-  refreshToken: null, // Khởi tạo refreshToken
-  isAuthenticated: false, // Khởi tạo isAuthenticated
+  access_token: null,
+  refreshToken: null,
+  isAuthenticated: false,
+  // 2FA initial states
+  requiresTwoFactor: false,
+  twoFactorEmail: null,
+  twoFactorMessage: null,
 };
 
-// Login thunk
-export const login = createAsyncThunk(
+// Login thunk - now handles 2FA
+export const login = createAsyncThunk<
+  LoginApiResponse,
+  { email: string; password: string },
+  { rejectValue: string }
+>(
   "auth/login",
-  async ({ email, password }: { email: string; password: string }, thunkAPI) => {
+  async ({ email, password }, thunkAPI) => {
     try {
-      const response = await dependencies.loginUseCase.execute(email, password);
-      return response as unknown as AuthResponse;
+      const response = await loginApi(email, password);
+      return response;
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.message || "Đăng nhập thất bại");
+    }
+  }
+);
+
+// Verify Two Factor thunk
+export const verifyTwoFactor = createAsyncThunk<
+  LoginSuccessResponse,
+  { email: string; otp: string; trustDevice: boolean },
+  { rejectValue: string }
+>(
+  "auth/verifyTwoFactor",
+  async ({ email, otp, trustDevice }, thunkAPI) => {
+    try {
+      const response = await verifyTwoFactorApi(email, otp, trustDevice);
+      return response;
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.message || "Xác thực thất bại");
     }
   }
 );
@@ -135,8 +165,8 @@ const authSlice = createSlice({
 
     // Thêm reducer để giảm số thông báo chưa đọc
     decrementUnreadNotifications: (state) => {
-      if (state.profile && state.profile.unreadNotifications > 0) {
-        state.profile.unreadNotifications = state.profile.unreadNotifications - 1;
+      if (state.profile && (state.profile.unreadNotifications ?? 0) > 0) {
+        state.profile.unreadNotifications = (state.profile.unreadNotifications ?? 0) - 1;
       }
     },
 
@@ -147,6 +177,13 @@ const authSlice = createSlice({
       }
     },
 
+    // Reset 2FA state
+    resetTwoFactorState: (state) => {
+      state.requiresTwoFactor = false;
+      state.twoFactorEmail = null;
+      state.twoFactorMessage = null;
+    },
+
     // Immediate logout (không cần async)
     logoutImmediate: (state) => {
       state.isAuthenticated = false;
@@ -155,26 +192,68 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.loading = false;
       state.error = null;
+      state.requiresTwoFactor = false;
+      state.twoFactorEmail = null;
+      state.twoFactorMessage = null;
     },
   },
   extraReducers: (builder) => {
-    // Login cases
+    // Login cases - with 2FA support
     builder
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.requiresTwoFactor = false;
+        state.twoFactorEmail = null;
+        state.twoFactorMessage = null;
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = action.payload.user;
-        state.access_token = action.payload.access_token;
-        state.refreshToken = action.payload.refresh_token;
-        state.isAuthenticated = true; // Cập nhật trạng thái isAuthenticated
+
+        // Check if 2FA is required
+        if (action.payload.requiresTwoFactor) {
+          state.requiresTwoFactor = true;
+          state.twoFactorEmail = action.payload.email;
+          state.twoFactorMessage = action.payload.message;
+          state.isAuthenticated = false;
+        } else {
+          // Login successful
+          state.profile = action.payload.user as User;
+          state.access_token = action.payload.access_token;
+          state.refreshToken = action.payload.refresh_token;
+          state.isAuthenticated = true;
+          state.requiresTwoFactor = false;
+          state.twoFactorEmail = null;
+          state.twoFactorMessage = null;
+        }
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.isAuthenticated = false; // Đặt lại trạng thái isAuthenticated khi đăng nhập thất bại
+        state.isAuthenticated = false;
+        state.requiresTwoFactor = false;
+      });
+
+    // Verify Two Factor cases
+    builder
+      .addCase(verifyTwoFactor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyTwoFactor.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload.user as User;
+        state.access_token = action.payload.access_token;
+        state.refreshToken = action.payload.refresh_token;
+        state.isAuthenticated = true;
+        state.requiresTwoFactor = false;
+        state.twoFactorEmail = null;
+        state.twoFactorMessage = null;
+      })
+      .addCase(verifyTwoFactor.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        // Keep 2FA state so user can retry
       });
 
     // Register cases
@@ -204,6 +283,9 @@ const authSlice = createSlice({
         state.access_token = null;
         state.refreshToken = null;
         state.error = null;
+        state.requiresTwoFactor = false;
+        state.twoFactorEmail = null;
+        state.twoFactorMessage = null;
       })
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
@@ -224,6 +306,7 @@ export const {
   incrementUnreadNotifications,
   decrementUnreadNotifications,
   resetUnreadNotifications,
+  resetTwoFactorState,
   logoutImmediate
 } = authSlice.actions;
 

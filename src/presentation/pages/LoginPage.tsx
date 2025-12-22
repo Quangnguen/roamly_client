@@ -56,9 +56,21 @@ export default function LoginPage({ navigation }: Props) {
 
     const result = await dispatch(login({ email, password }))
     if (login.fulfilled.match(result)) {
-      navigation.replace('InApp')
+      const payload = result.payload
+
+      // Kiểm tra xem có yêu cầu 2FA không
+      if (payload.requiresTwoFactor) {
+        // Chuyển đến trang xác thực 2FA
+        navigation.navigate('TwoFactorAuth', {
+          email: payload.email,
+          message: payload.message,
+        })
+      } else {
+        // Đăng nhập thành công, chuyển đến màn hình chính
+        navigation.replace('InApp')
+      }
     } else {
-      Alert.alert('Lỗi', 'Tên đăng nhập hoặc mật khẩu không chính xác')
+      Alert.alert('Lỗi', 'Email hoặc mật khẩu không chính xác')
     }
   }
 
