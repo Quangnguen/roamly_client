@@ -12,13 +12,16 @@ import {
     TouchableWithoutFeedback,
     Keyboard,
     StatusBar,
-    Dimensions
+    Dimensions,
+    ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store';
 import { updatePassword, clearMessage } from '../redux/slices/userSlice';
+import { sendChangePasswordOtp } from '../../data/api/userApi';
+import Toast from 'react-native-toast-message';
 
 interface ChangePasswordModalProps {
     isVisible: boolean;
@@ -31,46 +34,115 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isVisible, on
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [otp, setOtp] = useState('');
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+    const [sendingOtp, setSendingOtp] = useState(false);
+    const [countdown, setCountdown] = useState(0);
+
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, message, status, statusCode } = useSelector((state: RootState) => state.user);
+
+    // Countdown timer for resend OTP
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        if (countdown > 0) {
+            timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [countdown]);
 
     // Theo dõi thay đổi của status và message
     useEffect(() => {
         if (status === 'success' && message) {
+            Toast.show({
+                type: 'success',
+                text1: 'Thành công',
+                text2: message,
+            });
             // Reset form và đóng modal
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-            dispatch(clearMessage()); // Clear message sau khi xử lý xong
+            setOtp('');
+            setOtpSent(false);
+            dispatch(clearMessage());
             onClose();
         } else if (status === 'error' && message) {
-            Alert.alert('Lỗi', message);
-            dispatch(clearMessage()); // Clear message sau khi hiển thị lỗi
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: message,
+            });
+            dispatch(clearMessage());
         }
     }, [status, message]);
 
-    const handleSubmit = () => {
-        // Kiểm tra validation
+    const handleSendOtp = async () => {
+        // Validate passwords first
         if (!currentPassword || !newPassword || !confirmPassword) {
-            Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: 'Vui lòng điền đầy đủ thông tin mật khẩu',
+            });
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            Alert.alert('Lỗi', 'Mật khẩu mới không khớp');
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: 'Mật khẩu mới không khớp',
+            });
             return;
         }
 
         if (newPassword.length < 6) {
-            Alert.alert('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự');
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: 'Mật khẩu mới phải có ít nhất 6 ký tự',
+            });
             return;
         }
 
-        // Gọi API đổi mật khẩu
-        dispatch(updatePassword({ oldPassword: currentPassword, newPassword }));
+        try {
+            setSendingOtp(true);
+            await sendChangePasswordOtp();
+            setOtpSent(true);
+            setCountdown(60); // 60 seconds countdown
+            Toast.show({
+                type: 'success',
+                text1: 'Thành công',
+                text2: 'Mã OTP đã được gửi đến email của bạn',
+            });
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: error.message || 'Không thể gửi OTP',
+            });
+        } finally {
+            setSendingOtp(false);
+        }
+    };
+
+    const handleSubmit = () => {
+        // Kiểm tra OTP
+        if (!otp || otp.length !== 6) {
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: 'Vui lòng nhập mã OTP 6 chữ số',
+            });
+            return;
+        }
+
+        // Gọi API đổi mật khẩu với OTP
+        dispatch(updatePassword({ oldPassword: currentPassword, newPassword, otp }));
     };
 
     const dismissKeyboard = () => {
@@ -101,12 +173,31 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isVisible, on
                                     <Ionicons name="chevron-back" size={28} color="#000" />
                                 </TouchableOpacity>
                                 <Text style={styles.headerTitle}>Đổi mật khẩu</Text>
-                                <TouchableOpacity
-                                    onPress={handleSubmit}
-                                    style={styles.saveButton}
-                                >
-                                    <Text style={styles.saveButtonText}>Lưu</Text>
-                                </TouchableOpacity>
+                                {!otpSent ? (
+                                    <TouchableOpacity
+                                        onPress={handleSendOtp}
+                                        style={styles.saveButton}
+                                        disabled={sendingOtp}
+                                    >
+                                        {sendingOtp ? (
+                                            <ActivityIndicator size="small" color="#3897F0" />
+                                        ) : (
+                                            <Text style={styles.saveButtonText}>Gửi OTP</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                ) : (
+                                    <TouchableOpacity
+                                        onPress={handleSubmit}
+                                        style={styles.saveButton}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator size="small" color="#3897F0" />
+                                        ) : (
+                                            <Text style={styles.saveButtonText}>Lưu</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                )}
                             </View>
 
                             {/* Form */}
@@ -122,6 +213,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isVisible, on
                                             onChangeText={setCurrentPassword}
                                             placeholder="Nhập mật khẩu hiện tại"
                                             placeholderTextColor="#999"
+                                            editable={!otpSent}
                                         />
                                         <TouchableOpacity
                                             onPress={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -147,6 +239,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isVisible, on
                                             onChangeText={setNewPassword}
                                             placeholder="Nhập mật khẩu mới"
                                             placeholderTextColor="#999"
+                                            editable={!otpSent}
                                         />
                                         <TouchableOpacity
                                             onPress={() => setShowNewPassword(!showNewPassword)}
@@ -172,6 +265,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isVisible, on
                                             onChangeText={setConfirmPassword}
                                             placeholder="Nhập lại mật khẩu mới"
                                             placeholderTextColor="#999"
+                                            editable={!otpSent}
                                         />
                                         <TouchableOpacity
                                             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -186,8 +280,36 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isVisible, on
                                     </View>
                                 </View>
 
+                                {/* OTP Input - Only show after OTP is sent */}
+                                {otpSent && (
+                                    <View style={styles.inputContainer}>
+                                        <Text style={styles.label}>Mã OTP</Text>
+                                        <View style={styles.passwordContainer}>
+                                            <TextInput
+                                                style={styles.input}
+                                                value={otp}
+                                                onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, '').slice(0, 6))}
+                                                placeholder="Nhập mã OTP 6 chữ số"
+                                                placeholderTextColor="#999"
+                                                keyboardType="number-pad"
+                                                maxLength={6}
+                                            />
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={handleSendOtp}
+                                            disabled={countdown > 0 || sendingOtp}
+                                            style={[styles.resendButton, (countdown > 0 || sendingOtp) && styles.resendButtonDisabled]}
+                                        >
+                                            <Text style={[styles.resendButtonText, (countdown > 0 || sendingOtp) && styles.resendButtonTextDisabled]}>
+                                                {countdown > 0 ? `Gửi lại sau ${countdown}s` : 'Gửi lại OTP'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+
                                 <Text style={styles.passwordRequirements}>
                                     * Mật khẩu phải có ít nhất 6 ký tự
+                                    {!otpSent && '\n* Nhấn "Gửi OTP" để nhận mã xác thực qua email'}
                                 </Text>
                             </View>
                         </View>
@@ -271,6 +393,21 @@ const styles = StyleSheet.create({
         color: '#666',
         marginTop: 8,
         fontStyle: 'italic',
+    },
+    resendButton: {
+        marginTop: 8,
+        paddingVertical: 8,
+    },
+    resendButtonDisabled: {
+        opacity: 0.5,
+    },
+    resendButtonText: {
+        color: '#3897F0',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    resendButtonTextDisabled: {
+        color: '#999',
     },
 });
 

@@ -96,11 +96,11 @@ export const updateUserProfile = createAsyncThunk(
 export const updatePassword = createAsyncThunk(
   'user/updatePassword',
   async (
-    { oldPassword, newPassword }: { oldPassword: string; newPassword: string },
+    { oldPassword, newPassword, otp }: { oldPassword: string; newPassword: string; otp: string },
     thunkAPI
   ) => {
     try {
-      const response = await dependencies.userUsecase.updatePassword(oldPassword, newPassword);
+      const response = await dependencies.userUsecase.updatePassword(oldPassword, newPassword, otp);
       return response as any; // Chuyển đổi kiểu dữ liệu
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to update password');

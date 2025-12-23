@@ -22,8 +22,8 @@ export class UserUseCase {
     return await this.repo.updateInfo(userData);
   }
 
-  async updatePassword(oldPassword: string, newPassword: string): Promise<void> {
-    return await this.repo.updatePassword(oldPassword, newPassword);
+  async updatePassword(oldPassword: string, newPassword: string, otp: string): Promise<void> {
+    return await this.repo.updatePassword(oldPassword, newPassword, otp);
   }
   async softDelete(): Promise<void> {
     return await this.repo.softDelete();

@@ -1,6 +1,5 @@
 import { authorizedRequest } from '../../utils/authorizedRequest';
 import { API_BASE_URL } from '../../const/api';
-import { getAccessToken } from '@/src/utils/tokenStorage';
 import { UserChangePasswordInterface, UserUpdateInterface } from '@/src/types/UserUpdateInterface';
 import { SearchUserParams } from '@/src/types/UserResponseInterface';
 
@@ -31,6 +30,16 @@ export const updateUserProfile = async (userData: UserUpdateInterface) => {
 export const softDeleteUser = async () => {
   return await authorizedRequest(`${API_BASE_URL}/users/soft-delete`, {
     method: 'PATCH',
+  });
+};
+
+// Gửi OTP để đổi mật khẩu
+export const sendChangePasswordOtp = async () => {
+  return await authorizedRequest(`${API_BASE_URL}/users/send-change-password-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
 };
 

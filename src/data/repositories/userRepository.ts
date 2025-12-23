@@ -12,7 +12,7 @@ export interface UserRepository {
     profilePic?: string;
     private?: boolean;
   }): Promise<UserApiResponse>;
-  updatePassword(oldPassword: string, newPassword: string): Promise<void>;
+  updatePassword(oldPassword: string, newPassword: string, otp: string): Promise<void>;
   softDelete(): Promise<void>;
   getUsers(params?: GetUsersParams): Promise<any>;
   getUserById(userId: string): Promise<UserApiResponse>;

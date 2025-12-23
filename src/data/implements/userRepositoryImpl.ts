@@ -35,9 +35,9 @@ export class UserRepositoryImpl implements UserRepository {
     }
   }
 
-  async updatePassword(oldPassword: string, newPassword: string): Promise<void> {
+  async updatePassword(oldPassword: string, newPassword: string, otp: string): Promise<void> {
     try {
-      const response = await changePassword({ oldPassword, newPassword });
+      const response = await changePassword({ oldPassword, newPassword, otp });
 
       if (response.statusCode === 200) {
         return;

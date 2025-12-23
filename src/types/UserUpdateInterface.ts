@@ -11,4 +11,5 @@ export interface UserUpdateInterface {
 export interface UserChangePasswordInterface {
     oldPassword: string;
     newPassword: string;
+    otp: string;
 }
