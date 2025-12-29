@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  Modal,
 } from 'react-native'
 import { useAppDispatch, useAppSelector } from '../redux/hook'
 import { login } from '../redux/slices/authSlice'
@@ -27,6 +28,30 @@ export default function LoginPage({ navigation }: Props) {
   const [password, setPassword] = useState('')
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
+
+  // Account Locked State
+  const [isAccountLocked, setIsAccountLocked] = useState(false)
+  const [lockoutSeconds, setLockoutSeconds] = useState(0)
+  const [lockoutLevel, setLockoutLevel] = useState<'soft' | 'hard'>('soft')
+
+  // Countdown timer for lockout
+  useEffect(() => {
+    if (lockoutSeconds > 0) {
+      const timer = setTimeout(() => {
+        setLockoutSeconds((prev) => prev - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    } else if (lockoutSeconds === 0 && isAccountLocked) {
+      setIsAccountLocked(false)
+    }
+  }, [lockoutSeconds, isAccountLocked])
+
+  // Format seconds to mm:ss
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   const validateForm = () => {
     let isValid = true
@@ -70,7 +95,15 @@ export default function LoginPage({ navigation }: Props) {
         navigation.replace('InApp')
       }
     } else {
-      Alert.alert('Lỗi', 'Email hoặc mật khẩu không chính xác')
+      // Kiểm tra nếu tài khoản bị khóa
+      const error = result.payload as any
+      if (error?.isAccountLocked) {
+        setLockoutSeconds(error.retryAfter || 300)
+        setIsAccountLocked(true)
+        setLockoutLevel(error.lockoutLevel === 'hard' ? 'hard' : 'soft')
+      } else {
+        Alert.alert('Lỗi', error?.message || 'Email hoặc mật khẩu không chính xác')
+      }
     }
   }
 
@@ -85,6 +118,37 @@ export default function LoginPage({ navigation }: Props) {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+        {/* Account Locked Modal */}
+        <Modal
+          visible={isAccountLocked}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setIsAccountLocked(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Ionicons name="lock-closed" size={60} color="#FF6B6B" />
+              <Text style={styles.modalTitle}>Tài khoản tạm khóa</Text>
+              <Text style={styles.modalMessage}>
+                Bạn đã đăng nhập sai quá nhiều lần.{'\n'}
+                Vui lòng thử lại sau:
+              </Text>
+              <Text style={styles.countdownText}>{formatTime(lockoutSeconds)}</Text>
+              <Text style={styles.modalHint}>
+                {lockoutLevel === 'soft'
+                  ? 'Đây là khóa tạm thời để bảo vệ tài khoản của bạn.'
+                  : 'Tài khoản đã bị khóa cứng. Liên hệ hỗ trợ nếu cần.'}
+              </Text>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => setIsAccountLocked(false)}
+              >
+                <Text style={styles.modalButtonText}>Đã hiểu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         <Text style={styles.title}>Welcome To ViVu 👋</Text>
         <Text style={styles.subtitle}>Login to continue</Text>
 
@@ -315,5 +379,61 @@ const styles = StyleSheet.create({
     color: '#2196F3',
     fontSize: 14,
     fontWeight: '500',
+  },
+  // Account Locked Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    marginHorizontal: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  countdownText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+    marginVertical: 15,
+  },
+  modalHint: {
+    fontSize: 13,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  modalButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

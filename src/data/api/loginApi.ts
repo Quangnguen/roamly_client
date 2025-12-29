@@ -60,6 +60,18 @@ export const loginApi = async (email: string, password: string): Promise<LoginAp
 
     if (!response.ok) {
       const errorData = await response.json();
+
+      // Xử lý tài khoản bị khóa (429 Too Many Requests)
+      if (response.status === 429) {
+        console.log('🔒 [loginApi] Account locked response:', JSON.stringify(errorData));
+        console.log('🔒 [loginApi] retryAfter from server:', errorData.retryAfter);
+        const error = new Error(errorData.message || 'Tài khoản tạm thời bị khóa') as any;
+        error.isAccountLocked = true;
+        error.retryAfter = errorData.retryAfter || 300; // Mặc định 5 phút
+        error.lockoutLevel = errorData.lockoutLevel || 'soft';
+        throw error;
+      }
+
       throw new Error(errorData.message || 'Đăng nhập thất bại..');
     }
 

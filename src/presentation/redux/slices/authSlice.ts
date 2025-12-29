@@ -56,11 +56,11 @@ const initialState: AuthState = {
   twoFactorMessage: null,
 };
 
-// Login thunk - now handles 2FA
+// Login thunk - now handles 2FA and Account Lockout
 export const login = createAsyncThunk<
   LoginApiResponse,
   { email: string; password: string },
-  { rejectValue: string }
+  { rejectValue: { message: string; isAccountLocked?: boolean; retryAfter?: number; lockoutLevel?: string } }
 >(
   "auth/login",
   async ({ email, password }, thunkAPI) => {
@@ -68,7 +68,16 @@ export const login = createAsyncThunk<
       const response = await loginApi(email, password);
       return response;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.message || "Đăng nhập thất bại");
+      // Xử lý Account Locked error
+      if (err.isAccountLocked) {
+        return thunkAPI.rejectWithValue({
+          message: err.message,
+          isAccountLocked: true,
+          retryAfter: err.retryAfter,
+          lockoutLevel: err.lockoutLevel,
+        });
+      }
+      return thunkAPI.rejectWithValue({ message: err.message || "Đăng nhập thất bại" });
     }
   }
 );
@@ -229,7 +238,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.payload?.message || 'Đăng nhập thất bại';
         state.isAuthenticated = false;
         state.requiresTwoFactor = false;
       });
